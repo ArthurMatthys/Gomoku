@@ -8,5 +8,5 @@ edition = "2018"
 
 [dependencies]
 
-gtk = { git = "https://github.com/gtk-rs/gtk.git" }
-
+gtk = { version = "0.2", features = ["v3_22"] }
+gdk = "0.6.0"
