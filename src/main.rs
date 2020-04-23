@@ -1,5 +1,6 @@
 extern crate gtk;
 use gui::controller::*;
+use gui::model::*;
 
 mod gui;
 

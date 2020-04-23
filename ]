@@ -237,13 +237,13 @@ pub fn get_pixbuf(filename: &str) -> Pixbuf {
 impl ContentGameplay {
     pub fn new() -> ContentGameplay {
         let images: [Pixbuf; 7] = [
-            get_pixbuf("src/gui/content/Black_pawn.png"),
-            get_pixbuf("src/gui/content/No_pawn.png"),
-            get_pixbuf("src/gui/content/No_pawn_grey.png"),
-            get_pixbuf("src/gui/content/No_pawn_green.png"),
-            get_pixbuf("src/gui/content/No_pawn_red.jpg"),
-            get_pixbuf("src/gui/content/No_pawn_orange.png"),
-            get_pixbuf("src/gui/content/White_pawn.png"),
+            get_pixbuf("/home/amatthys/Documents/Gomoku/src/gui/content/Black_pawn.png"),
+            get_pixbuf("/home/amatthys/Documents/Gomoku/src/gui/content/No_pawn.png"),
+            get_pixbuf("/home/amatthys/Documents/Gomoku/src/gui/content/No_pawn_grey.png"),
+            get_pixbuf("/home/amatthys/Documents/Gomoku/src/gui/content/No_pawn_green.png"),
+            get_pixbuf("/home/amatthys/Documents/Gomoku/src/gui/content/No_pawn_red.jpg"),
+            get_pixbuf("/home/amatthys/Documents/Gomoku/src/gui/content/No_pawn_orange.png"),
+            get_pixbuf("/home/amatthys/Documents/Gomoku/src/gui/content/White_pawn.png"),
         ];
 
         let grid = Grid::new();
@@ -254,7 +254,7 @@ impl ContentGameplay {
                 let mut eventbox = EventBox::new();
                 let image = Image::new_from_pixbuf(Some(&images[0]));
                 eventbox.add(&image);
-                eventbox.connect("button_press_event", true, |_| {
+                eventbox.connect("button_press_event", true, |eventbox| {
                     println!("test");
                     None
                 });

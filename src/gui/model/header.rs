@@ -31,13 +31,13 @@ impl HeaderGameplay {
     }
 }
 
-pub struct Header {
+pub struct HeaderGamerule {
     pub container: HeaderBar,
     pub play: Button,
 }
 
-impl Header {
-    pub fn new() -> Header {
+impl HeaderGamerule {
+    pub fn new() -> HeaderGamerule {
         // Creates the main header bar container widget.
         let container = HeaderBar::new();
 
@@ -57,6 +57,6 @@ impl Header {
         // THen add them to the header bar.
         container.pack_start(&play);
 
-        Header { container, play }
+        HeaderGamerule { container, play }
     }
 }

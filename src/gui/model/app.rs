@@ -7,21 +7,21 @@ use std::process;
 pub struct App {
     pub window: Window,
     pub window_gameplay: Window,
-    pub header: header::Header,
+    pub header: header::HeaderGamerule,
     pub header_gameplay: header::HeaderGameplay,
-    pub content: content::Content,
+    pub content: content::ContentGamerule,
     pub content_gameplay: content::ContentGameplay,
 }
 
 impl App {
-    pub fn new(stats: &game_class::Gamerule) -> App {
+    pub fn new(stats: std::sync::Arc<game_class::Gamerule>) -> App {
         let window = Window::new(WindowType::Toplevel);
         let window_gameplay = Window::new(WindowType::Toplevel);
 
-        let header = header::Header::new();
+        let header = header::HeaderGamerule::new();
         let header_gameplay = header::HeaderGameplay::new();
 
-        let content = content::Content::new(stats);
+        let content = content::ContentGamerule::new(stats);
         let content_gameplay = content::ContentGameplay::new();
 
         let app_name: &str = "Gomoku";
