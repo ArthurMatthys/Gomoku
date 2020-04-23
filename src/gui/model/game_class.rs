@@ -58,7 +58,7 @@ pub struct Game {
     pub nb_of_player: AtomicUsize,
     pub board: [Option<bool>; 361],
     type_of_party: AtomicUsize,
-    pub players: AtomicPtr<&(player_class::Player, player_class::Player)>,
+    pub players: AtomicPtr<(player_class::Player, player_class::Player)>,
 }
 
 impl Game {
@@ -68,7 +68,7 @@ impl Game {
             nb_of_player: AtomicUsize::new(0),
             board: [None; 361],
             type_of_party: AtomicUsize::new(TypeOfParty::Unset as usize),
-            players: AtomicPtr::new(&player_class::initialize_players(3)),
+            players: AtomicPtr::new(&mut player_class::initialize_players(3)),
         }
     }
 
@@ -105,7 +105,7 @@ impl Game {
         self.set_type_of_party(party_type);
         self.set_nb_of_player(nb_of_player);
         self.players
-            .store(player_class::initialize_players(nb_of_player));
+            .store(&mut player_class::initialize_players(nb_of_player), Ordering::SeqCst);
     }
 
     // Setter of the Game Instance
