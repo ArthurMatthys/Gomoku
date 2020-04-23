@@ -9,4 +9,4 @@ edition = "2018"
 [dependencies]
 
 gtk = { git = "https://github.com/gtk-rs/gtk.git" }
-
+rand = "0.7.3"
