@@ -3,7 +3,8 @@ use super::*;
 use gdk_pixbuf::*;
 use gtk::*;
 use std::process;
-//use std::sync::Arc;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicPtr, Ordering, AtomicUsize};
 //use std::sync::
 
 pub struct ContentGamerule {
@@ -169,31 +170,52 @@ pub enum ImageType {
 }
 
 pub struct EventBoxCoord {
-    eventbox: EventBox,
-    image: Image,
-    x: u8,
-    y: u8,
+    eventbox: AtomicPtr<EventBox>,
+    image: AtomicUsize,
+    x: AtomicUsize,
+    y: AtomicUsize,
 }
 
-//impl EventBoxCoord {
-//    pub fn new(x: u8, y: u8) -> EventBoxCoord {
-//        let image = Image::new_from_pixbuf(Some(&content::IMAGES[0]));
-//        //let image = match content::IMAGES[0] {
-//        //    Ok(pixbuf) => Image::new_from_pixbuf(Some(&pixbuf)),
-//        //    Err(e) => {
-//        //        eprintln!("Failed to load images");
-//        //        process::exit(1)
-//        //    }
-//        //};
-//        let eventbox = EventBox::new();
-//        eventbox.add(&image);
-//        EventBoxCoord {
-//            eventbox,
-//            image,
-//            x,
-//            y,
-//        }
-//    }
+pub enum Images {
+    BlackPawn = Pixbuf::get_pixbuf("src/gui/content/Black_pawn.png"),
+    NoPawn = get_pixbuf("src/gui/content/No_pawn.png"),
+    NoPawnPrey = get_pixbuf("src/gui/content/No_pawn_grey.png"),
+    NoPawnGreen = get_pixbuf("src/gui/content/No_pawn_green.png"),
+    NoPawnRed = get_pixbuf("src/gui/content/No_pawn_red.jpg"),
+    NoPawnOrange = get_pixbuf("src/gui/content/No_pawn_orange.png"),
+    WhitePawn = get_pixbuf("src/gui/content/White_pawn.png"),
+}
+
+impl EventBoxCoord {
+    
+   pub fn new(x: u8, y: u8) -> EventBoxCoord {
+       let image = Image::new_from_pixbuf(Some(&content::IMAGES[0]));
+       //let image = match content::IMAGES[0] {
+       //    Ok(pixbuf) => Image::new_from_pixbuf(Some(&pixbuf)),
+       //    Err(e) => {
+       //        eprintln!("Failed to load images");
+       //        process::exit(1)
+       //    }
+       //};
+       let eventbox = EventBox::new();
+       eventbox.add(&image);
+       EventBoxCoord {
+           eventbox,
+           image,
+           x,
+           y,
+       }
+   }
+
+   pub fn get_coord_safe(&self) -> (usize, usize) {
+       (self.x.load(Ordering::SeqCst), self.y.load(Ordering::SeqCst))
+   }
+
+   pub fn delete_image(&self) {
+       let eventbox = self.eventbox.load(Ordering::SeqCst);
+       let image = self.image
+       eventbox.remove(&);
+   }
 //
 //    pub fn change_image(&mut self, imagetype: ImageType) {
 //        self.eventbox.remove(&self.image);
@@ -234,6 +256,7 @@ pub fn get_pixbuf(filename: &str) -> Pixbuf {
     }
 }
 
+
 impl ContentGameplay {
     pub fn new() -> ContentGameplay {
         let images: [Pixbuf; 7] = [
@@ -251,13 +274,26 @@ impl ContentGameplay {
 
         for x in 0..19 {
             for y in 0..19 {
-                let mut eventbox = EventBox::new();
+                let safe_eventbox = Arc::new(EventBox::new());
+                
                 let image = Image::new_from_pixbuf(Some(&images[0]));
-                eventbox.add(&image);
-                eventbox.connect("button_press_event", true, |_| {
-                    println!("test");
-                    None
-                });
+                
+                // let image2 = Arc::new(AtomicPtr::new(&mut image));
+                // let safe_image = Arc::new(AtomicPtr::new(&mut image));
+
+                // let safer = safe_image.clone();
+                // let safe_image2 = safe_image.clone();
+                
+                // eventbox.add(&image);
+
+                {
+                    eventbox.connect("button_press_event", true, |_| {
+                        eventbox.add(&image);
+                        // eventbox.add(&(safer.load(Ordering::SeqCst)));
+                        println!("test");
+                        None
+                    });
+                }
                 //                gtk_container_add(Container::from(eventbox), image);
                 //                g_signal_connect(
                 //                    G_OBJECT(eventbox),
@@ -275,10 +311,10 @@ impl ContentGameplay {
                 );
                 //                {
                 //                    let eventbox = eventbox;
-                //                    eventbox.eventbox.connect_button_press_event(move |_, _| {
-                //                        eventbox.change_image(ImageType::ForbiddenPawn);
-                //                        Inhibit(false)
-                //                    });
+                                //    eventbox.eventbox.connect_button_press_event(move |_, _| {
+                                //        eventbox.change_image(ImageType::ForbiddenPawn);
+                                //        Inhibit(false)
+                                //    });
                 //                }
                 //                if x == y {
                 //                    eventbox.change_image(ImageType::ForbiddenPawn);
