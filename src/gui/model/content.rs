@@ -3,8 +3,8 @@ use super::*;
 use gdk_pixbuf::*;
 use gtk::*;
 use std::process;
+use std::sync::atomic::{AtomicPtr, AtomicUsize, Ordering};
 use std::sync::Arc;
-use std::sync::atomic::{AtomicPtr, Ordering, AtomicUsize};
 //use std::sync::
 
 pub struct ContentGamerule {
@@ -174,99 +174,105 @@ pub struct EventBoxCoord {
     image: AtomicUsize,
     x: AtomicUsize,
     y: AtomicUsize,
+    images: AtomicPtr<[Image; 7]>,
 }
 
-pub enum Images {
-    BlackPawn = Pixbuf::get_pixbuf("src/gui/content/Black_pawn.png"),
-    NoPawn = get_pixbuf("src/gui/content/No_pawn.png"),
-    NoPawnPrey = get_pixbuf("src/gui/content/No_pawn_grey.png"),
-    NoPawnGreen = get_pixbuf("src/gui/content/No_pawn_green.png"),
-    NoPawnRed = get_pixbuf("src/gui/content/No_pawn_red.jpg"),
-    NoPawnOrange = get_pixbuf("src/gui/content/No_pawn_orange.png"),
-    WhitePawn = get_pixbuf("src/gui/content/White_pawn.png"),
-}
+//pub enum Images {
+//    BlackPawn = Pixbuf::get_pixbuf("src/gui/content/Black_pawn.png"),
+//    NoPawn = get_pixbuf("src/gui/content/No_pawn.png"),
+//    NoPawnPrey = get_pixbuf("src/gui/content/No_pawn_grey.png"),
+//    NoPawnGreen = get_pixbuf("src/gui/content/No_pawn_green.png"),
+//    NoPawnRed = get_pixbuf("src/gui/content/No_pawn_red.jpg"),
+//    NoPawnOrange = get_pixbuf("src/gui/content/No_pawn_orange.png"),
+//    WhitePawn = get_pixbuf("src/gui/content/White_pawn.png"),
+//}
 
 impl EventBoxCoord {
-    
-   pub fn new(x: u8, y: u8) -> EventBoxCoord {
-       let image = Image::new_from_pixbuf(Some(&content::IMAGES[0]));
-       //let image = match content::IMAGES[0] {
-       //    Ok(pixbuf) => Image::new_from_pixbuf(Some(&pixbuf)),
-       //    Err(e) => {
-       //        eprintln!("Failed to load images");
-       //        process::exit(1)
-       //    }
-       //};
-       let eventbox = EventBox::new();
-       eventbox.add(&image);
-       EventBoxCoord {
-           eventbox,
-           image,
-           x,
-           y,
-       }
-   }
+    pub fn new(x: usize, y: usize, image: &mut [Image; 7]) -> EventBoxCoord {
+        let eventbox = AtomicPtr::new(&mut EventBox::new());
+        EventBoxCoord {
+            eventbox,
+            image: AtomicUsize::new(0),
+            x: AtomicUsize::new(x),
+            y: AtomicUsize::new(y),
+            images: AtomicPtr::new(image),
+        }
+    }
 
-   pub fn get_coord_safe(&self) -> (usize, usize) {
-       (self.x.load(Ordering::SeqCst), self.y.load(Ordering::SeqCst))
-   }
+    pub fn get_coord_safe(&self) -> (usize, usize) {
+        (self.x.load(Ordering::SeqCst), self.y.load(Ordering::SeqCst))
+    }
 
-   pub fn delete_image(&self) {
-       let eventbox = self.eventbox.load(Ordering::SeqCst);
-       let image = self.image
-       eventbox.remove(&);
-   }
-//
-//    pub fn change_image(&mut self, imagetype: ImageType) {
-//        self.eventbox.remove(&self.image);
-//        let mut path_to_images: String = "src/gui/content/".to_owned();
-//        match imagetype {
-//            ImageType::NoPawn => {
-//                path_to_images.push_str("No_pawn.png");
-//                self.image = Image::new_from_file(path_to_images);
-//            }
-//            ImageType::WhitePawn => {
-//                path_to_images.push_str("White_pawn.png");
-//                self.image = Image::new_from_file(path_to_images);
-//            }
-//            ImageType::BlackPawn => {
-//                path_to_images.push_str("Black_pawn.png");
-//                self.image = Image::new_from_file(path_to_images);
-//            }
-//            ImageType::ForbiddenPawn => {
-//                path_to_images.push_str("No_pawn_gray.png");
-//                self.image = Image::new_from_file(path_to_images);
-//            }
-//        };
-//        self.eventbox.add(&self.image);
-//    }
-//}
+    pub unsafe fn get_eventbox(&self) -> EventBox {
+        *self.eventbox.load(Ordering::SeqCst)
+    }
+
+    pub fn get_image(&self) -> Image {
+        let images: [Image; 7] = *self.images.load(Ordering::SeqCst);
+        images[self.image.load(Ordering::SeqCst)]
+    }
+
+    pub fn set_image(&self, ind: usize) -> () {
+        self.image.store(ind, Ordering::SeqCst);
+        let eventbox = *self.eventbox.load(Ordering::SeqCst);
+        eventbox.add(&self.get_image());
+    }
+
+    pub fn delete_image(&self) {
+        let eventbox = *self.eventbox.load(Ordering::SeqCst);
+        eventbox.remove(&self.get_image())
+    }
+
+    //
+    //    pub fn change_image(&mut self, imagetype: ImageType) {
+    //        self.eventbox.remove(&self.image);
+    //        let mut path_to_images: String = "src/gui/content/".to_owned();
+    //        match imagetype {
+    //            ImageType::NoPawn => {
+    //                path_to_images.push_str("No_pawn.png");
+    //                self.image = Image::new_from_file(path_to_images);
+    //            }
+    //            ImageType::WhitePawn => {
+    //                path_to_images.push_str("White_pawn.png");
+    //                self.image = Image::new_from_file(path_to_images);
+    //            }
+    //            ImageType::BlackPawn => {
+    //                path_to_images.push_str("Black_pawn.png");
+    //                self.image = Image::new_from_file(path_to_images);
+    //            }
+    //            ImageType::ForbiddenPawn => {
+    //                path_to_images.push_str("No_pawn_gray.png");
+    //                self.image = Image::new_from_file(path_to_images);
+    //            }
+    //        };
+    //        self.eventbox.add(&self.image);
+    //    }
+}
 
 pub struct ContentGameplay {
     pub grid: Grid,
 }
 
-pub fn get_pixbuf(filename: &str) -> Pixbuf {
+pub fn get_image(filename: &str) -> Image {
     match Pixbuf::new_from_file(filename) {
         Err(e) => {
             eprintln!("Erreur ici hihiihhihi {}", e);
             process::exit(1)
         }
-        Ok(pixbuf) => pixbuf,
+        Ok(pixbuf) => Image::new_from_pixbuf(Some(&pixbuf)),
     }
 }
 
-
 impl ContentGameplay {
     pub fn new() -> ContentGameplay {
-        let images: [Pixbuf; 7] = [
-            get_pixbuf("src/gui/content/Black_pawn.png"),
-            get_pixbuf("src/gui/content/No_pawn.png"),
-            get_pixbuf("src/gui/content/No_pawn_grey.png"),
-            get_pixbuf("src/gui/content/No_pawn_green.png"),
-            get_pixbuf("src/gui/content/No_pawn_red.jpg"),
-            get_pixbuf("src/gui/content/No_pawn_orange.png"),
-            get_pixbuf("src/gui/content/White_pawn.png"),
+        let mut images: [Image; 7] = [
+            get_image("src/gui/content/No_pawn.png"),
+            get_image("src/gui/content/Black_pawn.png"),
+            get_image("src/gui/content/No_pawn_grey.png"),
+            get_image("src/gui/content/No_pawn_green.png"),
+            get_image("src/gui/content/No_pawn_red.jpg"),
+            get_image("src/gui/content/No_pawn_orange.png"),
+            get_image("src/gui/content/White_pawn.png"),
         ];
 
         let grid = Grid::new();
@@ -274,25 +280,28 @@ impl ContentGameplay {
 
         for x in 0..19 {
             for y in 0..19 {
-                let safe_eventbox = Arc::new(EventBox::new());
-                
-                let image = Image::new_from_pixbuf(Some(&images[0]));
-                
+                let safe_eventbox = Arc::new(EventBoxCoord::new(x, y, &mut images));
+                safe_eventbox.set_image(0);
+
                 // let image2 = Arc::new(AtomicPtr::new(&mut image));
                 // let safe_image = Arc::new(AtomicPtr::new(&mut image));
 
                 // let safer = safe_image.clone();
                 // let safe_image2 = safe_image.clone();
-                
+
                 // eventbox.add(&image);
 
                 {
-                    eventbox.connect("button_press_event", true, |_| {
-                        eventbox.add(&image);
-                        // eventbox.add(&(safer.load(Ordering::SeqCst)));
-                        println!("test");
-                        None
-                    });
+                    let eventbox = safe_eventbox.clone();
+                    let images = images.clone();
+                    eventbox
+                        .get_eventbox()
+                        .connect("button_press_event", true, |_| {
+                            //eventbox.change_image(images[controller::func]);
+                            // eventbox.add(&(safer.load(Ordering::SeqCst)));
+                            println!("test");
+                            None
+                        });
                 }
                 //                gtk_container_add(Container::from(eventbox), image);
                 //                g_signal_connect(
@@ -303,7 +312,7 @@ impl ContentGameplay {
                 //                );
 
                 grid.attach(
-                    &eventbox,
+                    &safe_eventbox.get_eventbox(),
                     x as i32 * size_grid,
                     y as i32 * size_grid,
                     size_grid,
@@ -311,10 +320,10 @@ impl ContentGameplay {
                 );
                 //                {
                 //                    let eventbox = eventbox;
-                                //    eventbox.eventbox.connect_button_press_event(move |_, _| {
-                                //        eventbox.change_image(ImageType::ForbiddenPawn);
-                                //        Inhibit(false)
-                                //    });
+                //    eventbox.eventbox.connect_button_press_event(move |_, _| {
+                //        eventbox.change_image(ImageType::ForbiddenPawn);
+                //        Inhibit(false)
+                //    });
                 //                }
                 //                if x == y {
                 //                    eventbox.change_image(ImageType::ForbiddenPawn);

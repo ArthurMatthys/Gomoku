@@ -11,3 +11,6 @@ edition = "2018"
 gtk = { version = "0.2", features = ["v3_22"] }
 gdk-pixbuf = "0.2.0"
 gdk = "0.6.0"
+#lazy_static = "1.4.0"
+
+
