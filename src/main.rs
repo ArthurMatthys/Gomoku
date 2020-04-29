@@ -1,4 +1,8 @@
+#[macro_use]
+extern crate clap;
 extern crate sdl2;
+
+use clap::{App, Arg};
 use sdl2::event::Event;
 use sdl2::image::LoadTexture;
 use sdl2::keyboard::Keycode;
@@ -21,8 +25,46 @@ const IMAGES: [&str; 7] = [
     "src/content/red_warning.png",
 ];
 
+fn parse_args_and_fill_structs() -> (usize, game::TypeOfParty) {
+    let matches = App::new("Gomoku")
+        .version(crate_version!())
+        .author(crate_authors!())
+        .about("Implementation of Gomoku as a school's project")
+        .arg(
+            Arg::with_name("MODE")
+                .about("What mode to run the program in")
+                .index(1)
+                .possible_values(&["long-pro", "pro", "standard"])
+                .required(true),
+        )
+        .arg(
+            Arg::with_name("NUMBER-OF-PLAYER")
+                .about("Number of Human Players in the game")
+                .index(2)
+                .possible_values(&["0", "1", "2"])
+                .required(true),
+        )
+        .get_matches();
+    
+    let mode = match matches.value_of("MODE").unwrap() {
+        "long-pro" => { game::TypeOfParty::Longpro }
+        "pro" => { game::TypeOfParty::Pro }
+        "standard" => { game::TypeOfParty::Standard }
+        _ => unreachable!(),
+    };
+
+    let nb_of_players = match matches.value_of("NUMBER-OF-PLAYER").unwrap() {
+        "0" => { 0 }
+        "1" => { 1 }
+        "2" => { 2 }
+        _ => unreachable!(),
+    };
+    (nb_of_players,mode)
+}
+
 pub fn main() {
-    let (mut game, mut events) = game::Game::new("Gomoku", 1400, 1000, 2, game::TypeOfParty::Unset)
+    let (nb_of_players, type_of_game) = parse_args_and_fill_structs();
+    let (mut game, mut events) = game::Game::new("Gomoku", 1400, 1000, nb_of_players, type_of_game)
         .expect("Game intialisation failed");
 
     let texture_creator: TextureCreator<_> = game.canvas.texture_creator();

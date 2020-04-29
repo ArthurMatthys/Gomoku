@@ -10,11 +10,9 @@ const SIZE_BOARD: usize = 19;
 const SQUARE_SIZE: usize = 51;
 // TYPE OF PARTY
 pub enum TypeOfParty {
-    Unset,
     Standard,
     Pro,
-    Swap,
-    Swap2,
+    Longpro
 }
 
 pub struct Game {
