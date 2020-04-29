@@ -8,9 +8,8 @@ edition = "2018"
 
 [dependencies]
 
-gtk = { version = "0.2", features = ["v3_22"] }
-gdk-pixbuf = "0.2.0"
-gdk = "0.6.0"
-#lazy_static = "1.4.0"
+sdl2 = "0.34.0"
+rand = "0.7.3"
 
-
+[features]
+default = ["sdl2/image"]

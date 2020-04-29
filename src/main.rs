@@ -1,53 +1,70 @@
-extern crate gtk;
-use gui::controller::*;
-use gui::model::*;
+extern crate sdl2;
+use sdl2::event::Event;
+use sdl2::image::LoadTexture;
+use sdl2::keyboard::Keycode;
+use sdl2::render::{Texture, TextureCreator};
+use std::thread::sleep;
+use std::time::Duration;
 
-mod gui;
+mod model;
+mod render;
+use model::game;
+use render::board;
 
-// Import all methods frorm board.rs
-// use game_infos::*;
-// mod game_infos;
+const IMAGES: [&str; 7] = [
+    "src/content/normal_board.png",
+    "src/content/black_pawn.png",
+    "src/content/white_pawn.png",
+    "src/content/forbidden_pawn.png",
+    "src/content/green_warning.png",
+    "src/content/orange_warning.png",
+    "src/content/red_warning.png",
+];
 
-// Aim of the function :
-// Print debug for double_three analysis
-//fn print_grid(board: [Option<bool>; 361]) -> () {
-//    for x in 1..(board.len() + 1) {
-//        match board[x - 1] {
-//            Some(true) => print!("x"),
-//            Some(false) => print!("o"),
-//            None => print!("+"),
-//        }
-//        if x % 19 == 0 {
-//            print!("\n")
-//        }
-//    }
-//}
+pub fn main() {
+    let (mut game, mut events) = game::Game::new("Gomoku", 1400, 1000, 2, game::TypeOfParty::Unset)
+        .expect("Game intialisation failed");
 
-// Aim of the function :
-// Function that manages the global gameplay
-//fn play(mut game: gui::model::game_class::Game) -> &'static str {
-//    let (mut player1, mut player2) = initialize_players(game);
-//    game.board[19] = Some(false);
-//    game.board[20] = Some(false);
-//    game.board[22] = Some(false);
-//
-//    game.board[67] = Some(false);
-//    game.board[68] = Some(false);
-//    game.board[70] = Some(false);
-//
-//    game.board[97] = Some(false);
-//    game.board[116] = Some(false);
-//    game.board[135] = Some(false);
-//
-//    print_grid(game.board);
-//    "end"
-//    // loop {
-//
-//    // }
-//}
+    let texture_creator: TextureCreator<_> = game.canvas.texture_creator();
+    let images: [Texture; 7] = [
+        texture_creator
+            .load_texture(IMAGES[0])
+            .expect("Failed to load image"),
+        texture_creator
+            .load_texture(IMAGES[1])
+            .expect("Failed to load image"),
+        texture_creator
+            .load_texture(IMAGES[2])
+            .expect("Failed to load image"),
+        texture_creator
+            .load_texture(IMAGES[3])
+            .expect("Failed to load image"),
+        texture_creator
+            .load_texture(IMAGES[4])
+            .expect("Failed to load image"),
+        texture_creator
+            .load_texture(IMAGES[5])
+            .expect("Failed to load image"),
+        texture_creator
+            .load_texture(IMAGES[6])
+            .expect("Failed to load image"),
+    ];
 
-fn main() {
-    println!("=== Start Gomoku ===");
-    start_gui::start_gui();
-    //let game:Result<game_class::Game, &str> = collect_game_infos::collect_info_about_party();
+    'running: loop {
+        for event in events.poll_iter() {
+            match event {
+                Event::Quit { .. }
+                | Event::KeyDown {
+                    keycode: Some(Keycode::Escape),
+                    ..
+                } => break 'running,
+                Event::MouseButtonDown { x, y, .. } => {
+                    game.change_board(x, y);
+                }
+                _ => {}
+            }
+        }
+        board::render_board(&mut game, &images);
+        sleep(Duration::new(0, 1_000_000_000u32 / 60));
+    }
 }
