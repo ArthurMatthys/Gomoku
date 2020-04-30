@@ -2,8 +2,8 @@ extern crate rand;
 extern crate sdl2;
 
 use super::player;
-use super::point;
-use rand::Rng;
+//use super::point;
+//use rand::Rng;
 use sdl2::render::Canvas;
 
 const SIZE_BOARD: usize = 19;
@@ -12,7 +12,7 @@ const SQUARE_SIZE: usize = 51;
 pub enum TypeOfParty {
     Standard,
     Pro,
-    Longpro
+    Longpro,
 }
 
 pub struct Game {
@@ -24,8 +24,9 @@ pub struct Game {
     pub players: (player::Player, player::Player),
     pub board: [Option<bool>; 361],
     pub history: Vec<usize>,
+    pub has_changed: bool,
 
-    type_of_party: TypeOfParty,
+    pub type_of_party: TypeOfParty,
 }
 
 impl Game {
@@ -65,6 +66,7 @@ impl Game {
                 player_turn: 0,
                 board: [None; 361],
                 type_of_party: type_of_party,
+                has_changed: true,
                 history: Vec::new(),
             },
             events,
@@ -85,13 +87,23 @@ impl Game {
 
     fn change_board_value(&mut self, index: usize) -> () {
         self.board[index] = self.player_to_pawn();
+        self.has_changed = true;
     }
 
     pub fn get_actual_player(&self) -> &player::Player {
         match self.player_turn {
             0 => &self.players.0,
             1 => &self.players.1,
-            _ => &self.players.1,
+            _ => unreachable!(),
+        }
+    }
+
+    pub fn actual_player_is_ai(&self) -> Option<bool> {
+        let player = self.get_actual_player();
+        match player.player_type {
+            player::TypeOfPlayer::Unset => None,
+            player::TypeOfPlayer::Human => Some(false),
+            player::TypeOfPlayer::Robot => Some(true),
         }
     }
 
@@ -99,7 +111,7 @@ impl Game {
         match self.player_turn {
             0 => &mut (self.players.0),
             1 => &mut (self.players.1),
-            _ => &mut (self.players.1),
+            _ => unreachable!(),
         }
     }
 
@@ -107,7 +119,21 @@ impl Game {
     //        &(self.canvas, self.get_actual_player())
     //    }
 
-    pub fn change_board(&mut self, x: i32, y: i32) {
+    pub fn change_board_from_input(&mut self, x: i32, y: i32) {
+        let index: usize = (x * SIZE_BOARD as i32 + y) as usize;
+        if index >= 361 {
+            return;
+        }
+        match self.board[index] {
+            Some(_) => (),
+            None => {
+                self.change_board_value(index);
+                self.next_player()
+            }
+        }
+    }
+
+    pub fn change_board_from_click(&mut self, x: i32, y: i32) {
         let index: usize =
             ((x / SQUARE_SIZE as i32) * SIZE_BOARD as i32 + y / SQUARE_SIZE as i32) as usize;
         if index >= 361 {
@@ -119,6 +145,38 @@ impl Game {
                 self.change_board_value(index);
                 self.next_player()
             }
+        }
+    }
+
+    pub fn party_to_string(&self) -> &str {
+        match self.type_of_party {
+            TypeOfParty::Standard => "Party Type : Standard",
+            TypeOfParty::Pro => "Party Type : Pro",
+            TypeOfParty::Longpro => "Party Type : Long pro",
+        }
+    }
+
+    pub fn get_player1(&self) -> &str {
+        match self.players.0.player_type {
+            player::TypeOfPlayer::Human => "Player 1 : Human",
+            player::TypeOfPlayer::Robot => "Player 1 : IA",
+            player::TypeOfPlayer::Unset => unreachable!(),
+        }
+    }
+
+    pub fn get_player2(&self) -> &str {
+        match self.players.0.player_type {
+            player::TypeOfPlayer::Human => "Player 2 : Human",
+            player::TypeOfPlayer::Robot => "Player 2 : IA",
+            player::TypeOfPlayer::Unset => unreachable!(),
+        }
+    }
+
+    pub fn get_player_turn_display(&self) -> &str {
+        match self.player_turn {
+            0 => "Turn of player 1",
+            1 => "Turn of player 2",
+            _ => unreachable!(),
         }
     }
 }

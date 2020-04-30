@@ -14,11 +14,11 @@ pub enum TypeOfPlayer {
 // Board is 361 cases long -> 19 x 19 Board
 //#[derive(Copy, Clone)]
 pub struct Player {
-    player_type: TypeOfPlayer,
+    pub player_type: TypeOfPlayer,
     pub nb_of_catch: isize,
     pub bool_type: Option<bool>,
     pub forbidden: Vec<point::Point>,
-    name: &'static str,
+    pub name: &'static str,
 }
 
 impl Player {
@@ -45,13 +45,13 @@ impl Player {
         self.name = name
     }
 
-    pub fn get_forbidden(&self) -> &Vec<point::Point> {
-        &self.forbidden
-    }
-
-    pub fn get_mutable_forbidden(&mut self) -> &mut Vec<point::Point> {
-        &mut self.forbidden
-    }
+    //    pub fn get_forbidden(&self) -> &Vec<point::Point> {
+    //        &self.forbidden
+    //    }
+    //
+    //    pub fn get_mutable_forbidden(&mut self) -> &mut Vec<point::Point> {
+    //        &mut self.forbidden
+    //    }
 
     pub fn set_forbidden(&mut self, forbidden: Vec<point::Point>) -> () {
         self.forbidden = forbidden
@@ -98,6 +98,6 @@ pub fn initialize_players(nb_player: usize) -> (Player, Player) {
     match rng.gen_range(0, 2) {
         0 => (player1, player2),
         1 => (player2, player1),
-        _ => (player1, player2),
+        _ => unreachable!(),
     }
 }
