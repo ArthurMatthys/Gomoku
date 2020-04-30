@@ -12,8 +12,10 @@ use std::time::Duration;
 
 mod model;
 mod render;
+mod checks;
 use model::game;
 use render::board;
+use checks::after_turn_check;
 
 const IMAGES: [&str; 7] = [
     "src/content/normal_board.png",
@@ -106,6 +108,10 @@ pub fn main() {
                 _ => {}
             }
         }
+        let result = after_turn_check::check_winner(&game);
+        // DEBUG for check
+        if result { use std::process; println!("GAGNE") ; process::exit(0x0100); }
+
         board::render_board(&mut game, &images);
         sleep(Duration::new(0, 1_000_000_000u32 / 60));
     }

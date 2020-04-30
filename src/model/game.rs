@@ -6,7 +6,7 @@ use super::point;
 use rand::Rng;
 use sdl2::render::Canvas;
 
-const SIZE_BOARD: usize = 19;
+pub const SIZE_BOARD: usize = 19;
 const SQUARE_SIZE: usize = 51;
 // TYPE OF PARTY
 pub enum TypeOfParty {
@@ -85,6 +85,13 @@ impl Game {
 
     fn change_board_value(&mut self, index: usize) -> () {
         self.board[index] = self.player_to_pawn();
+        self.history.push(index);
+    }
+
+    fn clear_board(&mut self) -> () {
+        if let Some(index) = self.history.pop() {
+            self.board[index] = None;
+        }
     }
 
     pub fn get_actual_player(&self) -> &player::Player {
