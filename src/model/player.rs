@@ -1,4 +1,5 @@
 extern crate rand;
+
 use super::point;
 use rand::Rng;
 

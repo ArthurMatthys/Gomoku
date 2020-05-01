@@ -5,9 +5,12 @@ use sdl2::rect::Rect;
 
 use super::super::model::game;
 
-const SIZE_BOARDGAME: u32 = 19 * 51;
-pub const WINDOW_LENGTH: u32 = 1400;
+use super::board;
+
+const SIZE_BOARDGAME: u32 = (board::SIZE_BOARD * board::SQUARE_SIZE) as u32;
 const SIZE_SCORE: u32 = WINDOW_LENGTH - SIZE_BOARDGAME;
+
+pub const WINDOW_LENGTH: u32 = 1400;
 pub const WINDOW_HEIGHT: u32 = 961;
 
 macro_rules! rect_score {

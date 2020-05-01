@@ -1,13 +1,17 @@
 extern crate rand;
 extern crate sdl2;
 
-use super::player;
-//use super::point;
-//use rand::Rng;
 use sdl2::render::Canvas;
 
-const SIZE_BOARD: usize = 19;
-const SQUARE_SIZE: usize = 51;
+use super::super::checks::after_turn_check;
+
+use super::super::render::board;
+
+use super::player;
+
+//use super::point;
+//use rand::Rng;
+
 // TYPE OF PARTY
 pub enum TypeOfParty {
     Standard,
@@ -87,6 +91,14 @@ impl Game {
 
     fn change_board_value(&mut self, index: usize) -> () {
         self.board[index] = self.player_to_pawn();
+        self.history.push(index);
+        self.has_changed = true;
+    }
+
+    fn clear_board(&mut self) -> () {
+        if let Some(index) = self.history.pop() {
+            self.board[index] = None;
+        }
         self.has_changed = true;
     }
 
@@ -120,7 +132,7 @@ impl Game {
     //    }
 
     pub fn change_board_from_input(&mut self, x: i32, y: i32) {
-        let index: usize = (x * SIZE_BOARD as i32 + y) as usize;
+        let index: usize = (x * board::SIZE_BOARD as i32 + y) as usize;
         if index >= 361 {
             return;
         }
@@ -134,8 +146,8 @@ impl Game {
     }
 
     pub fn change_board_from_click(&mut self, x: i32, y: i32) {
-        let index: usize =
-            ((x / SQUARE_SIZE as i32) * SIZE_BOARD as i32 + y / SQUARE_SIZE as i32) as usize;
+        let index: usize = ((x / board::SQUARE_SIZE as i32) * board::SIZE_BOARD as i32
+            + y / board::SQUARE_SIZE as i32) as usize;
         if index >= 361 {
             return;
         }
@@ -146,6 +158,7 @@ impl Game {
                 self.next_player()
             }
         }
+        let result = after_turn_check::check_winner(&self);
     }
 
     pub fn party_to_string(&self) -> &str {

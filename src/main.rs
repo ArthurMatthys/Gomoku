@@ -17,11 +17,14 @@ use std::thread::sleep;
 use std::time::Duration;
 
 mod model;
-mod render;
-
 use model::game;
+
+mod render;
+use render::board;
 use render::score;
 use render::window;
+
+mod checks;
 
 const IMAGES: [&str; 7] = [
     "src/content/normal_board.png",
@@ -144,6 +147,9 @@ pub fn main() {
             }
         }
         window::render_window(&mut game, &images, &font);
+        // DEBUG for check
+        // if result { use std::process; println!("GAGNE") ; process::exit(0x0100); }
+
         sleep(Duration::new(0, 1_000_000_000u32 / 60));
     }
 }

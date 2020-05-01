@@ -1,4 +1,5 @@
 extern crate sdl2;
+
 use sdl2::render::Texture;
 
 use super::super::model::game;
