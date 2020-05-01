@@ -1,10 +1,12 @@
 extern crate rand;
 
-use super::point;
+use std::time::Duration;
+
 use rand::Rng;
 
 // Enum representing the different types of parties
 //#[derive(Copy, Clone)]
+#[derive(PartialEq)]
 pub enum TypeOfPlayer {
     Unset,
     Human,
@@ -18,8 +20,8 @@ pub struct Player {
     pub player_type: TypeOfPlayer,
     pub nb_of_catch: isize,
     pub bool_type: Option<bool>,
-    pub forbidden: Vec<point::Point>,
     pub name: &'static str,
+    pub time_spent: Duration,
 }
 
 impl Player {
@@ -29,8 +31,8 @@ impl Player {
             player_type: TypeOfPlayer::Unset,
             nb_of_catch: 0,
             bool_type: None,
-            forbidden: vec![],
             name: "",
+            time_spent: Duration::new(0, 0),
         }
     }
 
@@ -54,20 +56,32 @@ impl Player {
     //        &mut self.forbidden
     //    }
 
-    pub fn set_forbidden(&mut self, forbidden: Vec<point::Point>) -> () {
-        self.forbidden = forbidden
+    //    pub fn set_forbidden(&mut self, forbidden: Vec<point::Point>) -> () {
+    //        self.forbidden = forbidden
+    //    }
+
+    //    pub fn test_forbidden(&mut self) -> () {
+    //        let mut rng = rand::thread_rng();
+    //        let mut new_forbid = vec![];
+    //        for _ in 0..20 {
+    //            new_forbid.push(point::Point::new(
+    //                rng.gen_range(0, 19),
+    //                rng.gen_range(0, 19),
+    //            ));
+    //        }
+    //        self.set_forbidden(new_forbid);
+    //    }
+
+    pub fn get_time(&self) -> String {
+        format!(
+            "Time spent : {}.{:03}",
+            self.time_spent.as_secs(),
+            self.time_spent.subsec_millis()
+        )
     }
 
-    pub fn test_forbidden(&mut self) -> () {
-        let mut rng = rand::thread_rng();
-        let mut new_forbid = vec![];
-        for _ in 0..20 {
-            new_forbid.push(point::Point::new(
-                rng.gen_range(0, 19),
-                rng.gen_range(0, 19),
-            ));
-        }
-        self.set_forbidden(new_forbid);
+    pub fn set_time(&mut self, time: Duration) -> () {
+        self.time_spent = time;
     }
 }
 

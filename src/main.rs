@@ -14,9 +14,11 @@ use sdl2::render::{Texture, TextureCreator};
 
 use std::thread::sleep;
 use std::time::Duration;
+use std::time::Instant;
 
 mod model;
 use model::game;
+use model::point::Point;
 
 mod render;
 use render::score;
@@ -122,14 +124,20 @@ pub fn main() {
     ];
     let mut rng = rand::thread_rng();
     let choice = Uniform::from(0..20);
+    if game.has_changed {
+        game.set_impossible_pos();
+    }
 
     'running: loop {
         if !game.result && game.actual_player_is_ai().expect("Wrong type of player") {
-            let x = choice.sample(&mut rng);
-            let y = choice.sample(&mut rng);
-            game.change_board_from_input(x, y);
+            let start = Instant::now();
+            //let point = get_IA();
+            let point = Point::new(choice.sample(&mut rng), choice.sample(&mut rng));
+            let end = Instant::now();
+            game.set_player_time(end.duration_since(start));
+            game.change_board_from_input(&point);
             flush_events!(events, 'running);
-            //            sleep(Duration::new(1, 0));
+            //    sleep(Duration::new(1, 0000000));
         }
         for event in events.poll_iter() {
             match event {
@@ -141,9 +149,17 @@ pub fn main() {
                 Event::MouseButtonDown { x, y, .. } => {
                     game.change_board_from_click(x, y);
                 }
+                Event::KeyDown {
+                    keycode: Some(Keycode::Backspace),
+                    ..
+                } => game.clear_board(),
                 _ => {}
             }
         }
+        if game.has_changed {
+            game.set_impossible_pos();
+        }
+
         window::render_window(&mut game, &images, &font);
         // DEBUG for check
         // if result { use std::process; println!("GAGNE") ; process::exit(0x0100); }

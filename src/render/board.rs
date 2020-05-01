@@ -24,12 +24,7 @@ pub fn render_board(game: &mut game::Game, images: &[Texture; 7]) -> () {
         for y in 0..19 {
             match game.board[x * SIZE_BOARD + y] {
                 None => {
-                    if game
-                        .get_actual_player()
-                        .forbidden
-                        .iter()
-                        .any(|&point| point.is_equal(x, y))
-                    {
+                    if game.forbidden.iter().any(|&point| point.is_equal(x, y)) {
                         game.canvas
                             .copy(&images[3], None, rect!(x, y))
                             .expect("failed to render image");

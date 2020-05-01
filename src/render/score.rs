@@ -4,16 +4,23 @@ use sdl2::pixels::Color;
 use sdl2::rect::Rect;
 
 use super::super::model::game;
+use super::super::model::player;
 
 use super::board;
 
 const SIZE_BOARDGAME: u32 = (board::SIZE_BOARD * board::SQUARE_SIZE) as u32;
-const SIZE_SCORE: u32 = WINDOW_LENGTH - SIZE_BOARDGAME;
+const SIZE_SCORE: u32 = WINDOW_LENGTH - SIZE_BOARDGAME - 3;
 
 pub const WINDOW_LENGTH: u32 = 1400;
 pub const WINDOW_HEIGHT: u32 = 961;
 
 macro_rules! rect_score {
+    ($x:expr, $y:expr, $l:expr, $h:expr) => {
+        Rect::new((SIZE_BOARDGAME + $x + 3) as i32, $y, $l, $h)
+    };
+}
+
+macro_rules! split_rect {
     ($x:expr, $y:expr, $l:expr, $h:expr) => {
         Rect::new((SIZE_BOARDGAME + $x) as i32, $y, $l, $h)
     };
@@ -37,10 +44,16 @@ pub fn render_score(game: &mut game::Game, font: &sdl2::ttf::Font) -> () {
     let tc = game.canvas.texture_creator();
     let mut line = 0;
     let jump = 100;
+    game.canvas.set_draw_color(Color::RGB(0, 0, 0));
+    game.canvas
+        .fill_rect(split_rect!(0, 0, 3, WINDOW_HEIGHT))
+        .expect("Failed to render white rect");
     game.canvas.set_draw_color(Color::RGB(255, 255, 255));
     game.canvas
         .fill_rect(rect_score!(0, 0, SIZE_SCORE, WINDOW_HEIGHT))
         .expect("Failed to render white rect");
+
+    //Party type
     render_text!(
         font,
         tc,
@@ -48,9 +61,11 @@ pub fn render_score(game: &mut game::Game, font: &sdl2::ttf::Font) -> () {
         game.canvas,
         0,
         line,
-        SIZE_SCORE,
+        SIZE_SCORE - 50,
         100
     );
+
+    //Player 1 stats
     line += jump;
     render_text!(
         font,
@@ -72,12 +87,14 @@ pub fn render_score(game: &mut game::Game, font: &sdl2::ttf::Font) -> () {
         SIZE_SCORE / 2 - 50,
         50
     );
+
+    //Player 2 stats
     render_text!(
         font,
         tc,
         game.get_player2(),
         game.canvas,
-        SIZE_SCORE / 2 + 50,
+        SIZE_SCORE / 2 + 30,
         line,
         SIZE_SCORE / 2 - 50,
         50
@@ -87,19 +104,56 @@ pub fn render_score(game: &mut game::Game, font: &sdl2::ttf::Font) -> () {
         tc,
         &game.get_player2_take(),
         game.canvas,
-        SIZE_SCORE / 2 + 50,
+        SIZE_SCORE / 2 + 30,
         line + 50,
         SIZE_SCORE / 2 - 50,
         50
     );
     line += jump;
+
+    //time spent by each player
+    if game.players.0.player_type == player::TypeOfPlayer::Robot {
+        render_text!(
+            font,
+            tc,
+            &game.players.0.get_time(),
+            game.canvas,
+            0,
+            line,
+            SIZE_SCORE / 2 - 50,
+            50
+        );
+    }
+    if game.players.1.player_type == player::TypeOfPlayer::Robot {
+        render_text!(
+            font,
+            tc,
+            &game.players.1.get_time(),
+            game.canvas,
+            SIZE_SCORE / 2 + 30,
+            line,
+            SIZE_SCORE / 2 - 50,
+            50
+        );
+    }
+
+    //game status
     if game.result {
         let winner = match game.history.len() % 2 {
             0 => "Player 2 won",
             1 => "Player 1 won",
             _ => unreachable!(),
         };
-        render_text!(font, tc, winner, game.canvas, 0, line, SIZE_SCORE, 100);
+        render_text!(
+            font,
+            tc,
+            winner,
+            game.canvas,
+            0,
+            line + 50,
+            SIZE_SCORE / 2,
+            50
+        );
     } else {
         render_text!(
             font,
@@ -107,13 +161,14 @@ pub fn render_score(game: &mut game::Game, font: &sdl2::ttf::Font) -> () {
             game.get_player_turn_display(),
             game.canvas,
             0,
-            line,
-            SIZE_SCORE,
-            100
+            line + 50,
+            SIZE_SCORE / 2,
+            50
         );
     };
     line += jump;
 
+    //history
     let (h_p1, h_p2) = game.get_history();
     h_p1.iter().enumerate().for_each(|(i, e)| {
         render_text!(

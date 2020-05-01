@@ -1,7 +1,9 @@
+use super::super::render::board;
+
 #[derive(Copy, Clone)]
 pub struct Point {
-    x: usize,
-    y: usize,
+    pub x: usize,
+    pub y: usize,
 }
 
 impl Point {
@@ -12,4 +14,12 @@ impl Point {
     pub fn is_equal(&self, x: usize, y: usize) -> bool {
         self.x == x && self.y == y
     }
+
+    pub fn is_equal_from_index(&self, index: usize) -> bool {
+        self.x == index / board::SIZE_BOARD && self.y == index % board::SIZE_BOARD
+    }
+}
+
+pub fn point_of_index(index: &usize) -> Point {
+    Point::new(index / board::SIZE_BOARD, index % board::SIZE_BOARD)
 }
