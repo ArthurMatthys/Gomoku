@@ -13,6 +13,15 @@ use super::player;
 //use super::point;
 //use rand::Rng;
 
+macro_rules! string_of_index {
+    ($e:expr) => {{
+        let line: char = std::char::from_u32('A' as u32 + ($e / board::SIZE_BOARD) as u32)
+            .expect("Could not convert number to char");
+        let col = $e % board::SIZE_BOARD;
+        format!("{}{}", line, col)
+    }};
+}
+
 // TYPE OF PARTY
 pub enum TypeOfParty {
     Standard,
@@ -199,19 +208,45 @@ impl Game {
         }
     }
 
+    pub fn get_player1_take(&self) -> String {
+        format!("nb of take : {}", self.players.0.nb_of_catch)
+    }
+
     pub fn get_player2(&self) -> &str {
-        match self.players.0.player_type {
+        match self.players.1.player_type {
             player::TypeOfPlayer::Human => "Player 2 : Human",
             player::TypeOfPlayer::Robot => "Player 2 : IA",
             player::TypeOfPlayer::Unset => unreachable!(),
         }
     }
 
+    pub fn get_player2_take(&self) -> String {
+        format!("nb of take : {}", self.players.1.nb_of_catch)
+    }
+
     pub fn get_player_turn_display(&self) -> &str {
         match self.player_turn {
-            0 => "Turn of player 1",
-            1 => "Turn of player 2",
+            0 => "player1's turn",
+            1 => "player2's turn",
             _ => unreachable!(),
         }
+    }
+
+    pub fn get_history(&self) -> (Vec<String>, Vec<String>) {
+        let black_history: Vec<String> = self
+            .history
+            .iter()
+            .enumerate()
+            .filter(|&(i, _)| i % 2 == 0)
+            .map(|(_, e)| string_of_index!(e))
+            .collect::<Vec<String>>();
+        let white_history: Vec<String> = self
+            .history
+            .iter()
+            .enumerate()
+            .filter(|&(i, _)| i % 2 == 1)
+            .map(|(_, e)| string_of_index!(e))
+            .collect::<Vec<String>>();
+        (black_history, white_history)
     }
 }
