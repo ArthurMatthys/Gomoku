@@ -189,7 +189,7 @@ impl Game {
     }
 
     pub fn get_player1_take(&self) -> String {
-        format!("nb of take : {}", self.players.0.nb_of_catch)
+        format!("number of take : {}", self.players.0.nb_of_catch)
     }
 
     pub fn get_player2(&self) -> &str {
@@ -201,7 +201,7 @@ impl Game {
     }
 
     pub fn get_player2_take(&self) -> String {
-        format!("nb of take : {}", self.players.1.nb_of_catch)
+        format!("number of take : {}", self.players.1.nb_of_catch)
     }
 
     pub fn get_player_turn_display(&self) -> &str {
