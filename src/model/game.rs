@@ -4,6 +4,7 @@ extern crate sdl2;
 use sdl2::render::Canvas;
 
 use super::super::checks::after_turn_check;
+use super::super::checks::capture;
 
 use super::super::render::board;
 
@@ -104,13 +105,32 @@ impl Game {
         self.board[index] = self.player_to_pawn();
         self.history.push(index);
         self.result = after_turn_check::check_winner(&self);
+        if let Some(ret) = capture::check_capture(self) {
+            ret.iter().for_each(|&x| self.clear_board_index(x));
+        }
         self.has_changed = true;
     }
 
     fn clear_board(&mut self) -> () {
         if let Some(index) = self.history.pop() {
             self.board[index] = None;
+            self.history.pop();
+            self.has_changed = true;
         }
+    }
+
+    pub fn add_capture(&mut self) {
+        match self.player_turn {
+            0 => self.players.0.nb_of_catch += 1,
+            1 => self.players.1.nb_of_catch += 1,
+            _ => unreachable!(),
+        }
+    }
+
+    fn clear_board_index(&mut self, (x,y):(isize, isize)) -> () {
+        self.board[x as usize] = None;
+        self.board[y as usize] = None;
+        self.add_capture();
         self.has_changed = true;
     }
 

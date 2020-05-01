@@ -54,18 +54,6 @@ pub fn check_winner(game: &game::Game) -> bool {
         let dirs: [isize; 4] = [20, 19, 18, 1];
         let call_mac = |&x| check_winner!(&board, x, &(*index_lpiece as isize));
         dirs.iter().any(call_mac)
-
-    //        if check_winner!(&board, 20, &(*index_lpiece as isize)) {
-    //            true
-    //        } else if check_winner!(&board, 19, &(*index_lpiece as isize)) {
-    //            true
-    //        } else if check_winner!(&board, 18, &(*index_lpiece as isize)) {
-    //            true
-    //        } else if check_winner!(&board, 1, &(*index_lpiece as isize)) {
-    //            true
-    //        } else {
-    //            false
-    //        }
     } else {
         false
     }
