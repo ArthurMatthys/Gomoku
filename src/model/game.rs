@@ -31,6 +31,7 @@ pub struct Game {
     pub has_changed: bool,
 
     pub type_of_party: TypeOfParty,
+    pub result: bool,
 }
 
 impl Game {
@@ -72,6 +73,7 @@ impl Game {
                 type_of_party: type_of_party,
                 has_changed: true,
                 history: Vec::new(),
+                result: false,
             },
             events,
         ))
@@ -83,8 +85,8 @@ impl Game {
 
     fn player_to_pawn(&self) -> Option<bool> {
         match self.player_turn {
-            0 => Some(true),
-            1 => Some(false),
+            0 => Some(false),
+            1 => Some(true),
             _ => None,
         }
     }
@@ -92,6 +94,7 @@ impl Game {
     fn change_board_value(&mut self, index: usize) -> () {
         self.board[index] = self.player_to_pawn();
         self.history.push(index);
+        self.result = after_turn_check::check_winner(&self);
         self.has_changed = true;
     }
 
@@ -158,7 +161,6 @@ impl Game {
                 self.next_player()
             }
         }
-        let result = after_turn_check::check_winner(&self);
     }
 
     pub fn party_to_string(&self) -> &str {

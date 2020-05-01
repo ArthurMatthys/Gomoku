@@ -69,14 +69,23 @@ pub fn render_score(game: &mut game::Game, font: &sdl2::ttf::Font) -> () {
         SIZE_SCORE / 2 - 20,
         100
     );
-    render_text!(
-        font,
-        tc,
-        game.get_player_turn_display(),
-        game.canvas,
-        0,
-        200,
-        SIZE_SCORE,
-        100
-    );
+    if game.result {
+        let winner = match game.history.len() % 2 {
+            0 => "Player 2 won",
+            1 => "Player 1 won",
+            _ => unreachable!(),
+        };
+        render_text!(font, tc, winner, game.canvas, 0, 200, SIZE_SCORE, 100)
+    } else {
+        render_text!(
+            font,
+            tc,
+            game.get_player_turn_display(),
+            game.canvas,
+            0,
+            200,
+            SIZE_SCORE,
+            100
+        )
+    };
 }

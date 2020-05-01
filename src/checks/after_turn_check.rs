@@ -9,7 +9,7 @@ fn explore(
     type_of_index: Option<bool>,
     counter: usize,
 ) -> usize {
-    if *index >= 0 && *index <= 361 && board[*index as usize] == type_of_index {
+    if *index >= 0 && *index < 361 && board[*index as usize] == type_of_index {
         explore(
             board,
             direction,
@@ -51,18 +51,21 @@ macro_rules! check_winner {
 pub fn check_winner(game: &game::Game) -> bool {
     let board = game.board;
     if let Some(index_lpiece) = game.history.last() {
-        // (1,1) = + 1 + 19
-        if check_winner!(&board, 20, &(*index_lpiece as isize)) {
-            true
-        } else if check_winner!(&board, 19, &(*index_lpiece as isize)) {
-            true
-        } else if check_winner!(&board, 18, &(*index_lpiece as isize)) {
-            true
-        } else if check_winner!(&board, 1, &(*index_lpiece as isize)) {
-            true
-        } else {
-            false
-        }
+        let dirs: [isize; 4] = [20, 19, 18, 1];
+        let call_mac = |&x| check_winner!(&board, x, &(*index_lpiece as isize));
+        dirs.iter().any(call_mac)
+
+    //        if check_winner!(&board, 20, &(*index_lpiece as isize)) {
+    //            true
+    //        } else if check_winner!(&board, 19, &(*index_lpiece as isize)) {
+    //            true
+    //        } else if check_winner!(&board, 18, &(*index_lpiece as isize)) {
+    //            true
+    //        } else if check_winner!(&board, 1, &(*index_lpiece as isize)) {
+    //            true
+    //        } else {
+    //            false
+    //        }
     } else {
         false
     }

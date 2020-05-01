@@ -126,12 +126,12 @@ pub fn main() {
     let choice = Uniform::from(0..20);
 
     'running: loop {
-        if game.actual_player_is_ai().expect("Wrong type of player") {
+        if !game.result && game.actual_player_is_ai().expect("Wrong type of player") {
             let x = choice.sample(&mut rng);
             let y = choice.sample(&mut rng);
             game.change_board_from_input(x, y);
-            //            sleep(Duration::new(1, 0));
             flush_events!(events, 'running);
+            //            sleep(Duration::new(1, 0));
         }
         for event in events.poll_iter() {
             match event {
