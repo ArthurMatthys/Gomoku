@@ -24,9 +24,13 @@ pub fn render_board(game: &mut game::Game, images: &[Texture; 7]) -> () {
         for y in 0..19 {
             match game.board[x * SIZE_BOARD + y] {
                 None => {
-                    if game.forbidden.iter().any(|&point| point.is_equal(x, y)) {
+                    if game.is_forbidden_from_coord(x, y) {
                         game.canvas
                             .copy(&images[3], None, rect!(x, y))
+                            .expect("failed to render image");
+                    } else if game.is_capture_from_coord(x, y) {
+                        game.canvas
+                            .copy(&images[4], None, rect!(x, y))
                             .expect("failed to render image");
                     } else {
                         game.canvas

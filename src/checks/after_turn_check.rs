@@ -1,4 +1,5 @@
 use super::super::model::game;
+use super::capture;
 
 // Recursive function that recurses in the direction specified
 // and counts the number of pawns of the same color
@@ -9,7 +10,11 @@ fn explore(
     type_of_index: Option<bool>,
     counter: usize,
 ) -> usize {
-    if *index >= 0 && *index < 361 && board[*index as usize] == type_of_index {
+    if *index >= 0
+        && *index < 361
+        && board[*index as usize] == type_of_index
+        && capture::valid_dir(index, direction, 1)
+    {
         explore(
             board,
             direction,

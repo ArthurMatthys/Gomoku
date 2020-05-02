@@ -14,26 +14,6 @@ use super::super::render::board;
 use super::player;
 use super::point;
 
-const COMPULSORY: [usize; 360] = [
-    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25,
-    26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49,
-    50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73,
-    74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97,
-    98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116,
-    117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135,
-    136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154,
-    155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173,
-    174, 175, 176, 177, 178, 179, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 193,
-    194, 195, 196, 197, 198, 199, 200, 201, 202, 203, 204, 205, 206, 207, 208, 209, 210, 211, 212,
-    213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223, 224, 225, 226, 227, 228, 229, 230, 231,
-    232, 233, 234, 235, 236, 237, 238, 239, 240, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250,
-    251, 252, 253, 254, 255, 256, 257, 258, 259, 260, 261, 262, 263, 264, 265, 266, 267, 268, 269,
-    270, 271, 272, 273, 274, 275, 276, 277, 278, 279, 280, 281, 282, 283, 284, 285, 286, 287, 288,
-    289, 290, 291, 292, 293, 294, 295, 296, 297, 298, 299, 300, 301, 302, 303, 304, 305, 306, 307,
-    308, 309, 310, 311, 312, 313, 314, 315, 316, 317, 318, 319, 320, 321, 322, 323, 324, 325, 326,
-    327, 328, 329, 330, 331, 332, 333, 334, 335, 336, 337, 338, 339, 340, 341, 342, 343, 344, 345,
-    346, 347, 348, 349, 350, 351, 352, 353, 354, 355, 356, 357, 358, 359, 360,
-];
 const FORBIDDEN_PRO: [usize; 25] = [
     140, 141, 142, 143, 144, 159, 160, 161, 162, 163, 178, 179, 180, 181, 182, 197, 198, 199, 200,
     201, 216, 217, 218, 219, 220,
@@ -43,8 +23,6 @@ const FORBIDDEN_LONGPRO: [usize; 49] = [
     163, 164, 177, 178, 179, 180, 181, 182, 183, 196, 197, 198, 199, 200, 201, 202, 215, 216, 217,
     218, 219, 220, 221, 234, 235, 236, 237, 238, 239, 240,
 ];
-//use super::point;
-//use rand::Rng;
 
 macro_rules! string_of_index {
     ($e:expr) => {{
@@ -69,12 +47,15 @@ pub struct Game {
     // GAME
     player_turn: i32,
     pub players: (player::Player, player::Player),
-    pub board: [Option<bool>; 361],
     pub history: Vec<usize>,
-    pub has_changed: bool,
-    pub forbidden: Vec<point::Point>,
+    pub history_capture: Vec<(usize, (usize, usize))>,
+
+    pub board: [Option<bool>; 361],
+    pub forbidden: Vec<usize>,
+    pub capture: Vec<usize>,
 
     pub type_of_party: TypeOfParty,
+    pub has_changed: bool,
     pub result: bool,
 }
 
@@ -115,46 +96,30 @@ impl Game {
                 player_turn: 0,
                 board: [None; 361],
                 type_of_party: type_of_party,
-                has_changed: true,
+                has_changed: false,
                 history: Vec::new(),
+                history_capture: Vec::new(),
                 result: false,
                 forbidden: vec![],
+                capture: vec![],
             },
             events,
         ))
+    }
+
+    pub fn get_actual_player(&self) -> &player::Player {
+        match self.player_turn {
+            0 => &self.players.0,
+            1 => &self.players.1,
+            _ => unreachable!(),
+        }
     }
 
     fn next_player(&mut self) -> () {
         self.player_turn = (self.player_turn + 1) % 2;
     }
 
-    fn player_to_pawn(&self) -> Option<bool> {
-        match self.player_turn {
-            0 => Some(false),
-            1 => Some(true),
-            _ => unreachable!(),
-        }
-    }
-
-    fn change_board_value(&mut self, index: usize) -> () {
-        self.board[index] = self.player_to_pawn();
-        self.history.push(index);
-        self.result = after_turn_check::check_winner(&self);
-        if let Some(ret) = capture::check_capture(self) {
-            ret.iter().for_each(|&x| self.clear_board_index(x));
-        }
-        self.has_changed = true;
-    }
-
-    pub fn clear_board(&mut self) -> () {
-        if let Some(index) = self.history.pop() {
-            self.board[index] = None;
-            self.has_changed = true;
-            self.next_player();
-        }
-    }
-
-    pub fn add_capture(&mut self) {
+    fn add_capture(&mut self) {
         match self.player_turn {
             0 => self.players.0.nb_of_catch += 1,
             1 => self.players.1.nb_of_catch += 1,
@@ -162,17 +127,18 @@ impl Game {
         }
     }
 
-    fn clear_board_index(&mut self, (x, y): (isize, isize)) -> () {
-        self.board[x as usize] = None;
-        self.board[y as usize] = None;
-        self.add_capture();
-        self.has_changed = true;
+    fn minus_capture(&mut self) {
+        match self.player_turn {
+            1 => self.players.0.nb_of_catch -= 1,
+            0 => self.players.1.nb_of_catch -= 1,
+            _ => unreachable!(),
+        }
     }
 
-    pub fn get_actual_player(&self) -> &player::Player {
+    pub fn player_to_pawn(&self) -> Option<bool> {
         match self.player_turn {
-            0 => &self.players.0,
-            1 => &self.players.1,
+            0 => Some(false),
+            1 => Some(true),
             _ => unreachable!(),
         }
     }
@@ -186,14 +152,6 @@ impl Game {
         }
     }
 
-    //    pub fn get_actual_player_mutable(&mut self) -> &mut player::Player {
-    //        match self.player_turn {
-    //            0 => &mut (self.players.0),
-    //            1 => &mut (self.players.1),
-    //            _ => unreachable!(),
-    //        }
-    //    }
-
     pub fn set_player_time(&mut self, time: Duration) -> () {
         match self.player_turn {
             0 => self.players.0.set_time(time),
@@ -201,13 +159,11 @@ impl Game {
             _ => unreachable!(),
         }
     }
+}
 
-    //    pub fn get_player_canvas(&self) -> &(&Canvas<sdl2::video::Window>, &player::Player) {
-    //        &(self.canvas, self.get_actual_player())
-    //    }
-
-    pub fn change_board_from_input(&mut self, point: &point::Point) {
-        let index: usize = (point.x * board::SIZE_BOARD + point.y) as usize;
+impl Game {
+    //Modify board
+    pub fn change_board_from_input(&mut self, index: usize) {
         if !valid_pos::valid_pos(self, index) {
             return;
         }
@@ -218,6 +174,16 @@ impl Game {
                 self.next_player()
             }
         }
+    }
+
+    fn change_board_value(&mut self, index: usize) -> () {
+        self.board[index] = self.player_to_pawn();
+        self.history.push(index);
+        self.result = after_turn_check::check_winner(&self);
+        if let Some(ret) = capture::check_capture(self) {
+            ret.iter().for_each(|&x| self.clear_board_index(x, index));
+        }
+        self.set_changed();
     }
 
     pub fn change_board_from_click(&mut self, x: i32, y: i32) {
@@ -235,6 +201,127 @@ impl Game {
         }
     }
 
+    pub fn change_board_value_hint(&mut self, index: usize) -> () {
+        self.board[index] = self.player_to_pawn();
+        self.history.push(index);
+        self.next_player();
+    }
+
+    pub fn clear_last_move(&mut self) -> () {
+        let mut new_history = vec![];
+        if let Some(index) = self.history.pop() {
+            let mut nbr = 0;
+            self.board[index] = None;
+            for (x, (y, z)) in self.history_capture.iter() {
+                if *x == index {
+                    self.board[*y] = self.player_to_pawn();
+                    self.board[*z] = self.player_to_pawn();
+                    nbr += 1;
+                } else {
+                    new_history.push((*x, (*y, *z)));
+                }
+            }
+            for _ in 0..nbr {
+                self.minus_capture();
+            }
+            self.history_capture = new_history;
+            self.set_changed();
+            self.next_player();
+        }
+    }
+
+    fn add_history_capture(&mut self, (x, y): (isize, isize), index: usize) -> () {
+        self.history_capture.push((index, (x as usize, y as usize)));
+    }
+
+    fn clear_board_index(&mut self, (x, y): (isize, isize), index: usize) -> () {
+        self.add_history_capture((x, y), index);
+        self.board[x as usize] = None;
+        self.board[y as usize] = None;
+        self.add_capture();
+        self.set_changed();
+    }
+}
+
+impl Game {
+    //render board
+    fn clear_forbidden(&mut self) -> () {
+        self.forbidden = vec![];
+    }
+
+    fn clear_capture(&mut self) -> () {
+        self.capture = vec![];
+    }
+
+    fn add_impossible_index(&mut self, point: usize) -> () {
+        self.forbidden.push(point);
+    }
+
+    fn add_impossible_vec_index(&mut self, points: Vec<usize>) -> () {
+        points
+            .iter()
+            .for_each(|&point| self.add_impossible_index(point));
+    }
+
+    fn add_capture_index(&mut self, point: usize) -> () {
+        self.capture.push(point);
+    }
+
+    fn add_capture_vec_index(&mut self, points: Vec<usize>) -> () {
+        points
+            .iter()
+            .for_each(|&point| self.add_capture_index(point));
+    }
+
+    pub fn set_forbidden_pos(&mut self) -> () {
+        self.clear_forbidden();
+        match self.type_of_party {
+            TypeOfParty::Pro => match self.history.len() {
+                0 => self.add_impossible_vec_index(valid_pos::all_except(vec![180])),
+                2 => self.add_impossible_vec_index(FORBIDDEN_PRO.to_vec()),
+                _ => (),
+            },
+            TypeOfParty::Longpro => match self.history.len() {
+                0 => self.add_impossible_vec_index(valid_pos::all_except(vec![180])),
+                2 => self.add_impossible_vec_index(FORBIDDEN_LONGPRO.to_vec()),
+                _ => (),
+            },
+            TypeOfParty::Standard => {}
+        }
+    }
+
+    pub fn set_capture_pos(&mut self) -> () {
+        self.clear_capture();
+        let capture = capture::find_capture(self);
+        self.add_capture_vec_index(capture);
+        self.has_changed = true;
+    }
+
+    pub fn is_forbidden_from_index(&self, index: usize) -> bool {
+        self.forbidden.iter().any(|&point| point == index)
+    }
+
+    pub fn is_forbidden_from_coord(&self, x: usize, y: usize) -> bool {
+        self.forbidden
+            .iter()
+            .any(|&point| point == point::index_of_coord(x, y))
+    }
+
+    pub fn is_capture_from_coord(&self, x: usize, y: usize) -> bool {
+        self.capture
+            .iter()
+            .any(|&point| point == point::index_of_coord(x, y))
+    }
+
+    pub fn set_changed(&mut self) -> () {
+        self.set_forbidden_pos();
+        self.clear_capture();
+        self.has_changed = true;
+    }
+}
+
+impl Game {
+    //render score
     pub fn party_to_string(&self) -> &str {
         match self.type_of_party {
             TypeOfParty::Standard => "Party Type : Standard",
@@ -291,38 +378,5 @@ impl Game {
             .map(|(_, e)| string_of_index!(e))
             .collect::<Vec<String>>();
         (black_history, white_history)
-    }
-
-    fn clear_impossible(&mut self) -> () {
-        self.forbidden = vec![];
-    }
-
-    fn add_impossible(&mut self, point: point::Point) -> () {
-        self.forbidden.push(point);
-    }
-
-    pub fn set_impossible_pos(&mut self) -> () {
-        self.clear_impossible();
-        match self.type_of_party {
-            TypeOfParty::Pro => match self.history.len() {
-                0 => COMPULSORY
-                    .iter()
-                    .for_each(|i| self.add_impossible(point::point_of_index(i))),
-                2 => FORBIDDEN_PRO
-                    .iter()
-                    .for_each(|i| self.add_impossible(point::point_of_index(i))),
-                _ => (),
-            },
-            TypeOfParty::Longpro => match self.history.len() {
-                0 => COMPULSORY
-                    .iter()
-                    .for_each(|i| self.add_impossible(point::point_of_index(i))),
-                2 => FORBIDDEN_LONGPRO
-                    .iter()
-                    .for_each(|i| self.add_impossible(point::point_of_index(i))),
-                _ => (),
-            },
-            TypeOfParty::Standard => {}
-        }
     }
 }

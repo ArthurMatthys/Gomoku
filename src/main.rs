@@ -18,7 +18,7 @@ use std::time::Instant;
 
 mod model;
 use model::game;
-use model::point::Point;
+use model::point;
 
 mod render;
 use render::score;
@@ -124,18 +124,16 @@ pub fn main() {
     ];
     let mut rng = rand::thread_rng();
     let choice = Uniform::from(0..20);
-    if game.has_changed {
-        game.set_impossible_pos();
-    }
+    game.set_changed();
 
     'running: loop {
         if !game.result && game.actual_player_is_ai().expect("Wrong type of player") {
             let start = Instant::now();
             //let point = get_IA();
-            let point = Point::new(choice.sample(&mut rng), choice.sample(&mut rng));
+            let point = point::index_of_coord(choice.sample(&mut rng), choice.sample(&mut rng));
             let end = Instant::now();
             game.set_player_time(end.duration_since(start));
-            game.change_board_from_input(&point);
+            game.change_board_from_input(point);
             flush_events!(events, 'running);
             //    sleep(Duration::new(1, 0000000));
         }
@@ -152,14 +150,17 @@ pub fn main() {
                 Event::KeyDown {
                     keycode: Some(Keycode::Backspace),
                     ..
-                } => game.clear_board(),
+                } => game.clear_last_move(),
+                Event::KeyDown {
+                    keycode: Some(Keycode::H),
+                    ..
+                } => game.set_capture_pos(),
+                Event::KeyDown {
+                    keycode: Some(a), ..
+                } => println!("{}", a),
                 _ => {}
             }
         }
-        if game.has_changed {
-            game.set_impossible_pos();
-        }
-
         window::render_window(&mut game, &images, &font);
         // DEBUG for check
         // if result { use std::process; println!("GAGNE") ; process::exit(0x0100); }
