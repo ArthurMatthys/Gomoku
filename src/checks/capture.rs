@@ -7,6 +7,8 @@ pub fn valid_dir(index: &isize, dir: isize, moves: isize) -> bool {
     let final_index = *index + moves * dir;
     let delta_line = final_index / board::SIZE_BOARD as isize - *index / board::SIZE_BOARD as isize;
     let delta_col = final_index % board::SIZE_BOARD as isize - *index % board::SIZE_BOARD as isize;
+    // println!("final_index:{} - delta_line:{} - delta_col:{} - index: {} - moves: {}", final_index, delta_line, delta_col, index, moves);
+    // println!("-------------------");
     match dir {
         20 => delta_line == moves && delta_col == moves,
         19 => delta_line == moves && delta_col == 0,
