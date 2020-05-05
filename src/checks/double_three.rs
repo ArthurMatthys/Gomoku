@@ -204,7 +204,7 @@ fn is_free_tree(game: &mut game::Game, index: isize, current: bool, dir: isize) 
         let index_part: usize = ((i + 1) / 2) as usize;
         let mut moves: isize = 1;
         loop {
-            if capture::valid_dir(&index, dir, moves) {
+            if capture::valid_dir(&index, i * dir, moves) {
                 let new_index = index + dir * moves * i;
                 match game.board[new_index as usize] {
                     None => {
@@ -254,8 +254,8 @@ pub fn check_double_three(game: &mut game::Game) -> Vec<usize> {
     let pawn_current_player = !game
         .player_to_pawn()
         .expect("Could not retrieve player pawn");
-    let mut nbr_free_tree = 0;
     for i in 0..361 {
+        let mut nbr_free_tree = 0;
         if game.board[i] != None {
             continue;
         } else {
@@ -267,7 +267,6 @@ pub fn check_double_three(game: &mut game::Game) -> Vec<usize> {
         }
         if nbr_free_tree >= 2 {
             ret.push(i);
-            nbr_free_tree = 0;
         }
     }
     ret

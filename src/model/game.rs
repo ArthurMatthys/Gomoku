@@ -288,11 +288,8 @@ impl Game {
             },
             TypeOfParty::Standard => (),
         }
-        let double_threes = double_three::forbidden_indexes(&self);
-        match double_threes {
-            Some(x) => self.add_impossible_vec_index(x),
-            None => (),
-        }
+        let double_threes = double_three::check_double_three(self);
+        self.add_impossible_vec_index(double_threes);
     }
 
     pub fn set_capture_pos(&mut self) -> () {
