@@ -48,6 +48,8 @@ fn check_explore(
                 } else {
                     break;
                 }
+            } else {
+                break;
             }
         }
     }
