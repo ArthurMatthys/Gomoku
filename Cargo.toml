@@ -11,6 +11,7 @@ edition = "2018"
 sdl2 = "0.34.0"
 rand = "0.7.3"
 clap = { git = "https://github.com/clap-rs/clap/" }
+array_tool = "1.0.3"
 
 [features]
 default = ["sdl2/image", "sdl2/ttf"]

@@ -5,20 +5,26 @@ pub const DIRS: [isize; 8] = [20, 19, 18, 1, -1, -18, -19, -20];
 
 pub fn valid_dir(index: &isize, dir: isize, moves: isize) -> bool {
     let final_index = *index + moves * dir;
-    let delta_line = final_index / board::SIZE_BOARD as isize - *index / board::SIZE_BOARD as isize;
-    let delta_col = final_index % board::SIZE_BOARD as isize - *index % board::SIZE_BOARD as isize;
-    // println!("final_index:{} - delta_line:{} - delta_col:{} - index: {} - moves: {}", final_index, delta_line, delta_col, index, moves);
-    // println!("-------------------");
-    match dir {
-        20 => delta_line == moves && delta_col == moves,
-        19 => delta_line == moves && delta_col == 0,
-        18 => delta_line == moves && delta_col == -moves,
-        1 => delta_line == 0 && delta_col == moves,
-        -1 => delta_line == 0 && delta_col == -moves,
-        -18 => delta_line == -moves && delta_col == moves,
-        -19 => delta_line == -moves && delta_col == 0,
-        -20 => delta_line == -moves && delta_col == -moves,
-        _ => unreachable!(),
+    if final_index < 0 || final_index >= 361 {
+        false
+    } else {
+        let delta_line =
+            final_index / board::SIZE_BOARD as isize - *index / board::SIZE_BOARD as isize;
+        let delta_col =
+            final_index % board::SIZE_BOARD as isize - *index % board::SIZE_BOARD as isize;
+        // println!("final_index:{} - delta_line:{} - delta_col:{} - index: {} - moves: {}", final_index, delta_line, delta_col, index, moves);
+        // println!("-------------------");
+        match dir {
+            20 => delta_line == moves && delta_col == moves,
+            19 => delta_line == moves && delta_col == 0,
+            18 => delta_line == moves && delta_col == -moves,
+            1 => delta_line == 0 && delta_col == moves,
+            -1 => delta_line == 0 && delta_col == -moves,
+            -18 => delta_line == -moves && delta_col == moves,
+            -19 => delta_line == -moves && delta_col == 0,
+            -20 => delta_line == -moves && delta_col == -moves,
+            _ => unreachable!(),
+        }
     }
 }
 
@@ -109,4 +115,28 @@ pub fn find_capture(game: &mut game::Game) -> Vec<usize> {
         }
     }
     ret
+}
+
+pub fn can_capture(game: &mut game::Game, to_capture: Vec<isize>) -> Option<Vec<usize>> {
+    let mut ret: Vec<usize> = vec![];
+    for i in 0..361 {
+        if game.board[i] != None || game.is_forbidden_from_index(i) {
+            continue;
+        } else {
+            game.change_board_value_hint(i);
+            if let Some(taken) = check_capture(game) {
+                for (a, b) in taken.iter() {
+                    if to_capture.iter().any(|x| x == a || x == b) {
+                        ret.push(i);
+                    }
+                }
+            }
+        }
+        game.clear_last_move();
+    }
+    if ret.len() > 0 {
+        Some(ret)
+    } else {
+        None
+    }
 }

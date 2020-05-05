@@ -180,7 +180,6 @@ impl Game {
     fn change_board_value(&mut self, index: usize) -> () {
         self.board[index] = self.player_to_pawn();
         self.history.push(index);
-        self.result = after_turn_check::check_winner(&self);
         if let Some(ret) = capture::check_capture(self) {
             ret.iter().for_each(|&x| self.clear_board_index(x, index));
         }
@@ -392,10 +391,24 @@ impl Game {
         if !self.has_changed {
             false
         } else {
-            println!("Yop");
             if self.players.0.nb_of_catch >= 5 || self.players.1.nb_of_catch >= 5 {
                 self.result = true;
                 true
+            } else if let Some(indexes) = after_turn_check::check_winner(self) {
+                if let Some(captures) = capture::can_capture(self, indexes) {
+                    self.add_impossible_vec_index(valid_pos::all_except(captures));
+                    false
+                } else {
+                    let player = self.get_actual_player();
+                    if player.nb_of_catch == 4 {
+                        let captures = capture::find_capture(self);
+                        self.add_impossible_vec_index(valid_pos::all_except(captures));
+                        false
+                    } else {
+                        self.result = true;
+                        true
+                    }
+                }
             } else {
                 false
             }
