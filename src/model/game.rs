@@ -7,8 +7,8 @@ use std::time::Duration;
 
 use super::super::checks::after_turn_check;
 use super::super::checks::capture;
-use super::super::checks::valid_pos;
 use super::super::checks::double_three;
+use super::super::checks::valid_pos;
 
 use super::super::render::board;
 
@@ -280,14 +280,14 @@ impl Game {
             TypeOfParty::Pro => match self.history.len() {
                 0 => self.add_impossible_vec_index(valid_pos::all_except(vec![180])),
                 2 => self.add_impossible_vec_index(FORBIDDEN_PRO.to_vec()),
-                _ => ()
+                _ => (),
             },
             TypeOfParty::Longpro => match self.history.len() {
                 0 => self.add_impossible_vec_index(valid_pos::all_except(vec![180])),
                 2 => self.add_impossible_vec_index(FORBIDDEN_LONGPRO.to_vec()),
-                _ => ()
+                _ => (),
             },
-            TypeOfParty::Standard => ()
+            TypeOfParty::Standard => (),
         }
         let double_threes = double_three::forbidden_indexes(&self);
         match double_threes {
@@ -384,5 +384,21 @@ impl Game {
             .map(|(_, e)| string_of_index!(e))
             .collect::<Vec<String>>();
         (black_history, white_history)
+    }
+}
+
+impl Game {
+    pub fn check_win(&mut self) -> bool {
+        if !self.has_changed {
+            false
+        } else {
+            println!("Yop");
+            if self.players.0.nb_of_catch >= 5 || self.players.1.nb_of_catch >= 5 {
+                self.result = true;
+                true
+            } else {
+                false
+            }
+        }
     }
 }

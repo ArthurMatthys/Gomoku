@@ -161,10 +161,29 @@ pub fn main() {
                 _ => {}
             }
         }
+        if game.check_win() {
+            break 'running;
+        }
         window::render_window(&mut game, &images, &font);
         // DEBUG for check
         // if result { use std::process; println!("GAGNE") ; process::exit(0x0100); }
 
         sleep(Duration::new(0, 1_000_000_000u32 / 60));
+    }
+
+    if game.result {
+        window::render_window(&mut game, &images, &font);
+        'ending: loop {
+            for event in events.poll_iter() {
+                match event {
+                    Event::Quit { .. }
+                    | Event::KeyDown {
+                        keycode: Some(Keycode::Escape),
+                        ..
+                    } => break 'ending,
+                    _ => {}
+                }
+            }
+        }
     }
 }
