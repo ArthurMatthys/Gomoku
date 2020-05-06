@@ -209,7 +209,9 @@ fn is_free_tree(game: &mut game::Game, index: isize, current: bool, dir: isize) 
                 match game.board[new_index as usize] {
                     None => {
                         if parts[index_part][1] == 1 {
-                            parts[index_part][3] = 1;
+                            if parts[index_part][1] == 1 && parts[index_part][2] != 0 {
+                                parts[index_part][3] = 1;
+                            }
                             break;
                         } else {
                             parts[index_part][1] = 1;
