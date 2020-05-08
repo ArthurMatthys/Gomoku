@@ -23,6 +23,9 @@ pub fn render_board(game: &mut game::Game, images: &Vec<Texture>) -> () {
     for x in 0..20 {
         for y in 0..20 {
             if x + y == 0 {
+                game.canvas
+                    .copy(&images[45], None, rect!(x, y))
+                    .expect("failed to render image");
                 continue;
             }
             if x == 0 {

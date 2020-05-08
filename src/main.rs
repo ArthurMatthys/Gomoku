@@ -26,7 +26,7 @@ use render::window;
 
 mod checks;
 
-const IMAGES: [&str; 45] = [
+const IMAGES: [&str; 46] = [
     "src/content/normal_board.png",
     "src/content/black_pawn.png",
     "src/content/white_pawn.png",
@@ -72,6 +72,7 @@ const IMAGES: [&str; 45] = [
     "src/content/nb/16.png",
     "src/content/nb/17.png",
     "src/content/nb/18.png",
+    "src/content/empty.png",
 ];
 
 macro_rules! get_image {
