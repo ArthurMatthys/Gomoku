@@ -26,7 +26,7 @@ use render::window;
 
 mod checks;
 
-const IMAGES: [&str; 7] = [
+const IMAGES: [&str; 45] = [
     "src/content/normal_board.png",
     "src/content/black_pawn.png",
     "src/content/white_pawn.png",
@@ -34,6 +34,44 @@ const IMAGES: [&str; 7] = [
     "src/content/green_warning.png",
     "src/content/orange_warning.png",
     "src/content/red_warning.png",
+    "src/content/letters/A.png",
+    "src/content/letters/B.png",
+    "src/content/letters/C.png",
+    "src/content/letters/D.png",
+    "src/content/letters/E.png",
+    "src/content/letters/F.png",
+    "src/content/letters/G.png",
+    "src/content/letters/H.png",
+    "src/content/letters/I.png",
+    "src/content/letters/J.png",
+    "src/content/letters/K.png",
+    "src/content/letters/L.png",
+    "src/content/letters/M.png",
+    "src/content/letters/N.png",
+    "src/content/letters/O.png",
+    "src/content/letters/P.png",
+    "src/content/letters/Q.png",
+    "src/content/letters/R.png",
+    "src/content/letters/S.png",
+    "src/content/nb/00.png",
+    "src/content/nb/01.png",
+    "src/content/nb/02.png",
+    "src/content/nb/03.png",
+    "src/content/nb/04.png",
+    "src/content/nb/05.png",
+    "src/content/nb/06.png",
+    "src/content/nb/07.png",
+    "src/content/nb/08.png",
+    "src/content/nb/09.png",
+    "src/content/nb/10.png",
+    "src/content/nb/11.png",
+    "src/content/nb/12.png",
+    "src/content/nb/13.png",
+    "src/content/nb/14.png",
+    "src/content/nb/15.png",
+    "src/content/nb/16.png",
+    "src/content/nb/17.png",
+    "src/content/nb/18.png",
 ];
 
 macro_rules! get_image {
@@ -113,15 +151,10 @@ pub fn main() {
     font.set_style(sdl2::ttf::FontStyle::BOLD);
 
     let texture_creator: TextureCreator<_> = game.canvas.texture_creator();
-    let images: [Texture; 7] = [
-        get_image!(texture_creator, IMAGES[0]),
-        get_image!(texture_creator, IMAGES[1]),
-        get_image!(texture_creator, IMAGES[2]),
-        get_image!(texture_creator, IMAGES[3]),
-        get_image!(texture_creator, IMAGES[4]),
-        get_image!(texture_creator, IMAGES[5]),
-        get_image!(texture_creator, IMAGES[6]),
-    ];
+    let images: Vec<Texture> = IMAGES
+        .iter()
+        .map(|x| get_image!(texture_creator, x))
+        .collect::<Vec<Texture>>();
     let mut rng = rand::thread_rng();
     let choice = Uniform::from(0..20);
     game.set_changed();

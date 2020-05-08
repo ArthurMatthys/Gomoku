@@ -2,7 +2,6 @@ use super::super::model::game;
 use super::after_turn_check;
 use super::capture;
 
-
 fn is_free_tree(game: &mut game::Game, index: isize, current: bool, dir: isize) -> bool {
     let mut parts = [[0, 0, 0, 0], [0, 0, 0, 0]];
     for i in [-1, 1].iter() {
@@ -17,7 +16,7 @@ fn is_free_tree(game: &mut game::Game, index: isize, current: bool, dir: isize) 
                         // Check wether we already met an empty position
                         // If yes
                         if parts[index_part][1] == 1 {
-                            if parts[index_part][1] == 1 && parts[index_part][2] != 0 {
+                            if parts[index_part][2] + parts[index_part][0] != 0 {
                                 parts[index_part][3] = 1;
                             }
                             break;
@@ -28,6 +27,9 @@ fn is_free_tree(game: &mut game::Game, index: isize, current: bool, dir: isize) 
                     }
                     // If I am on a competitors pawn, break
                     Some(x) if x != current => {
+                        if parts[index_part][1] == 1 && parts[index_part][2] == 0 {
+                            parts[index_part][3] = 1;
+                        }
                         break;
                     }
                     // If I am on the player's pawn
@@ -56,9 +58,23 @@ fn is_free_tree(game: &mut game::Game, index: isize, current: bool, dir: isize) 
         parts[0][2] + parts[1][2],
         parts[0][3] + parts[1][3],
     );
+    if index == 180 {
+        println!(
+            "{}/{}/{}/{}",
+            parts[0][0], parts[0][1], parts[0][2], parts[0][3]
+        );
+        println!(
+            "{}/{}/{}/{}",
+            parts[1][0], parts[1][1], parts[1][2], parts[1][3]
+        );
+        println!("{}/{}/{}/{}", tot.0, tot.1, tot.2, tot.3);
+        println!();
+        println!();
+    }
     if tot.3 >= 1
         && tot.1 == 2
-        && (tot.0 + tot.2 == 2 && ((parts[0][2] * parts[1][2] == 0) || tot.0 != 0)) {
+        && (tot.0 + tot.2 == 2 && ((parts[0][2] * parts[1][2] == 0) || tot.0 != 0))
+    {
         true
     } else {
         false

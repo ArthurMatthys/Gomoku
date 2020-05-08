@@ -19,12 +19,29 @@ macro_rules! rect {
     };
 }
 
-pub fn render_board(game: &mut game::Game, images: &[Texture; 7]) -> () {
-    for x in 0..19 {
-        for y in 0..19 {
-            match game.board[x * SIZE_BOARD + y] {
+pub fn render_board(game: &mut game::Game, images: &Vec<Texture>) -> () {
+    for x in 0..20 {
+        for y in 0..20 {
+            if x + y == 0 {
+                continue;
+            }
+            if x == 0 {
+                game.canvas
+                    .copy(&images[7 + 19 + y - 1], None, rect!(x, y))
+                    .expect("failed to render image");
+                continue;
+            }
+            if y == 0 {
+                game.canvas
+                    .copy(&images[7 + x - 1], None, rect!(x, y))
+                    .expect("failed to render image");
+                continue;
+            }
+            let new_x = x - 1;
+            let new_y = y - 1;
+            match game.board[new_x * SIZE_BOARD + new_y] {
                 None => {
-                    if game.is_forbidden_from_coord(x, y) {
+                    if game.is_forbidden_from_coord(new_x, new_y) {
                         game.canvas
                             .copy(&images[3], None, rect!(x, y))
                             .expect("failed to render image");

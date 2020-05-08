@@ -7,7 +7,7 @@ use super::super::model::game;
 use super::board;
 use super::score;
 
-pub fn render_window(game: &mut game::Game, images: &[Texture; 7], font: &sdl2::ttf::Font) -> () {
+pub fn render_window(game: &mut game::Game, images: &Vec<Texture>, font: &sdl2::ttf::Font) -> () {
     if !game.has_changed {
         return;
     }

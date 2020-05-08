@@ -187,8 +187,13 @@ impl Game {
     }
 
     pub fn change_board_from_click(&mut self, x: i32, y: i32) {
-        let index: usize =
-            (x as usize / board::SQUARE_SIZE) * board::SIZE_BOARD + y as usize / board::SQUARE_SIZE;
+        let new_x = x as usize / board::SQUARE_SIZE;
+        let new_y = y as usize / board::SQUARE_SIZE;
+        if new_x * new_y == 0 {
+            return;
+        }
+        let index: usize = (new_x - 1) * board::SIZE_BOARD + (new_y - 1);
+        println!("{}", index);
         if !valid_pos::valid_pos(self, index) {
             return;
         }

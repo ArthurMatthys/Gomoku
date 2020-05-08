@@ -8,11 +8,12 @@ use super::super::model::player;
 
 use super::board;
 
-const SIZE_BOARDGAME: u32 = (board::SIZE_BOARD * board::SQUARE_SIZE) as u32;
+const SIZE_BOARDGAME: u32 = ((board::SIZE_BOARD + 1) * board::SQUARE_SIZE) as u32;
 const SIZE_SCORE: u32 = WINDOW_LENGTH - SIZE_BOARDGAME - 3;
+const NBR_LINES_MOVES: u32 = 28;
 
 pub const WINDOW_LENGTH: u32 = 1400;
-pub const WINDOW_HEIGHT: u32 = 961;
+pub const WINDOW_HEIGHT: u32 = (board::SIZE_BOARD + 1) as u32 * (board::SQUARE_SIZE) as u32;
 
 macro_rules! rect_score {
     ($x:expr, $y:expr, $l:expr, $h:expr) => {
@@ -176,8 +177,8 @@ pub fn render_score(game: &mut game::Game, font: &sdl2::ttf::Font) -> () {
             tc,
             &e,
             game.canvas,
-            (i as u32 / 26) * 70,
-            line + (i % 26 * 25) as i32,
+            (i as u32 / NBR_LINES_MOVES) * 70,
+            line + (i % NBR_LINES_MOVES as usize * 25) as i32,
             20,
             20
         )
@@ -188,8 +189,8 @@ pub fn render_score(game: &mut game::Game, font: &sdl2::ttf::Font) -> () {
             tc,
             &e,
             game.canvas,
-            40 + (i as u32 / 26) * 70,
-            line + (i % 26 * 25) as i32,
+            40 + (i as u32 / NBR_LINES_MOVES) * 70,
+            line + (i % NBR_LINES_MOVES as usize * 25) as i32,
             20,
             20
         )
@@ -197,7 +198,7 @@ pub fn render_score(game: &mut game::Game, font: &sdl2::ttf::Font) -> () {
     game.canvas.set_draw_color(Color::RGB(0, 0, 0));
     let mut len = h_p2.len();
     let mut col = 1;
-    while len > 26 {
+    while len > NBR_LINES_MOVES as usize {
         game.canvas
             .fill_rect(rect_score!(
                 70 * col - 6,
@@ -207,6 +208,6 @@ pub fn render_score(game: &mut game::Game, font: &sdl2::ttf::Font) -> () {
             ))
             .expect("Failed to render white rect");
         col += 1;
-        len -= 26;
+        len -= NBR_LINES_MOVES as usize;
     }
 }
