@@ -16,6 +16,7 @@ use std::time::Instant;
 
 mod model;
 use model::game;
+use model::player;
 
 mod render;
 use render::score;
@@ -181,7 +182,14 @@ pub fn main() {
                 Event::KeyDown {
                     keycode: Some(Keycode::Backspace),
                     ..
-                } => game.clear_last_move(),
+                } => {
+                    game.clear_last_move();
+                    if game.players.0.player_type == player::TypeOfPlayer::Robot
+                        || game.players.1.player_type == player::TypeOfPlayer::Robot
+                    {
+                        game.clear_last_move();
+                    }
+                }
                 Event::KeyDown {
                     keycode: Some(Keycode::H),
                     ..
