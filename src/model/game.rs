@@ -193,7 +193,6 @@ impl Game {
             return;
         }
         let index: usize = (new_x - 1) * board::SIZE_BOARD + (new_y - 1);
-        println!("{}", index);
         if !valid_pos::valid_pos(self, index) {
             return;
         }
