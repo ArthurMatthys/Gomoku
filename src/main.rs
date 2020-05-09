@@ -166,6 +166,7 @@ pub fn main() {
             game.set_player_time(end.duration_since(start));
             game.change_board_from_input(point);
             flush_events!(events, 'running);
+            //    sleep(Duration::new(1, 0000000));
         }
         for event in events.poll_iter() {
             match event {

@@ -16,6 +16,7 @@ fn around_area(game: &mut game::Game, index: isize, dir: isize) -> Vec<usize> {
     ret
 }
 
+// 
 pub fn search_space(game: &mut game::Game) -> Vec<usize> {
     let mut ret = vec![];
     for i in 0..361 {
