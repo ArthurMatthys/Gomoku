@@ -58,19 +58,6 @@ fn is_free_tree(game: &mut game::Game, index: isize, current: bool, dir: isize) 
         parts[0][2] + parts[1][2],
         parts[0][3] + parts[1][3],
     );
-    if index == 180 {
-        println!(
-            "{}/{}/{}/{}",
-            parts[0][0], parts[0][1], parts[0][2], parts[0][3]
-        );
-        println!(
-            "{}/{}/{}/{}",
-            parts[1][0], parts[1][1], parts[1][2], parts[1][3]
-        );
-        println!("{}/{}/{}/{}", tot.0, tot.1, tot.2, tot.3);
-        println!();
-        println!();
-    }
     if tot.3 >= 1
         && tot.1 == 2
         && (tot.0 + tot.2 == 2 && ((parts[0][2] * parts[1][2] == 0) || tot.0 != 0))
