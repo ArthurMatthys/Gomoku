@@ -6,6 +6,9 @@ use sdl2::render::Canvas;
 use std::time::Duration;
 
 use super::super::checks::after_turn_check;
+// DEBUG
+use super::super::checks::search_space;
+// 
 use super::super::checks::capture;
 use super::super::checks::double_three;
 use super::super::checks::valid_pos;
@@ -295,6 +298,9 @@ impl Game {
         }
         let double_threes = double_three::check_double_three(self);
         self.add_impossible_vec_index(double_threes);
+        // let search_space = search_space::search_space(self);
+        // self.add_impossible_vec_index(search_space);
+
     }
 
     pub fn set_capture_pos(&mut self) -> () {
