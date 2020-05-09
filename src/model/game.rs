@@ -191,6 +191,7 @@ impl Game {
     pub fn change_board_from_click(&mut self, x: i32, y: i32) {
         let new_x = x as usize / board::SQUARE_SIZE;
         let new_y = y as usize / board::SQUARE_SIZE;
+        self.move_number += 1 ;
         if new_x * new_y == 0 {
             return;
         }
@@ -232,7 +233,7 @@ impl Game {
             }
             self.history_capture = new_history;
             self.set_changed();
-            // self.move_number -= 1;
+            self.move_number -= 1;
             self.next_player();
         }
     }
