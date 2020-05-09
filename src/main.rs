@@ -5,8 +5,6 @@ extern crate sdl2;
 
 use clap::{App, Arg};
 
-use rand::distributions::{Distribution, Uniform};
-
 use sdl2::event::Event;
 use sdl2::image::LoadTexture;
 use sdl2::keyboard::Keycode;
@@ -18,11 +16,13 @@ use std::time::Instant;
 
 mod model;
 use model::game;
-use model::point;
 
 mod render;
 use render::score;
 use render::window;
+
+mod ia;
+use ia::get_ia;
 
 mod checks;
 
@@ -156,20 +156,16 @@ pub fn main() {
         .iter()
         .map(|x| get_image!(texture_creator, x))
         .collect::<Vec<Texture>>();
-    let mut rng = rand::thread_rng();
-    let choice = Uniform::from(0..20);
     game.set_changed();
 
     'running: loop {
         if !game.result && game.actual_player_is_ai().expect("Wrong type of player") {
             let start = Instant::now();
-            //let point = get_IA();
-            let point = point::index_of_coord(choice.sample(&mut rng), choice.sample(&mut rng));
+            let point = get_ia::get_ia(&mut game);
             let end = Instant::now();
             game.set_player_time(end.duration_since(start));
             game.change_board_from_input(point);
             flush_events!(events, 'running);
-            //    sleep(Duration::new(1, 0000000));
         }
         for event in events.poll_iter() {
             match event {
