@@ -57,8 +57,8 @@ pub struct Game {
 
     pub type_of_party: TypeOfParty,
     pub has_changed: bool,
-    pub result: bool,
-    pub move_number: usize,
+    pub result: Option<bool>,
+    pub instant_win: bool,
 }
 
 impl Game {
@@ -101,10 +101,10 @@ impl Game {
                 has_changed: false,
                 history: Vec::new(),
                 history_capture: Vec::new(),
-                result: false,
+                result: None,
                 forbidden: vec![],
                 capture: vec![],
-                move_number: 0,
+                instant_win: false,
             },
             events,
         ))
@@ -191,7 +191,6 @@ impl Game {
     pub fn change_board_from_click(&mut self, x: i32, y: i32) {
         let new_x = x as usize / board::SQUARE_SIZE;
         let new_y = y as usize / board::SQUARE_SIZE;
-        self.move_number += 1 ;
         if new_x * new_y == 0 {
             return;
         }
@@ -233,7 +232,6 @@ impl Game {
             }
             self.history_capture = new_history;
             self.set_changed();
-            self.move_number -= 1;
             self.next_player();
         }
     }
@@ -397,20 +395,42 @@ impl Game {
             false
         } else {
             if self.players.0.nb_of_catch >= 5 || self.players.1.nb_of_catch >= 5 {
-                self.result = true;
+                self.result = None;
+                self.instant_win = true;
                 true
+            } else if let Some(winner) = self.result {
+                let x = self.history.pop();
+                self.next_player();
+                if Some(winner) == self.player_to_pawn() {
+                    if let Some(_) = after_turn_check::check_winner(self) {
+                        self.next_player();
+                        self.instant_win = true;
+                        true
+                    } else {
+                        self.next_player();
+                        if let Some(new_push) = x {
+                            self.history.push(new_push);
+                        }
+                        false
+                    }
+                } else {
+                    if let Some(new_push) = x {
+                        self.history.push(new_push);
+                    }
+                    self.next_player();
+                    false
+                }
             } else if let Some(indexes) = after_turn_check::check_winner(self) {
-                if let Some(captures) = capture::can_capture(self, indexes) {
-                    self.add_impossible_vec_index(valid_pos::all_except(captures));
+                self.result = self.player_to_pawn();
+                if let Some(_) = capture::can_capture(self, indexes) {
                     false
                 } else {
                     let player = self.get_actual_player();
                     if player.nb_of_catch == 4 {
-                        let captures = capture::find_capture(self);
-                        self.add_impossible_vec_index(valid_pos::all_except(captures));
                         false
                     } else {
-                        self.result = true;
+                        self.result = None;
+                        self.instant_win = true;
                         true
                     }
                 }
@@ -420,3 +440,32 @@ impl Game {
         }
     }
 }
+//impl Game {
+//    pub fn check_win(&mut self) -> bool {
+//        if !self.has_changed {
+//            false
+//        } else {
+//            if self.players.0.nb_of_catch >= 5 || self.players.1.nb_of_catch >= 5 {
+//                self.result = Some(true;
+//                true
+//            } else if let Some(indexes) = after_turn_check::check_winner(self) {
+//                if let Some(captures) = capture::can_capture(self, indexes) {
+//                    self.add_impossible_vec_index(valid_pos::all_except(captures));
+//                    false
+//                } else {
+//                    let player = self.get_actual_player();
+//                    if player.nb_of_catch == 4 {
+//                        let captures = capture::find_capture(self);
+//                        self.add_impossible_vec_index(valid_pos::all_except(captures));
+//                        false
+//                    } else {
+//                        self.result = true;
+//                        true
+//                    }
+//                }
+//            } else {
+//                false
+//            }
+//        }
+//    }
+//}

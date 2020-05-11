@@ -48,7 +48,7 @@ pub fn render_board(game: &mut game::Game, images: &Vec<Texture>) -> () {
                         game.canvas
                             .copy(&images[3], None, rect!(x, y))
                             .expect("failed to render image");
-                    } else if game.is_capture_from_coord(x, y) {
+                    } else if game.is_capture_from_coord(new_x, new_y) {
                         game.canvas
                             .copy(&images[4], None, rect!(x, y))
                             .expect("failed to render image");

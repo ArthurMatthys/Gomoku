@@ -160,7 +160,7 @@ pub fn main() {
     game.set_changed();
 
     'running: loop {
-        if !game.result && game.actual_player_is_ai().expect("Wrong type of player") {
+        if game.actual_player_is_ai().expect("Wrong type of player") {
             let start = Instant::now();
             let point = get_ia::get_ia(&mut game);
             let end = Instant::now();
@@ -209,8 +209,7 @@ pub fn main() {
 
         sleep(Duration::new(0, 1_000_000_000u32 / 60));
     }
-
-    if game.result {
+    if game.instant_win {
         window::render_window(&mut game, &images, &font);
         'ending: loop {
             for event in events.poll_iter() {
