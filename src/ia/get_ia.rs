@@ -13,8 +13,25 @@ pub fn dumb_ia(game: &mut game::Game, rng: &mut rand::prelude::ThreadRng) -> usi
         .expect("Error in random extraction") as usize
 }
 
+// Aim of the function :
+// Bitwise transpose Bool option board to bitArray (2 bits == 1 Bool option index)
+fn transpose_board_to_bitboard(game: &mut game::Game, bitboard: &mut [u64; 12]) -> () {
+    game.board.iter().enumerate().for_each(|(i, &val)| {
+        let byte_index = (i as isize / 32) as usize;
+        let bit_index = ((i as isize & 31) * 2) as usize;
+        match val {
+            Some(true) => { bitboard[byte_index] |= 0b11 << bit_index; }
+            Some(false) => { bitboard[byte_index] |= 0b10 << bit_index; }
+            None => { () }
+        } 
+    });
+}
+
 // Need to take history into account, found some issue with double_three
 pub fn get_ia(game: &mut game::Game) -> usize {
+    let mut bitboard = [0_u64; 12];
+    transpose_board_to_bitboard(game, &mut bitboard);
+
     // copy get_ia
     let mut rng = rand::thread_rng();
 
