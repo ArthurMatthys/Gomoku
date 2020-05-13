@@ -162,10 +162,10 @@ pub fn main() {
     'running: loop {
         if game.actual_player_is_ai().expect("Wrong type of player") {
             let start = Instant::now();
-            let point = get_ia::get_ia(&mut game);
+            let (line, col) = get_ia::get_ia(&mut game);
             let end = Instant::now();
             game.set_player_time(end.duration_since(start));
-            game.change_board_from_input(point);
+            game.change_board_from_input(line, col);
             flush_events!(events, 'running);
             //    sleep(Duration::new(1, 0000000));
         }
@@ -177,7 +177,8 @@ pub fn main() {
                     ..
                 } => break 'running,
                 Event::MouseButtonDown { x, y, .. } => {
-                    game.change_board_from_click(x, y);
+                    // game.change_board_from_click(x, y);
+                    game.change_board_from_click(y, x);
                 }
                 Event::KeyDown {
                     keycode: Some(Keycode::Backspace),

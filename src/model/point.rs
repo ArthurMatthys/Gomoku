@@ -1,4 +1,4 @@
-use super::super::render::board;
+// use super::super::render::board;
 
 //#[derive(Copy, Clone)]
 //pub struct Point {
@@ -24,6 +24,6 @@ use super::super::render::board;
 //    Point::new(index / board::SIZE_BOARD, index % board::SIZE_BOARD)
 //}
 
-pub fn index_of_coord(x: usize, y: usize) -> usize {
-    x * board::SIZE_BOARD + y
-}
+// pub fn index_of_coord(x: usize, y: usize) -> usize {
+//     x * board::SIZE_BOARD + y
+// }

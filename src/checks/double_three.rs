@@ -2,15 +2,15 @@ use super::super::model::game;
 use super::after_turn_check;
 use super::capture;
 
-fn is_free_tree(game: &mut game::Game, index: isize, current: bool, dir: isize) -> bool {
+fn is_free_tree(game: &mut game::Game, (line,col): (isize, isize), current: bool, (dir_line, dir_col): (isize,isize)) -> bool {
     let mut parts = [[0, 0, 0, 0], [0, 0, 0, 0]];
     for i in [-1, 1].iter() {
         let index_part: usize = ((i + 1) / 2) as usize;
         let mut moves: isize = 1;
         loop {
-            if capture::valid_dir(&index, i * dir, moves) {
-                let new_index = index + dir * moves * i;
-                match game.board[new_index as usize] {
+            if capture::valid_dir(&(line, col), (i * dir_line, i * dir_col), moves) {
+                let (new_index_line, new_index_col) = (line + dir_line * moves * i, col + dir_col * moves * i);
+                match game.board[new_index_line as usize][new_index_col as usize] {
                     //  If I am on an empty position
                     None => {
                         // Check wether we already met an empty position
@@ -68,24 +68,26 @@ fn is_free_tree(game: &mut game::Game, index: isize, current: bool, dir: isize) 
     }
 }
 
-pub fn check_double_three(game: &mut game::Game) -> Vec<usize> {
+pub fn check_double_three(game: &mut game::Game) -> Vec<(usize,usize)> {
     let mut ret = vec![];
     let pawn_current_player = !game
         .player_to_pawn()
         .expect("Could not retrieve player pawn");
-    for i in 0..361 {
-        let mut nbr_free_tree = 0;
-        if game.board[i] != None {
-            continue;
-        } else {
-            after_turn_check::DIRECTIONS.iter().for_each(|&x| {
-                if is_free_tree(game, i as isize, pawn_current_player, x) {
-                    nbr_free_tree += 1;
-                }
-            });
-        }
-        if nbr_free_tree >= 2 {
-            ret.push(i);
+    for i in 0..19 {
+        for j in 0..19 {
+            let mut nbr_free_tree = 0;
+            if game.board[i][j] != None {
+                continue;
+            } else {
+                after_turn_check::DIRECTIONS.iter().for_each(|&x| {
+                    if is_free_tree(game, (i as isize, j as isize), pawn_current_player, x) {
+                        nbr_free_tree += 1;
+                    }
+                });
+            }
+            if nbr_free_tree >= 2 {
+                ret.push((i,j));
+            }
         }
     }
     ret

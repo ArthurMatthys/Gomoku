@@ -42,7 +42,7 @@ pub fn render_board(game: &mut game::Game, images: &Vec<Texture>) -> () {
             }
             let new_x = x - 1;
             let new_y = y - 1;
-            match game.board[new_x * SIZE_BOARD + new_y] {
+            match game.board[new_x][new_y] {
                 None => {
                     if game.is_forbidden_from_coord(new_x, new_y) {
                         game.canvas

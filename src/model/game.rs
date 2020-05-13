@@ -13,24 +13,31 @@ use super::super::checks::valid_pos;
 use super::super::render::board;
 
 use super::player;
-use super::point;
+// use super::point;
 
-const FORBIDDEN_PRO: [usize; 25] = [
-    140, 141, 142, 143, 144, 159, 160, 161, 162, 163, 178, 179, 180, 181, 182, 197, 198, 199, 200,
-    201, 216, 217, 218, 219, 220,
+const FORBIDDEN_PRO: [(usize,usize); 49] = [
+// const FORBIDDEN_PRO: [(usize,usize); 25] = [
+    (6,6),  (7,6),  (8,6),  (9,6),  (10,6),  (11,6),  (12,6),  (6,7),  (7,7),  (8,7),  (9,7),  (10,7),  (11,7),  (12,7),
+    (6,8),  (7,8),  (8,8),  (9,8),  (10,8),  (11,8),  (12,8),  (6,9),  (7,9),  (8,9),  (9,9),  (10,9),  (11,9),  (12,9),
+    (6,10), (7,10), (8,10), (9,10), (10,10), (11,10), (12,10), (6,11), (7,11), (8,11), (9,11), (10,11), (11,11), (12,11),
+    (6,12), (7,12), (8,12), (9,12), (10,12), (11,12), (12,12),
 ];
-const FORBIDDEN_LONGPRO: [usize; 49] = [
-    120, 121, 122, 123, 124, 125, 126, 139, 140, 141, 142, 143, 144, 145, 158, 159, 160, 161, 162,
-    163, 164, 177, 178, 179, 180, 181, 182, 183, 196, 197, 198, 199, 200, 201, 202, 215, 216, 217,
-    218, 219, 220, 221, 234, 235, 236, 237, 238, 239, 240,
+
+// const FORBIDDEN_LONGPRO: [(usize,usize); 49] = [
+const FORBIDDEN_LONGPRO: [(usize,usize); 81] = [
+    (5,5),  (6,5),  (7,5),  (8,5),  (9,5),  (10,5),  (11,5),  (12,5),  (13,5),  (5,6),  (6,6),  (7,6),  (8,6),  (9,6),  (10,6),  (11,6),  (12,6),  (13,6),
+    (5,7),  (6,7),  (7,7),  (8,7),  (9,7),  (10,7),  (11,7),  (12,7),  (13,7),  (5,8),  (6,8),  (7,8),  (8,8),  (9,8),  (10,8),  (11,8),  (12,8),  (13,8),
+    (5,9),  (6,9),  (7,9),  (8,9),  (9,9),  (10,9),  (11,9),  (12,9),  (13,9),  (5,10), (6,10), (7,10), (8,10), (9,10), (10,10), (11,10), (12,10), (13,10),
+    (5,11), (6,11), (7,11), (8,11), (9,11), (10,11), (11,11), (12,11), (13,11), (5,12), (6,12), (7,12), (8,12), (9,12), (10,12), (11,12), (12,12), (13,12),
+    (5,13), (6,13), (7,13), (8,13), (9,13), (10,13), (11,13), (12,13), (13,13),
 ];
 
 macro_rules! string_of_index {
-    ($e:expr) => {{
-        let line: char = std::char::from_u32('A' as u32 + ($e / board::SIZE_BOARD) as u32)
+    ($line:expr, $col:expr) => {{
+        let col: char = std::char::from_u32('A' as u32 + *$col as u32)
             .expect("Could not convert number to char");
-        let col = $e % board::SIZE_BOARD;
-        format!("{}{}", line, col)
+        let line = *$line;
+        format!("{}{}", col, line)
     }};
 }
 
@@ -48,12 +55,12 @@ pub struct Game {
     // GAME
     player_turn: i32,
     pub players: (player::Player, player::Player),
-    pub history: Vec<usize>,
-    pub history_capture: Vec<(usize, (usize, usize))>,
+    pub history: Vec<(usize, usize)>,
+    pub history_capture: Vec<((usize, usize), ((usize, usize), (usize, usize)))>,
 
-    pub board: [Option<bool>; 361],
-    pub forbidden: Vec<usize>,
-    pub capture: Vec<usize>,
+    pub board: [[Option<bool>; board::SIZE_BOARD]; board::SIZE_BOARD],
+    pub forbidden: Vec<(usize,usize)>,
+    pub capture: Vec<(usize,usize)>,
 
     pub type_of_party: TypeOfParty,
     pub has_changed: bool,
@@ -96,7 +103,7 @@ impl Game {
                 canvas: canvas,
                 players: player::initialize_players(nb_of_player),
                 player_turn: 0,
-                board: [None; 361],
+                board: [[None; 19]; 19],
                 type_of_party: type_of_party,
                 has_changed: false,
                 history: Vec::new(),
@@ -166,24 +173,24 @@ impl Game {
 
 impl Game {
     //Modify board
-    pub fn change_board_from_input(&mut self, index: usize) {
-        if !valid_pos::valid_pos(self, index) {
+    pub fn change_board_from_input(&mut self, line: usize, col: usize) {
+        if !valid_pos::valid_pos(self, line, col) {
             return;
         }
-        match self.board[index] {
+        match self.board[line][col] {
             Some(_) => (),
             None => {
-                self.change_board_value(index);
+                self.change_board_value(line, col);
                 self.next_player()
             }
         }
     }
 
-    fn change_board_value(&mut self, index: usize) -> () {
-        self.board[index] = self.player_to_pawn();
-        self.history.push(index);
+    fn change_board_value(&mut self, line: usize, col: usize) -> () {
+        self.board[line][col] = self.player_to_pawn();
+        self.history.push((line,col));
         if let Some(ret) = capture::check_capture(self) {
-            ret.iter().for_each(|&x| self.clear_board_index(x, index));
+            ret.iter().for_each(|&x| self.clear_board_index(x, line, col));
         }
         self.set_changed();
     }
@@ -194,37 +201,37 @@ impl Game {
         if new_x * new_y == 0 {
             return;
         }
-        let index: usize = (new_x - 1) * board::SIZE_BOARD + (new_y - 1);
-        if !valid_pos::valid_pos(self, index) {
+        // let index: usize = (new_x - 1) * board::SIZE_BOARD + (new_y - 1);
+        if !valid_pos::valid_pos(self, new_y - 1, new_x - 1) {
             return;
         }
-        match self.board[index] {
+        match self.board[new_y - 1][new_x - 1] {
             Some(_) => (),
             None => {
-                self.change_board_value(index);
+                self.change_board_value(new_y - 1, new_x - 1);
                 self.next_player()
             }
         }
     }
 
-    pub fn change_board_value_hint(&mut self, index: usize) -> () {
-        self.board[index] = self.player_to_pawn();
-        self.history.push(index);
+    pub fn change_board_value_hint(&mut self, line: usize, col: usize) -> () {
+        self.board[line][col] = self.player_to_pawn();
+        self.history.push((line, col));
         self.next_player();
     }
 
     pub fn clear_last_move(&mut self) -> () {
         let mut new_history = vec![];
-        if let Some(index) = self.history.pop() {
+        if let Some((line, col)) = self.history.pop() {
             let mut nbr = 0;
-            self.board[index] = None;
-            for (x, (y, z)) in self.history_capture.iter() {
-                if *x == index {
-                    self.board[*y] = self.player_to_pawn();
-                    self.board[*z] = self.player_to_pawn();
+            self.board[line][col] = None;
+            for (x, ((line_y, col_y), (line_z, col_z))) in self.history_capture.iter() {
+                if *x == (line, col) {
+                    self.board[*line_y][*col_y] = self.player_to_pawn();
+                    self.board[*line_z][*col_z] = self.player_to_pawn();
                     nbr += 1;
                 } else {
-                    new_history.push((*x, (*y, *z)));
+                    new_history.push((*x, ((*line_y, *col_y), (*line_z, *col_z))));
                 }
             }
             for _ in 0..nbr {
@@ -236,14 +243,22 @@ impl Game {
         }
     }
 
-    fn add_history_capture(&mut self, (x, y): (isize, isize), index: usize) -> () {
-        self.history_capture.push((index, (x as usize, y as usize)));
+    fn add_history_capture(
+        &mut self,
+        ((line_x, col_x), (line_y, col_y)): ((isize, isize), (isize, isize)),
+        line: usize, col: usize
+    ) -> () {
+        self.history_capture.push(((line, col), ((line_x as usize, col_x as usize), (line_y as usize, col_y as usize))));
     }
 
-    fn clear_board_index(&mut self, (x, y): (isize, isize), index: usize) -> () {
-        self.add_history_capture((x, y), index);
-        self.board[x as usize] = None;
-        self.board[y as usize] = None;
+    fn clear_board_index(
+        &mut self,
+        ((line_x, col_x), (line_y, col_y)): ((isize, isize), (isize, isize)),
+        line: usize, col: usize
+    ) -> () {
+        self.add_history_capture(((line_x, col_x), (line_y, col_y)), line, col);
+        self.board[line_x as usize][col_x as usize] = None;
+        self.board[line_y as usize][col_y as usize] = None;
         self.add_capture();
         self.set_changed();
     }
@@ -259,21 +274,21 @@ impl Game {
         self.capture = vec![];
     }
 
-    fn add_impossible_index(&mut self, point: usize) -> () {
+    fn add_impossible_index(&mut self, point: (usize, usize)) -> () {
         self.forbidden.push(point);
     }
 
-    fn add_impossible_vec_index(&mut self, points: Vec<usize>) -> () {
+    fn add_impossible_vec_index(&mut self, points: Vec<(usize, usize)>) -> () {
         points
             .iter()
             .for_each(|&point| self.add_impossible_index(point));
     }
 
-    fn add_capture_index(&mut self, point: usize) -> () {
+    fn add_capture_index(&mut self, point: (usize, usize)) -> () {
         self.capture.push(point);
     }
 
-    fn add_capture_vec_index(&mut self, points: Vec<usize>) -> () {
+    fn add_capture_vec_index(&mut self, points: Vec<(usize, usize)>) -> () {
         points
             .iter()
             .for_each(|&point| self.add_capture_index(point));
@@ -283,12 +298,12 @@ impl Game {
         self.clear_forbidden();
         match self.type_of_party {
             TypeOfParty::Pro => match self.history.len() {
-                0 => self.add_impossible_vec_index(valid_pos::all_except(vec![180])),
+                0 => self.add_impossible_vec_index(valid_pos::all_except(vec![(9,9)])),
                 2 => self.add_impossible_vec_index(FORBIDDEN_PRO.to_vec()),
                 _ => (),
             },
             TypeOfParty::Longpro => match self.history.len() {
-                0 => self.add_impossible_vec_index(valid_pos::all_except(vec![180])),
+                0 => self.add_impossible_vec_index(valid_pos::all_except(vec![(9,9)])),
                 2 => self.add_impossible_vec_index(FORBIDDEN_LONGPRO.to_vec()),
                 _ => (),
             },
@@ -305,20 +320,20 @@ impl Game {
         self.has_changed = true;
     }
 
-    pub fn is_forbidden_from_index(&self, index: usize) -> bool {
-        self.forbidden.iter().any(|&point| point == index)
+    pub fn is_forbidden_from_index(&self, line: usize, col: usize) -> bool {
+        self.forbidden.iter().any(|&point| point == (line,col))
     }
 
     pub fn is_forbidden_from_coord(&self, x: usize, y: usize) -> bool {
         self.forbidden
             .iter()
-            .any(|&point| point == point::index_of_coord(x, y))
+            .any(|&point| point == (x, y))
     }
 
     pub fn is_capture_from_coord(&self, x: usize, y: usize) -> bool {
         self.capture
             .iter()
-            .any(|&point| point == point::index_of_coord(x, y))
+            .any(|&point| point == (x, y))
     }
 
     pub fn set_changed(&mut self) -> () {
@@ -376,14 +391,14 @@ impl Game {
             .iter()
             .enumerate()
             .filter(|&(i, _)| i % 2 == 0)
-            .map(|(_, e)| string_of_index!(e))
+            .map(|(_, (line, col))| string_of_index!(line, col))
             .collect::<Vec<String>>();
         let white_history: Vec<String> = self
             .history
             .iter()
             .enumerate()
             .filter(|&(i, _)| i % 2 == 1)
-            .map(|(_, e)| string_of_index!(e))
+            .map(|(_, (line, col))| string_of_index!(line, col))
             .collect::<Vec<String>>();
         (black_history, white_history)
     }
