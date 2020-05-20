@@ -2,21 +2,25 @@ use super::super::model::game;
 use super::after_turn_check;
 use super::capture;
 
-fn around_area(game: &mut game::Game, (line, col): (isize,isize), (dir_line, dir_col): (isize, isize)) -> Vec<(usize,usize)> {
+fn around_area(
+    game: &mut game::Game,
+    (line, col): (isize, isize),
+    (dir_line, dir_col): (isize, isize),
+) -> Vec<(usize, usize)> {
     let mut ret = vec![];
     for i in [-1, 1].iter() {
         if capture::valid_dir(&(line, col), (i * dir_line, i * dir_col), 1) {
-            let (new_index_line,new_index_col) = (line + dir_line * 1 * i, col + dir_col * 1 * i);
+            let (new_index_line, new_index_col) = (line + dir_line * 1 * i, col + dir_col * 1 * i);
             match game.board[new_index_line as usize][new_index_col as usize] {
                 None => ret.push((new_index_line as usize, new_index_col as usize)),
-                _ => ()
+                _ => (),
             }
         }
     }
     ret
 }
 
-// 
+//
 pub fn search_space(game: &mut game::Game) -> Vec<(usize, usize)> {
     let mut ret = vec![];
     for i in 0..19 {
@@ -25,15 +29,18 @@ pub fn search_space(game: &mut game::Game) -> Vec<(usize, usize)> {
                 continue;
             } else {
                 after_turn_check::DIRECTIONS.iter().for_each(|&x| {
-                    around_area(game, (i as isize, j as isize), x).iter().for_each(|&y| ret.push(y))
+                    around_area(game, (i as isize, j as isize), x)
+                        .iter()
+                        .for_each(|&y| ret.push(y))
                 });
             }
         }
     }
-    // Remove forbidden moves 
-    game.forbidden.iter().for_each(|&x| {
-        ret.retain(|&y| y != x)
+    // Remove forbidden moves
+    game.forbidden.iter().for_each(|&x| ret.retain(|&y| y != x));
+    ret.iter().for_each(|&(x, y)| match game.board[x][y] {
+        None => println!("1"),
+        _ => println!("0"),
     });
     ret
 }
-

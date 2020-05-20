@@ -28,6 +28,15 @@ use ia::heuristic;
 
 mod checks;
 
+macro_rules! string_of_index {
+    ($line:expr, $col:expr) => {{
+        let col: char = std::char::from_u32('A' as u32 + *$col as u32)
+            .expect("Could not convert number to char");
+        let line = *$line;
+        format!("{}{}", col, line)
+    }};
+}
+
 const IMAGES: [&str; 46] = [
     "src/content/normal_board.png",
     "src/content/black_pawn.png",
@@ -166,7 +175,7 @@ pub fn main() {
             let (line, col) = get_ia::get_ia(&mut game);
             let end = Instant::now();
             game.set_player_time(end.duration_since(start));
-            println!("{}/{}", line, col);
+            println!("{}", string_of_index!(&line, &col));
             game.change_board_from_input(line, col);
             flush_events!(events, 'running);
             //    sleep(Duration::new(1, 0000000));

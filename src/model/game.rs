@@ -283,9 +283,6 @@ impl Game {
         table: &[[[u64; 2]; 19]; 19],
         zhash: &mut u64,
     ) -> () {
-        if !valid_pos::valid_pos(self, line, col) {
-            return;
-        }
         match self.board[line][col] {
             Some(_) => (),
             None => {
@@ -631,50 +628,46 @@ impl Game {
             }
         }
     }
+
     pub fn check_win_hint(&mut self) -> bool {
-        if !self.has_changed {
-            false
-        } else {
-            if self.players.0.nb_of_catch >= 5 || self.players.1.nb_of_catch >= 5 {
-                self.result = None;
-                true
-            } else if let Some(winner) = self.result {
-                let x = self.history.pop();
-                self.next_player();
-                if Some(winner) == self.player_to_pawn() {
-                    if let Some(_) = after_turn_check::check_winner(self) {
-                        self.next_player();
-                        true
-                    } else {
-                        self.next_player();
-                        if let Some(new_push) = x {
-                            self.history.push(new_push);
-                        }
-                        false
-                    }
+        if self.players.0.nb_of_catch >= 5 || self.players.1.nb_of_catch >= 5 {
+            true
+        } else if let Some(winner) = self.result {
+            let x = self.history.pop();
+            self.next_player();
+            if Some(winner) == self.player_to_pawn() {
+                if let Some(_) = after_turn_check::check_winner(self) {
+                    self.next_player();
+                    true
                 } else {
+                    self.next_player();
                     if let Some(new_push) = x {
                         self.history.push(new_push);
                     }
-                    self.next_player();
                     false
-                }
-            } else if let Some(indexes) = after_turn_check::check_winner(self) {
-                self.result = self.player_to_pawn();
-                if let Some(_) = capture::can_capture(self, indexes) {
-                    false
-                } else {
-                    let player = self.get_actual_player();
-                    if player.nb_of_catch == 4 {
-                        false
-                    } else {
-                        self.result = None;
-                        true
-                    }
                 }
             } else {
+                if let Some(new_push) = x {
+                    self.history.push(new_push);
+                }
+                self.next_player();
                 false
             }
+        } else if let Some(indexes) = after_turn_check::check_winner(self) {
+            self.result = self.player_to_pawn();
+            if let Some(_) = capture::can_capture(self, indexes) {
+                false
+            } else {
+                let player = self.get_actual_player();
+                if player.nb_of_catch == 4 {
+                    false
+                } else {
+                    self.result = None;
+                    true
+                }
+            }
+        } else {
+            false
         }
     }
 }
