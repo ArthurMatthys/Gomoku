@@ -166,6 +166,7 @@ pub fn main() {
             let (line, col) = get_ia::get_ia(&mut game);
             let end = Instant::now();
             game.set_player_time(end.duration_since(start));
+            println!("{}/{}", line, col);
             game.change_board_from_input(line, col);
             flush_events!(events, 'running);
             //    sleep(Duration::new(1, 0000000));

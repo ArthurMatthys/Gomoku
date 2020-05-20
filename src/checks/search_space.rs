@@ -30,6 +30,10 @@ pub fn search_space(game: &mut game::Game) -> Vec<(usize, usize)> {
             }
         }
     }
+    // Remove forbidden moves 
+    game.forbidden.iter().for_each(|&x| {
+        ret.retain(|&y| y != x)
+    });
     ret
 }
 
