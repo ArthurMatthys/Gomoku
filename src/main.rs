@@ -24,6 +24,7 @@ use render::window;
 
 mod ia;
 use ia::get_ia;
+use ia::heuristic;
 
 mod checks;
 
@@ -204,6 +205,9 @@ pub fn main() {
         if game.check_win() {
             break 'running;
         }
+        //        if game.has_changed {
+        //            heuristic::first_heuristic(game.board, None);
+        //        }
         window::render_window(&mut game, &images, &font);
         // DEBUG for check
         // if result { use std::process; println!("GAGNE") ; process::exit(0x0100); }
