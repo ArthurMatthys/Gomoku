@@ -4,7 +4,7 @@ use rand::Rng;
 use super::super::render::board;
 
 // Type of element in TT
-#[derive(Clone,PartialEq)]
+#[derive(Copy,Clone,PartialEq)]
 pub enum TypeOfEl {
     Lowerbound,
     Upperbound,
@@ -13,15 +13,24 @@ pub enum TypeOfEl {
 }
 
 // Type of element in TT
-#[derive(Clone,PartialEq)]
+#[derive(Copy,Clone,PartialEq)]
 pub enum Move {
     Leaf,
     Unitialized,
     Some((usize, usize)),
 }
 
+impl Move {
+    pub fn unwrap_unsafe(&self) -> (usize,usize) {
+        match self {
+            Move::Some((i,j)) =>  (*i,*j),
+            _ => unreachable!(),
+        }
+    }
+}
+
 // Transposition table
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub struct TT {
     // Zobrist key, to check for collision
     pub key: u64,
@@ -51,14 +60,15 @@ pub fn retrieve_tt_from_hash(tt: &Vec<TT>, zhash: &u64) -> TT {
 }
 
 pub fn store_tt_entry(
-    tt: &Vec<TT>,
+    tt: &mut Vec<TT>,
     zhash: &mut u64,
     value: &i32,
     flag:TypeOfEl,
     depth:&mut i8,
     status: Move,
 ) -> () {
-    tt[(*zhash % tt.len() as u64) as usize] = TT {
+    let len = tt.len();
+    tt[(*zhash % len as u64) as usize] = TT {
         key: *zhash,
         value: *value,
         r#type: flag,
