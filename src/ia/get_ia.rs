@@ -9,7 +9,7 @@ use rand::seq::SliceRandom;
 use super::zobrist;
 use super::zobrist::Move;
 use super::zobrist::TypeOfEl;
-use super::super::player;
+// use super::super::player;
 
 fn evaluate() -> i32 {
     10
@@ -45,11 +45,13 @@ fn alpha_beta_w_memory(
         }
 
         if *alpha >= *beta {
-            match tte.r#move {
-                Move::Some((i,j)) => return (tte.value,Some((i,j))),
-                Move::Leaf => return (tte.value,None),
-                _=> unreachable!(),
-            } // Directly cut branch
+            // match tte.r#move {
+                let mov2 = tte.r#move.unwrap_unsafe();
+                return (tte.value,Some(mov2));
+                // Move::Some((i,j)) => return (tte.value,Some((i,j))),
+                // // Move::Leaf => return (tte.value,None),
+                // _=> unreachable!(),
+            // } // Directly cut branch
         }
     }
 
@@ -59,18 +61,18 @@ fn alpha_beta_w_memory(
         // Line below --> debug
         value = evaluate();
         // Stocke-t-on ou non ici ??
-        if value <= *alpha { // a lowerbound value
-            zobrist::store_tt_entry(tt, zhash, &value, TypeOfEl::Lowerbound, depth, Move::Leaf);
-        } else if value >= *beta { // an upperbound value
-            zobrist::store_tt_entry(tt, zhash, &value, TypeOfEl::Upperbound, depth, Move::Leaf);
-        } else { // a true minimax value
-            zobrist::store_tt_entry(tt, zhash, &value, TypeOfEl::Exact, depth, Move::Leaf);
-        }
+        // if value <= *alpha { // a lowerbound value
+        //     zobrist::store_tt_entry(tt, zhash, &value, TypeOfEl::Lowerbound, depth, Move::Leaf);
+        // } else if value >= *beta { // an upperbound value
+        //     zobrist::store_tt_entry(tt, zhash, &value, TypeOfEl::Upperbound, depth, Move::Leaf);
+        // } else { // a true minimax value
+        //     zobrist::store_tt_entry(tt, zhash, &value, TypeOfEl::Exact, depth, Move::Leaf);
+        // }
         return (value, None);
     }
     
     // First check already known move (reordering)
-    if tte.r#type != zobrist::TypeOfEl::Empty && tte.r#move != zobrist::Move::Leaf {
+    if tte.r#type != zobrist::TypeOfEl::Empty {
         // Place pawn
         match tte.r#move {
             Move::Some((i,j)) => game.ia_change_board_from_input(i, j, &table, zhash),
@@ -83,7 +85,7 @@ fn alpha_beta_w_memory(
         game.ia_clear_last_move(table, zhash);
         best_mov = tte.r#move;
     } else {
-        best_value = std::f64::NEG_INFINITY as i32 + 1;   // ????? DANGEROUS CAST ?????
+        best_value = i32::min_value() + 1;   // ????? DANGEROUS CAST ?????
     }
 
     if best_value < *beta {
@@ -91,10 +93,13 @@ fn alpha_beta_w_memory(
         let available_positions = search_space::search_space(game);
         for i in 0..available_positions.len() {
             if Move::Some(available_positions[i]) != tte.r#move {
+                // println!("zhash_before-change: {}| depth: {}", zhash, depth);
                 game.ia_change_board_from_input(available_positions[i].0, available_positions[i].1, &table, zhash);
+                // println!("zhash_after-change: {}| depth: {}", zhash, depth);
                 let (val,_) = alpha_beta_w_memory(game, table, zhash, tt, &mut(*depth-1),&mut(-*beta),&mut(-*alpha));
                 value = -val;
                 game.ia_clear_last_move(table, zhash);
+                // println!("zhash_after-recursive: {}| depth: {}", zhash, depth);
                 if value > best_value {
                     best_value = value;
                     best_mov = Move::Some(available_positions[i]);
@@ -163,8 +168,8 @@ fn ia(
     //     // Remove pawn on board && zobrit
     //     game.ia_clear_last_move(&table, &mut hash);
     // }); 
-    match alpha_beta_w_memory(game, &table, &mut hash, &mut tt, &mut 10,
-        &mut (std::f64::NEG_INFINITY as i32), &mut (std::f64::INFINITY as i32)
+    match alpha_beta_w_memory(game, &table, &mut hash, &mut tt, &mut 5,
+        &mut (i32::min_value() + 1), &mut (i32::max_value())
     ) {
         (_, Some(best_position)) => best_position,
         (_, None) => unreachable!(),
