@@ -11,6 +11,8 @@ use super::zobrist::Move;
 use super::zobrist::TypeOfEl;
 // use super::super::player;
 
+const DEPTH_MAX: i8 = 5;
+
 fn evaluate() -> i32 {
     10
 }
@@ -45,13 +47,13 @@ fn alpha_beta_w_memory(
         }
 
         if *alpha >= *beta {
-            // match tte.r#move {
-                let mov2 = tte.r#move.unwrap_unsafe();
-                return (tte.value,Some(mov2));
-                // Move::Some((i,j)) => return (tte.value,Some((i,j))),
-                // // Move::Leaf => return (tte.value,None),
-                // _=> unreachable!(),
-            // } // Directly cut branch
+            match tte.r#move {
+                // let mov2 = tte.r#move.unwrap_unsafe();
+                // return (tte.value,Some(mov2));
+                Move::Some((i,j)) => return (tte.value,Some((i,j))),
+                Move::Leaf => return (tte.value,None),
+                _=> unreachable!(),
+            } // Directly cut branch
         }
     }
 
@@ -61,18 +63,18 @@ fn alpha_beta_w_memory(
         // Line below --> debug
         value = evaluate();
         // Stocke-t-on ou non ici ??
-        // if value <= *alpha { // a lowerbound value
-        //     zobrist::store_tt_entry(tt, zhash, &value, TypeOfEl::Lowerbound, depth, Move::Leaf);
-        // } else if value >= *beta { // an upperbound value
-        //     zobrist::store_tt_entry(tt, zhash, &value, TypeOfEl::Upperbound, depth, Move::Leaf);
-        // } else { // a true minimax value
-        //     zobrist::store_tt_entry(tt, zhash, &value, TypeOfEl::Exact, depth, Move::Leaf);
-        // }
+        if value <= *alpha { // a lowerbound value
+            zobrist::store_tt_entry(tt, zhash, &value, TypeOfEl::Lowerbound, depth, Move::Leaf);
+        } else if value >= *beta { // an upperbound value
+            zobrist::store_tt_entry(tt, zhash, &value, TypeOfEl::Upperbound, depth, Move::Leaf);
+        } else { // a true minimax value
+            zobrist::store_tt_entry(tt, zhash, &value, TypeOfEl::Exact, depth, Move::Leaf);
+        }
         return (value, None);
     }
     
     // First check already known move (reordering)
-    if tte.r#type != zobrist::TypeOfEl::Empty {
+    if tte.r#type != zobrist::TypeOfEl::Empty && tte.r#move != zobrist::Move::Leaf {
         // Place pawn
         match tte.r#move {
             Move::Some((i,j)) => game.ia_change_board_from_input(i, j, &table, zhash),
@@ -155,6 +157,7 @@ fn ia(
     let mut _oppenent = game.get_opponent();
     // let mut best_position: (usize, usize) = (0,0);
     // let mut best_score = 0;
+    let mut depth_max = DEPTH_MAX;
     let mut tt = zobrist::initialize_transposition_table();
     // let available_positions = search_space::search_space(game);
     
@@ -168,7 +171,7 @@ fn ia(
     //     // Remove pawn on board && zobrit
     //     game.ia_clear_last_move(&table, &mut hash);
     // }); 
-    match alpha_beta_w_memory(game, &table, &mut hash, &mut tt, &mut 5,
+    match alpha_beta_w_memory(game, &table, &mut hash, &mut tt, &mut depth_max,
         &mut (i32::min_value() + 1), &mut (i32::max_value())
     ) {
         (_, Some(best_position)) => best_position,
