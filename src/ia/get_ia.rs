@@ -4,6 +4,8 @@
 use super::super::checks::capture;
 use super::super::checks::search_space;
 use super::super::model::game;
+use super::super::model::player;
+use std::time::Duration;
 // use super::super::model::player;
 use super::heuristic;
 use super::zobrist;
@@ -20,7 +22,7 @@ macro_rules! string_of_index {
         format!("{}{}", col, line)
     }};
 }
-const DEPTH_MAX: i8 = 3;
+const DEPTH_MAX: i8 = 2;
 
 // alpha beta memory
 fn alpha_beta_w_memory(
@@ -81,15 +83,36 @@ fn alpha_beta_w_memory(
         // Stocke-t-on ou non ici ??
         if value <= *alpha {
             // a lowerbound value
-            zobrist::store_tt_entry(tt, zhash, &value, TypeOfEl::Lowerbound, depth, Move::Some(game.history[game.history.len()-1]));
+            zobrist::store_tt_entry(
+                tt,
+                zhash,
+                &value,
+                TypeOfEl::Lowerbound,
+                depth,
+                Move::Some(game.history[game.history.len() - 1]),
+            );
         } else if value >= *beta {
             // an upperbound value
-            zobrist::store_tt_entry(tt, zhash, &value, TypeOfEl::Upperbound, depth, Move::Some(game.history[game.history.len()-1]));
+            zobrist::store_tt_entry(
+                tt,
+                zhash,
+                &value,
+                TypeOfEl::Upperbound,
+                depth,
+                Move::Some(game.history[game.history.len() - 1]),
+            );
         } else {
             // a true minimax value
-            zobrist::store_tt_entry(tt, zhash, &value, TypeOfEl::Exact, depth, Move::Some(game.history[game.history.len()-1]));
+            zobrist::store_tt_entry(
+                tt,
+                zhash,
+                &value,
+                TypeOfEl::Exact,
+                depth,
+                Move::Some(game.history[game.history.len() - 1]),
+            );
         }
-        return (value, Some(game.history[game.history.len()-1]));
+        return (value, Some(game.history[game.history.len() - 1]));
     }
 
     // First check already known move (reordering)
@@ -117,10 +140,9 @@ fn alpha_beta_w_memory(
                 } else {
                     best_value = i64::min_value() + 1;
                 }
-            },
+            }
             _ => unreachable!(),
         }
-        
     } else {
         best_value = i64::min_value() + 1; // ????? DANGEROUS CAST ?????
     }
@@ -224,6 +246,109 @@ fn alpha_beta_w_memory(
     }
     // (best_value, best_mov)
 }
+fn minimax_hint(
+    table: &mut [[Option<bool>; 19]; 19],
+    actual: Option<bool>,
+    depth: &mut i8,
+    player: Option<bool>,
+) -> i64 {
+    let available_positions = search_space::search_space_hint(table);
+    if *depth == 0 {
+        return heuristic::first_heuristic(
+            *table,
+            &player::Player {
+                player_type: player::TypeOfPlayer::Unset,
+                nb_of_catch: 0,
+                bool_type: actual,
+                name: "",
+                time_spent: Duration::new(0, 0),
+            },
+            &player::Player {
+                player_type: player::TypeOfPlayer::Unset,
+                nb_of_catch: 0,
+                bool_type: match actual {
+                    Some(a) => Some(!a),
+                    _ => unreachable!(),
+                },
+                name: "",
+                time_spent: Duration::new(0, 0),
+            },
+            depth,
+        );
+    }
+    let mut score = i64::min_value() + 1;
+    if player == actual {
+        for &(x, y) in available_positions.iter() {
+            table[x][y] = actual;
+            let a = minimax_hint(
+                table,
+                match actual {
+                    Some(a) => Some(!a),
+                    _ => unreachable!(),
+                },
+                &mut (*depth - 1),
+                player,
+            );
+            if a > score {
+                score = a;
+            }
+            table[x][y] = None;
+        }
+    } else {
+        score *= -1;
+        for &(x, y) in available_positions.iter() {
+            table[x][y] = actual;
+            let a = minimax_hint(
+                table,
+                match actual {
+                    Some(a) => Some(!a),
+                    _ => unreachable!(),
+                },
+                &mut (*depth - 1),
+                player,
+            );
+            if a < score {
+                score = a;
+            }
+            table[x][y] = None;
+        }
+    }
+    score
+}
+
+fn minimax(game: &mut game::Game, depth: &mut i8, player: Option<bool>) -> i64 {
+    let available_positions = search_space::search_space(game);
+    if *depth == 0 {
+        return heuristic::first_heuristic(
+            game.board,
+            game.get_actual_player(),
+            game.get_opponent(),
+            depth,
+        );
+    }
+    let mut score = i64::min_value() + 1;
+    if player == game.player_to_pawn() {
+        for &(x, y) in available_positions.iter() {
+            game.change_board_from_input(x, y);
+            let a = minimax(game, &mut (*depth - 1), player);
+            if a > score {
+                score = a;
+            }
+            game.clear_last_move();
+        }
+    } else {
+        score *= -1;
+        for &(x, y) in available_positions.iter() {
+            game.change_board_from_input(x, y);
+            let a = minimax(game, &mut (*depth - 1), player);
+            if a < score {
+                score = a;
+            }
+            game.clear_last_move();
+        }
+    }
+    score
+}
 
 // function mtdf(root, f, d) is
 //     g := f
@@ -244,7 +369,7 @@ fn alpha_beta_w_memory(
 // Heart of AI, parse all available position close to a piece
 // and apply the mtd-f algorithm on it with depth of 10
 fn ia(game: &mut game::Game, (table, mut hash): ([[[u64; 2]; 19]; 19], u64)) -> (usize, usize) {
-    let mut _player = game.get_actual_player();
+    let player = game.player_to_pawn();
     let mut _oppenent = game.get_opponent();
     // let mut best_position: (usize, usize) = (0,0);
     // let mut best_score = 0;
@@ -262,18 +387,33 @@ fn ia(game: &mut game::Game, (table, mut hash): ([[[u64; 2]; 19]; 19], u64)) -> 
     //     // Remove pawn on board && zobrit
     //     game.ia_clear_last_move(&table, &mut hash);
     // });
-    match alpha_beta_w_memory(
-        game,
-        &table,
-        &mut hash,
-        &mut tt,
-        &mut depth_max,
-        &mut (i64::min_value() + 1),
-        &mut (i64::max_value()),
-    ) {
-        (_, Some(best_position)) => best_position,
-        (_, None) => unreachable!(),
+
+    let mut score = i64::min_value() + 1;
+    let mut ret = (0, 0);
+    let available_positions = search_space::search_space(game);
+    for &(x, y) in available_positions.iter() {
+        game.change_board_from_input(x, y);
+        let a = minimax_hint(&mut game.board, player, &mut depth_max, player);
+        if score < a {
+            score = a;
+            ret = (x, y);
+        }
+        game.clear_last_move();
     }
+    ret
+
+    //    match alpha_beta_w_memory(
+    //        game,
+    //        &table,
+    //        &mut hash,
+    //        &mut tt,
+    //        &mut depth_max,
+    //        &mut (i64::min_value() + 1),
+    //        &mut (i64::max_value()),
+    //    ) {
+    //        (_, Some(best_position)) => best_position,
+    //        (_, None) => unreachable!(),
+    //    }
 }
 
 // Need to take history into account, found some issue with double_three

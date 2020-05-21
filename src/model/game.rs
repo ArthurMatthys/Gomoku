@@ -254,10 +254,11 @@ impl Game {
     //Modify board when user click
     pub fn change_board_from_input(&mut self, line: usize, col: usize) {
         if !valid_pos::valid_pos(self, line, col) {
+            println!("here also you loose");
             return;
         }
         match self.board[line][col] {
-            Some(_) => (),
+            Some(_) => println!("You loose"),
             None => {
                 self.change_board_value(line, col);
                 self.next_player()
