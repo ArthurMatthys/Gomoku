@@ -3,12 +3,12 @@ extern crate sdl2;
 
 use sdl2::render::Canvas;
 
-use std::time::Duration;
-
 use super::super::checks::after_turn_check;
 use super::super::checks::capture;
 use super::super::checks::double_three;
 use super::super::checks::valid_pos;
+use std::thread::sleep;
+use std::time::Duration;
 
 use super::super::ia::zobrist;
 use super::super::render::board;
@@ -284,7 +284,11 @@ impl Game {
         zhash: &mut u64,
     ) -> () {
         match self.board[line][col] {
-            Some(_) => (),
+            Some(_) => {
+                print!("{}/{}", line, col);
+                sleep(Duration::new(1, 0));
+                unreachable!()
+            }
             None => {
                 self.ia_change_board_value(line, col, table, zhash);
                 self.next_player()
@@ -632,40 +636,8 @@ impl Game {
     pub fn check_win_hint(&mut self) -> bool {
         if self.players.0.nb_of_catch >= 5 || self.players.1.nb_of_catch >= 5 {
             true
-        } else if let Some(winner) = self.result {
-            let x = self.history.pop();
-            self.next_player();
-            if Some(winner) == self.player_to_pawn() {
-                if let Some(_) = after_turn_check::check_winner(self) {
-                    self.next_player();
-                    true
-                } else {
-                    self.next_player();
-                    if let Some(new_push) = x {
-                        self.history.push(new_push);
-                    }
-                    false
-                }
-            } else {
-                if let Some(new_push) = x {
-                    self.history.push(new_push);
-                }
-                self.next_player();
-                false
-            }
-        } else if let Some(indexes) = after_turn_check::check_winner(self) {
-            self.result = self.player_to_pawn();
-            if let Some(_) = capture::can_capture(self, indexes) {
-                false
-            } else {
-                let player = self.get_actual_player();
-                if player.nb_of_catch == 4 {
-                    false
-                } else {
-                    self.result = None;
-                    true
-                }
-            }
+        } else if let Some(_) = after_turn_check::check_winner(self) {
+            true
         } else {
             false
         }

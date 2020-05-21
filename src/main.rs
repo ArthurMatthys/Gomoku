@@ -212,6 +212,12 @@ pub fn main() {
                 _ => {}
             }
         }
+        //        if game.has_changed {
+        //            game.history
+        //                .iter()
+        //                .for_each(|(x, y)| print!("{}//", string_of_index!(x, y)));
+        //            println!();
+        //        }
         if game.check_win() {
             break 'running;
         }

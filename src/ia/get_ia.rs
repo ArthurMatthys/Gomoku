@@ -12,6 +12,14 @@ use super::zobrist::TypeOfEl;
 use rand::seq::SliceRandom;
 // use super::super::player;
 
+macro_rules! string_of_index {
+    ($line:expr, $col:expr) => {{
+        let col: char = std::char::from_u32('A' as u32 + *$col as u32)
+            .expect("Could not convert number to char");
+        let line = *$line;
+        format!("{}{}", col, line)
+    }};
+}
 const DEPTH_MAX: i8 = 3;
 
 // alpha beta memory
@@ -23,7 +31,6 @@ fn alpha_beta_w_memory(
     depth: &mut i8,
     alpha: &mut i64,
     beta: &mut i64,
-    added: &mut isize,
 ) -> (i64, Option<(usize, usize)>) {
     let mut value: i64;
     let mut best_value: i64;
@@ -65,16 +72,13 @@ fn alpha_beta_w_memory(
     if *depth == 0 || game.check_win_hint() {
         // value = evaluate(board);
         // Line below --> debug
-        if game.check_win_hint() {
-            value = 2000000000000;
-        } else {
-            value = heuristic::first_heuristic(
-                game.board,
-                game.get_actual_player(),
-                game.get_opponent(),
-                depth,
-            );
-        }
+
+        value = heuristic::first_heuristic(
+            game.board,
+            game.get_actual_player(),
+            game.get_opponent(),
+            depth,
+        );
         //println!("value : {}", value);
         // Stocke-t-on ou non ici ??
         if value <= *alpha {
@@ -95,9 +99,9 @@ fn alpha_beta_w_memory(
         // Place pawn
         match tte.r#move {
             Move::Some((i, j)) => {
-                *added += 1;
                 if game.board[i][j] != None {
                     println!("Nullos");
+                    unreachable!();
                 }
                 game.ia_change_board_from_input_hint(i, j, &table, zhash);
             }
@@ -112,12 +116,10 @@ fn alpha_beta_w_memory(
             &mut (*depth - 1),
             &mut (-*beta),
             &mut (-*alpha),
-            added,
         );
         best_value = -tmp_best;
         // Remove pawn
         game.ia_clear_last_move_hint(table, zhash);
-        *added -= 1;
         best_mov = tte.r#move;
     } else {
         best_value = i64::min_value() + 1; // ????? DANGEROUS CAST ?????
@@ -130,9 +132,35 @@ fn alpha_beta_w_memory(
             if Move::Some(available_positions[i]) != tte.r#move {
                 // println!("zhash_before-change: {}| depth: {}", zhash, depth);
                 if game.board[available_positions[i].0][available_positions[i].1] != None {
-                    println!("Nullos");
+                    continue;
+                    game.history
+                        .iter()
+                        .for_each(|(x, y)| print!("{}//", string_of_index!(x, y)));
+                    println!("-------------");
+                    game.history_capture
+                        .iter()
+                        .for_each(|(_, ((x1, y1), (x2, y2)))| {
+                            print!(
+                                "{}//{}---",
+                                string_of_index!(x1, y1),
+                                string_of_index!(x2, y2)
+                            )
+                        });
+                    println!("-------------");
+                    available_positions
+                        .iter()
+                        .for_each(|(x, y)| print!("{}//", string_of_index!(x, y)));
+                    println!("-------------");
+                    println!(
+                        "{}",
+                        string_of_index!(&available_positions[i].0, &available_positions[i].1)
+                    );
+                    println!("Nullos1");
                 }
-                *added += 1;
+                //                println!(
+                //                    "{}//{}:{}",
+                //                    i, available_positions[i].0, available_positions[i].1
+                //                );
                 game.ia_change_board_from_input_hint(
                     available_positions[i].0,
                     available_positions[i].1,
@@ -148,11 +176,9 @@ fn alpha_beta_w_memory(
                     &mut (*depth - 1),
                     &mut (-*beta),
                     &mut (-*alpha),
-                    added,
                 );
                 value = -val;
                 game.ia_clear_last_move_hint(table, zhash);
-                *added -= 1;
                 // println!("zhash_after-recursive: {}| depth: {}", zhash, depth);
                 if value > best_value {
                     best_value = value;
@@ -218,11 +244,7 @@ fn alpha_beta_w_memory(
 // Aim of the function :
 // Heart of AI, parse all available position close to a piece
 // and apply the mtd-f algorithm on it with depth of 10
-fn ia(
-    game: &mut game::Game,
-    (table, mut hash): ([[[u64; 2]; 19]; 19], u64),
-    added: &mut isize,
-) -> (usize, usize) {
+fn ia(game: &mut game::Game, (table, mut hash): ([[[u64; 2]; 19]; 19], u64)) -> (usize, usize) {
     let mut _player = game.get_actual_player();
     let mut _oppenent = game.get_opponent();
     // let mut best_position: (usize, usize) = (0,0);
@@ -249,7 +271,6 @@ fn ia(
         &mut depth_max,
         &mut (i64::min_value() + 1),
         &mut (i64::max_value()),
-        added,
     ) {
         (_, Some(best_position)) => best_position,
         (_, None) => unreachable!(),
@@ -261,7 +282,6 @@ pub fn get_ia(game: &mut game::Game) -> (usize, usize) {
     // Initialize Zobrit hash
     let (table, hash): ([[[u64; 2]; 19]; 19], u64) = zobrist::board_to_zhash(&game.board);
     let mut rng = rand::thread_rng();
-    let mut added = 0;
 
     match game.history.len() {
         0 => (9, 9),
@@ -275,12 +295,11 @@ pub fn get_ia(game: &mut game::Game) -> (usize, usize) {
                 game::TypeOfParty::Longpro => {
                     ((9 + dir_line * 4) as usize, (9 + dir_col * 4) as usize)
                 }
-                game::TypeOfParty::Standard => ia(game, (table, hash), &mut added),
+                game::TypeOfParty::Standard => ia(game, (table, hash)),
             }
         }
         _ => {
-            let ret = ia(game, (table, hash), &mut added);
-            println!("{}", added);
+            let ret = ia(game, (table, hash));
             ret
         }
     }

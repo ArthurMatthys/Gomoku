@@ -3,6 +3,8 @@ use super::super::checks::after_turn_check::DIRECTIONS;
 use super::super::render::board::SIZE_BOARD;
 
 use super::super::model::player;
+use std::thread::sleep;
+use std::time::Duration;
 
 macro_rules! valid_coord {
     ($e:expr, $v:expr) => {
@@ -346,7 +348,10 @@ pub fn first_heuristic(
                         actual_tuple.1 += 1;
                     }
                 }
-                _ => unreachable!(),
+                _ => {
+                    sleep(Duration::new(20, 0));
+                    unreachable!()
+                }
             }
         }
     };
