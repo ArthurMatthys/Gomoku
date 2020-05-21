@@ -34,7 +34,7 @@ fn alpha_beta_w_memory(
 ) -> (i64, Option<(usize, usize)>) {
     let mut value: i64;
     let mut best_value: i64;
-    let mut best_mov = Move::Leaf;
+    let mut best_mov = Move::Unitialized;
     let tte = zobrist::retrieve_tt_from_hash(tt, zhash);
 
     //    println!("call alphabeta prof {}", depth);
@@ -46,7 +46,6 @@ fn alpha_beta_w_memory(
                 // let mov2 = tte.r#move.unwrap_unsafe();
                 // return (tte.value,Some(mov2));
                 Move::Some((i, j)) => return (tte.value, Some((i, j))),
-                Move::Leaf => return (tte.value, None),
                 _ => unreachable!(),
             }
         }
@@ -62,7 +61,6 @@ fn alpha_beta_w_memory(
                 // let mov2 = tte.r#move.unwrap_unsafe();
                 // return (tte.value,Some(mov2));
                 Move::Some((i, j)) => return (tte.value, Some((i, j))),
-                Move::Leaf => return (tte.value, None),
                 _ => unreachable!(),
             } // Directly cut branch
         }
@@ -83,44 +81,46 @@ fn alpha_beta_w_memory(
         // Stocke-t-on ou non ici ??
         if value <= *alpha {
             // a lowerbound value
-            zobrist::store_tt_entry(tt, zhash, &value, TypeOfEl::Lowerbound, depth, Move::Leaf);
+            zobrist::store_tt_entry(tt, zhash, &value, TypeOfEl::Lowerbound, depth, Move::Some(game.history[game.history.len()-1]));
         } else if value >= *beta {
             // an upperbound value
-            zobrist::store_tt_entry(tt, zhash, &value, TypeOfEl::Upperbound, depth, Move::Leaf);
+            zobrist::store_tt_entry(tt, zhash, &value, TypeOfEl::Upperbound, depth, Move::Some(game.history[game.history.len()-1]));
         } else {
             // a true minimax value
-            zobrist::store_tt_entry(tt, zhash, &value, TypeOfEl::Exact, depth, Move::Leaf);
+            zobrist::store_tt_entry(tt, zhash, &value, TypeOfEl::Exact, depth, Move::Some(game.history[game.history.len()-1]));
         }
-        return (value, None);
+        return (value, Some(game.history[game.history.len()-1]));
     }
 
     // First check already known move (reordering)
-    if tte.r#type != zobrist::TypeOfEl::Empty && tte.r#move != zobrist::Move::Leaf {
+    if tte.r#type != zobrist::TypeOfEl::Empty && tte.r#move != zobrist::Move::Unitialized {
         // Place pawn
         match tte.r#move {
             Move::Some((i, j)) => {
-                if game.board[i][j] != None {
+                if game.board[i][j] == None {
                     println!("Nullos");
-                    unreachable!();
+                    game.ia_change_board_from_input_hint(i, j, &table, zhash);
+                    // Collect value of this branch
+                    let (tmp_best, _) = alpha_beta_w_memory(
+                        game,
+                        table,
+                        zhash,
+                        tt,
+                        &mut (*depth - 1),
+                        &mut (-*beta),
+                        &mut (-*alpha),
+                    );
+                    best_value = -tmp_best;
+                    // Remove pawn
+                    game.ia_clear_last_move_hint(table, zhash);
+                    best_mov = tte.r#move;
+                } else {
+                    best_value = i64::min_value() + 1;
                 }
-                game.ia_change_board_from_input_hint(i, j, &table, zhash);
-            }
+            },
             _ => unreachable!(),
         }
-        // Collect value of this branch
-        let (tmp_best, _) = alpha_beta_w_memory(
-            game,
-            table,
-            zhash,
-            tt,
-            &mut (*depth - 1),
-            &mut (-*beta),
-            &mut (-*alpha),
-        );
-        best_value = -tmp_best;
-        // Remove pawn
-        game.ia_clear_last_move_hint(table, zhash);
-        best_mov = tte.r#move;
+        
     } else {
         best_value = i64::min_value() + 1; // ????? DANGEROUS CAST ?????
     }
@@ -220,7 +220,6 @@ fn alpha_beta_w_memory(
     }
     match best_mov {
         Move::Some((i, j)) => return (best_value, Some((i, j))),
-        Move::Leaf => return (best_value, None), // Full board case
         Move::Unitialized => unreachable!(),
     }
     // (best_value, best_mov)

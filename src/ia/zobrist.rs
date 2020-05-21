@@ -15,7 +15,6 @@ pub enum TypeOfEl {
 // Type of element in TT
 #[derive(Copy, Clone, PartialEq)]
 pub enum Move {
-    Leaf,
     Unitialized,
     Some((usize, usize)),
 }
