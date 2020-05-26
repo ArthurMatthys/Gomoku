@@ -5,6 +5,7 @@ use super::super::checks::capture;
 use super::super::checks::search_space;
 use super::super::model::game;
 use super::super::model::player;
+use super::super::render::board::SIZE_BOARD;
 use std::time::Duration;
 // use super::super::model::player;
 use super::heuristic;
@@ -22,12 +23,125 @@ macro_rules! string_of_index {
         format!("{}{}", col, line)
     }};
 }
-const DEPTH_MAX: i8 = 2;
 
-// alpha beta memory
-fn alpha_beta_w_memory(
-    game: &mut game::Game,
-    table: &[[[u64; 2]; 19]; 19],
+macro_rules! valid_pos {
+    ($x: expr, $y: expr) => {
+        $x > 0 && $x < SIZE_BOARD as isize && $y > 0 && $y < SIZE_BOARD as isize
+    };
+}
+
+macro_rules! get_space {
+    ($board:expr) => {{
+        let mut ret = vec![];
+        $board.iter().enumerate().for_each(|(x, line)| {
+            line.iter().enumerate().for_each(|(y, value)| {
+                if *value == None {
+                    capture::DIRS.iter().for_each(|&(dx, dy)| {
+                        let new_x = x as isize + dx;
+                        let new_y = y as isize + dy;
+                        if valid_pos!(new_x, new_y)
+                            && $board[new_x as usize][new_y as usize] != None
+                        {
+                            ret.push((x, y));
+                        }
+                    })
+                }
+            })
+        });
+        ret
+    }};
+}
+
+macro_rules! get_zindex_from_pawn {
+    ($e:expr) => {
+        match $e {
+            Some(true) => 1,
+            Some(false) => 0,
+            _ => unreachable!(),
+        }
+    };
+}
+
+macro_rules! get_opp {
+    ($e:expr) => {
+        match $e {
+            Some(a) => Some(!a),
+            _ => unreachable!(),
+        }
+    };
+}
+
+macro_rules! add_zhash {
+    ($table:expr, $zhash:expr, $x:expr, $y:expr, $piece:expr) => {
+        *$zhash ^= $table[$x as usize][$y as usize][zobrist::ZPIECES[$piece]];
+    };
+}
+fn remove_last_pawn(
+    board: &mut [[Option<bool>; SIZE_BOARD]; SIZE_BOARD],
+    x: usize,
+    y: usize,
+    pawn: Option<bool>,
+    removed: Vec<((isize, isize), (isize, isize))>,
+    table: &[[[u64; 2]; SIZE_BOARD]; SIZE_BOARD],
+    zhash: &mut u64,
+) {
+    let old = get_opp!(pawn);
+    board[x][y] = None;
+    removed.iter().for_each(|&((x1, y1), (x2, y2))| {
+        add_zhash!(table, zhash, x1, y1, get_zindex_from_pawn!(old));
+        board[x1 as usize][y1 as usize] = old;
+        add_zhash!(table, zhash, x2, y2, get_zindex_from_pawn!(old));
+        board[x2 as usize][y2 as usize] = old;
+    })
+}
+
+fn change_board(
+    board: &mut [[Option<bool>; SIZE_BOARD]; SIZE_BOARD],
+    x: usize,
+    y: usize,
+    pawn: Option<bool>,
+    table: &[[[u64; 2]; SIZE_BOARD]; SIZE_BOARD],
+    zhash: &mut u64,
+) -> Vec<((isize, isize), (isize, isize))> {
+    let mut removed = vec![];
+    board[x][y] = pawn;
+    add_zhash!(table, zhash, x, y, get_zindex_from_pawn!(pawn));
+    let opp = get_opp!(pawn);
+    for &(dx, dy) in capture::DIRS.iter() {
+        let mut count = 0;
+        let mut new_x = x as isize;
+        let mut new_y = y as isize;
+        for _ in 0..2 {
+            new_x += dx;
+            new_y += dy;
+            if valid_pos!(new_x, new_y) && board[new_x as usize][new_y as usize] == opp {
+                count += 1;
+            } else {
+                break;
+            }
+        }
+        if count == 2 {
+            let (x1, y1) = (new_x - dx, new_y - dy);
+            board[x1 as usize][y1 as usize] = None;
+            add_zhash!(table, zhash, x1, y1, get_zindex_from_pawn!(opp));
+            board[new_x as usize][new_y as usize] = None;
+            add_zhash!(table, zhash, new_x, new_y, get_zindex_from_pawn!(opp));
+            removed.push(((x1, y1), (new_x, new_y)));
+        }
+    }
+
+    removed
+}
+
+const DEPTH_MAX: i8 = 3;
+
+fn alpha_beta_w_memory_hint(
+    board: &mut [[Option<bool>; SIZE_BOARD]; SIZE_BOARD],
+    actual: Option<bool>,
+    actual_catch: isize,
+    opp_catch: isize,
+    last_move: Option<(usize, usize)>,
+    table: &[[[u64; 2]; SIZE_BOARD]; SIZE_BOARD],
     zhash: &mut u64,
     tt: &mut Vec<zobrist::TT>,
     depth: &mut i8,
@@ -68,17 +182,44 @@ fn alpha_beta_w_memory(
         }
     }
 
+    macro_rules! winner_move {
+        ($board:expr, $last_move:expr) => {{
+            if let Some((x, y)) = $last_move {
+                let ways = [-1, 1];
+                let pawn = board[x][y];
+                let res = capture::DIRS
+                    .iter()
+                    .map(|&(dx, dy)| {
+                        let mut count = 1;
+                        let mut new_x = x as isize;
+                        let mut new_y = y as isize;
+                        ways.iter().for_each(|&way| loop {
+                            new_x += dx * way;
+                            new_y += dy * way;
+                            if valid_pos!(new_x, new_y)
+                                && $board[new_x as usize][new_y as usize] == pawn
+                            {
+                                count += 1;
+                            } else {
+                                break;
+                            }
+                        });
+                        count >= 5
+                    })
+                    .collect::<Vec<bool>>();
+                res.iter().any(|&x| x)
+            } else {
+                false
+            }
+        }};
+    }
+
     // Process Leaf or end of game
-    if *depth == 0 || game.check_win_hint() {
+    if *depth == 0 || winner_move!(board, last_move) {
         // value = evaluate(board);
         // Line below --> debug
 
-        value = heuristic::first_heuristic(
-            game.board,
-            game.get_actual_player(),
-            game.get_opponent(),
-            depth,
-        );
+        value = heuristic::first_heuristic_hint(board, actual, actual_catch, opp_catch, depth);
         //println!("value : {}", value);
         // Stocke-t-on ou non ici ??
         if value <= *alpha {
@@ -89,7 +230,10 @@ fn alpha_beta_w_memory(
                 &value,
                 TypeOfEl::Lowerbound,
                 depth,
-                Move::Some(game.history[game.history.len() - 1]),
+                Move::Some(match last_move {
+                    Some(a) => a,
+                    _ => unreachable!(),
+                }),
             );
         } else if value >= *beta {
             // an upperbound value
@@ -99,7 +243,10 @@ fn alpha_beta_w_memory(
                 &value,
                 TypeOfEl::Upperbound,
                 depth,
-                Move::Some(game.history[game.history.len() - 1]),
+                Move::Some(match last_move {
+                    Some(a) => a,
+                    _ => unreachable!(),
+                }),
             );
         } else {
             // a true minimax value
@@ -109,10 +256,13 @@ fn alpha_beta_w_memory(
                 &value,
                 TypeOfEl::Exact,
                 depth,
-                Move::Some(game.history[game.history.len() - 1]),
+                Move::Some(match last_move {
+                    Some(a) => a,
+                    _ => unreachable!(),
+                }),
             );
         }
-        return (value, Some(game.history[game.history.len() - 1]));
+        return (value, last_move);
     }
 
     // First check already known move (reordering)
@@ -120,26 +270,28 @@ fn alpha_beta_w_memory(
         // Place pawn
         match tte.r#move {
             Move::Some((i, j)) => {
-                if game.board[i][j] == None {
-                    println!("Nullos");
-                    game.ia_change_board_from_input_hint(i, j, &table, zhash);
-                    // Collect value of this branch
-                    let (tmp_best, _) = alpha_beta_w_memory(
-                        game,
-                        table,
-                        zhash,
-                        tt,
-                        &mut (*depth - 1),
-                        &mut (-*beta),
-                        &mut (-*alpha),
-                    );
-                    best_value = -tmp_best;
-                    // Remove pawn
-                    game.ia_clear_last_move_hint(table, zhash);
-                    best_mov = tte.r#move;
-                } else {
-                    best_value = i64::min_value() + 1;
-                }
+                //add TODO (modify zhash)
+                let removed = change_board(board, i, j, actual, table, zhash);
+                //game.ia_change_board_from_input_hint(i, j, &table, zhash);
+                // Collect value of this branch
+                let (tmp_best, _) = alpha_beta_w_memory_hint(
+                    board,
+                    get_opp!(actual),
+                    opp_catch,
+                    actual_catch,
+                    Some((i, j)),
+                    table,
+                    zhash,
+                    tt,
+                    &mut (*depth - 1),
+                    &mut (-*beta),
+                    &mut (-*alpha),
+                );
+                best_value = -tmp_best;
+                // Remove pawn TODO DONE
+                remove_last_pawn(board, i, j, actual, removed, table, zhash);
+                //game.ia_clear_last_move_hint(table, zhash);
+                best_mov = tte.r#move;
             }
             _ => unreachable!(),
         }
@@ -148,50 +300,31 @@ fn alpha_beta_w_memory(
     }
 
     if best_value < *beta {
-        //
-        let available_positions = search_space::search_space(game);
+        // TODO search_space
+        //let available_positions = search_space::search_space(game);
+        let available_positions = get_space!(board);
         for i in 0..available_positions.len() {
             if Move::Some(available_positions[i]) != tte.r#move {
+                let (new_x, new_y) = available_positions[i];
                 // println!("zhash_before-change: {}| depth: {}", zhash, depth);
-                if game.board[available_positions[i].0][available_positions[i].1] != None {
-                    continue;
-                    game.history
-                        .iter()
-                        .for_each(|(x, y)| print!("{}//", string_of_index!(x, y)));
-                    println!("-------------");
-                    game.history_capture
-                        .iter()
-                        .for_each(|(_, ((x1, y1), (x2, y2)))| {
-                            print!(
-                                "{}//{}---",
-                                string_of_index!(x1, y1),
-                                string_of_index!(x2, y2)
-                            )
-                        });
-                    println!("-------------");
-                    available_positions
-                        .iter()
-                        .for_each(|(x, y)| print!("{}//", string_of_index!(x, y)));
-                    println!("-------------");
-                    println!(
-                        "{}",
-                        string_of_index!(&available_positions[i].0, &available_positions[i].1)
-                    );
-                    println!("Nullos1");
+                if board[new_x][new_y] != None {
+                    unreachable!();
                 }
-                //                println!(
-                //                    "{}//{}:{}",
-                //                    i, available_positions[i].0, available_positions[i].1
-                //                );
-                game.ia_change_board_from_input_hint(
-                    available_positions[i].0,
-                    available_positions[i].1,
-                    &table,
-                    zhash,
-                );
+                let removed = change_board(board, new_x, new_y, actual, table, zhash);
+                //TODO
+                //game.ia_change_board_from_input_hint(
+                //    available_positions[i].0,
+                //    available_positions[i].1,
+                //    &table,
+                //    zhash,
+                //);
                 // println!("zhash_after-change: {}| depth: {}", zhash, depth);
-                let (val, _) = alpha_beta_w_memory(
-                    game,
+                let (val, _) = alpha_beta_w_memory_hint(
+                    board,
+                    get_opp!(actual),
+                    opp_catch,
+                    actual_catch,
+                    Some((new_x, new_y)),
                     table,
                     zhash,
                     tt,
@@ -200,11 +333,13 @@ fn alpha_beta_w_memory(
                     &mut (-*alpha),
                 );
                 value = -val;
-                game.ia_clear_last_move_hint(table, zhash);
+                remove_last_pawn(board, new_x, new_y, actual, removed, table, zhash);
+                //TODO DONE
+                //game.ia_clear_last_move_hint(table, zhash);
                 // println!("zhash_after-recursive: {}| depth: {}", zhash, depth);
                 if value > best_value {
                     best_value = value;
-                    best_mov = Move::Some(available_positions[i]);
+                    best_mov = Move::Some((new_x, new_y));
                 }
                 if best_value > *alpha {
                     *alpha = best_value;
@@ -246,180 +381,42 @@ fn alpha_beta_w_memory(
     }
     // (best_value, best_mov)
 }
-fn minimax_hint(
-    table: &mut [[Option<bool>; 19]; 19],
-    actual: Option<bool>,
-    depth: &mut i8,
-    player: Option<bool>,
-) -> i64 {
-    let available_positions = search_space::search_space_hint(table);
-    if *depth == 0 {
-        return heuristic::first_heuristic(
-            *table,
-            &player::Player {
-                player_type: player::TypeOfPlayer::Unset,
-                nb_of_catch: 0,
-                bool_type: actual,
-                name: "",
-                time_spent: Duration::new(0, 0),
-            },
-            &player::Player {
-                player_type: player::TypeOfPlayer::Unset,
-                nb_of_catch: 0,
-                bool_type: match actual {
-                    Some(a) => Some(!a),
-                    _ => unreachable!(),
-                },
-                name: "",
-                time_spent: Duration::new(0, 0),
-            },
-            depth,
-        );
-    }
-    let mut score = i64::min_value() + 1;
-    if player == actual {
-        for &(x, y) in available_positions.iter() {
-            table[x][y] = actual;
-            let a = minimax_hint(
-                table,
-                match actual {
-                    Some(a) => Some(!a),
-                    _ => unreachable!(),
-                },
-                &mut (*depth - 1),
-                player,
-            );
-            if a > score {
-                score = a;
-            }
-            table[x][y] = None;
-        }
-    } else {
-        score *= -1;
-        for &(x, y) in available_positions.iter() {
-            table[x][y] = actual;
-            let a = minimax_hint(
-                table,
-                match actual {
-                    Some(a) => Some(!a),
-                    _ => unreachable!(),
-                },
-                &mut (*depth - 1),
-                player,
-            );
-            if a < score {
-                score = a;
-            }
-            table[x][y] = None;
-        }
-    }
-    score
-}
 
-fn minimax(game: &mut game::Game, depth: &mut i8, player: Option<bool>) -> i64 {
-    let available_positions = search_space::search_space(game);
-    if *depth == 0 {
-        return heuristic::first_heuristic(
-            game.board,
-            game.get_actual_player(),
-            game.get_opponent(),
-            depth,
-        );
-    }
-    let mut score = i64::min_value() + 1;
-    if player == game.player_to_pawn() {
-        for &(x, y) in available_positions.iter() {
-            game.change_board_from_input(x, y);
-            let a = minimax(game, &mut (*depth - 1), player);
-            if a > score {
-                score = a;
-            }
-            game.clear_last_move();
-        }
-    } else {
-        score *= -1;
-        for &(x, y) in available_positions.iter() {
-            game.change_board_from_input(x, y);
-            let a = minimax(game, &mut (*depth - 1), player);
-            if a < score {
-                score = a;
-            }
-            game.clear_last_move();
-        }
-    }
-    score
-}
-
-// function mtdf(root, f, d) is
-//     g := f
-//     upperBound := +∞
-//     lowerBound := −∞
-
-//     while lowerBound < upperBound do
-//         β := max(g, lowerBound + 1)
-//         g := AlphaBetaWithMemory(root, β − 1, β, d)
-//         if g < β then
-//             upperBound := g
-//         else
-//             lowerBound := g
-
-//     return g
-
-// Aim of the function :
-// Heart of AI, parse all available position close to a piece
-// and apply the mtd-f algorithm on it with depth of 10
-fn ia(game: &mut game::Game, (table, mut hash): ([[[u64; 2]; 19]; 19], u64)) -> (usize, usize) {
-    let player = game.player_to_pawn();
-    let mut _oppenent = game.get_opponent();
+fn ia(
+    game: &mut game::Game,
+    (table, mut hash): ([[[u64; 2]; SIZE_BOARD]; SIZE_BOARD], u64),
+) -> (usize, usize) {
+    let player = game.get_actual_player();
+    let opponent = game.get_opponent();
+    let mut board = game.board;
     // let mut best_position: (usize, usize) = (0,0);
     // let mut best_score = 0;
     let mut depth_max = DEPTH_MAX;
     let mut tt = zobrist::initialize_transposition_table();
-    // let available_positions = search_space::search_space(game);
 
-    // available_positions.iter().for_each(| &(i,j) | {
-    //     // Place pawn on board && zobrit
-    //     game.ia_change_board_from_input_hint(i, j, &table, &mut hash);
-    //     match mtdf(game, player, opponent, (&table, &mut hash), 9) {
-    //         x if x < best_score => (),
-    //         x if x >= best_score => { best_score = x ; best_position = (i,j) },
-    //     }
-    //     // Remove pawn on board && zobrit
-    //     game.ia_clear_last_move(&table, &mut hash);
-    // });
-
-    let mut score = i64::min_value() + 1;
-    let mut ret = (0, 0);
-    let available_positions = search_space::search_space(game);
-    for &(x, y) in available_positions.iter() {
-        game.change_board_from_input(x, y);
-        let a = minimax_hint(&mut game.board, player, &mut depth_max, player);
-        if score < a {
-            score = a;
-            ret = (x, y);
-        }
-        game.clear_last_move();
+    match alpha_beta_w_memory_hint(
+        &mut board,
+        player.bool_type,
+        player.nb_of_catch,
+        opponent.nb_of_catch,
+        None,
+        &table,
+        &mut hash,
+        &mut tt,
+        &mut depth_max,
+        &mut (i64::min_value() + 1),
+        &mut (i64::max_value()),
+    ) {
+        (_, Some(best_position)) => best_position,
+        (_, None) => unreachable!(),
     }
-    ret
-
-    //    match alpha_beta_w_memory(
-    //        game,
-    //        &table,
-    //        &mut hash,
-    //        &mut tt,
-    //        &mut depth_max,
-    //        &mut (i64::min_value() + 1),
-    //        &mut (i64::max_value()),
-    //    ) {
-    //        (_, Some(best_position)) => best_position,
-    //        (_, None) => unreachable!(),
-    //    }
 }
 
 // Need to take history into account, found some issue with double_three
 pub fn get_ia(game: &mut game::Game) -> (usize, usize) {
     // Initialize Zobrit hash
-    let (table, hash): ([[[u64; 2]; 19]; 19], u64) = zobrist::board_to_zhash(&game.board);
+    let (table, hash): ([[[u64; 2]; SIZE_BOARD]; SIZE_BOARD], u64) =
+        zobrist::board_to_zhash(&game.board);
     let mut rng = rand::thread_rng();
 
     match game.history.len() {

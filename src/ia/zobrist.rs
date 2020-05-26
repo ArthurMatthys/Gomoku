@@ -77,7 +77,7 @@ pub fn store_tt_entry(
 }
 
 // Zobrist hash
-const ZPIECES: [usize; 2] = [0, 1]; // 0 is black_pawn, 1 is white_pawn
+pub const ZPIECES: [usize; 2] = [0, 1]; // 0 is black_pawn, 1 is white_pawn
 
 // Initialize the first zobrist hash
 // We initialize a 3D array of 19x19 containing for each cell
@@ -100,7 +100,7 @@ fn init_zboard() -> [[[u64; 2]; board::SIZE_BOARD]; board::SIZE_BOARD] {
 // Function that initializes the zhash as a u64 accordingly to the current board's state
 pub fn board_to_zhash(
     board: &[[Option<bool>; board::SIZE_BOARD]; board::SIZE_BOARD],
-) -> ([[[u64; 2]; 19]; 19], u64) {
+) -> ([[[u64; 2]; board::SIZE_BOARD]; board::SIZE_BOARD], u64) {
     let table = init_zboard();
     let mut hash: u64 = 0;
 
@@ -117,7 +117,7 @@ pub fn board_to_zhash(
 }
 
 pub fn add_pawn_zhash(
-    table: &[[[u64; 2]; 19]; 19],
+    table: &[[[u64; 2]; board::SIZE_BOARD]; board::SIZE_BOARD],
     hash: &mut u64,
     (line, col, piece): (usize, usize, usize),
 ) -> () {
@@ -125,7 +125,7 @@ pub fn add_pawn_zhash(
 }
 
 pub fn capture_zhash(
-    table: &[[[u64; 2]; 19]; 19],
+    table: &[[[u64; 2]; board::SIZE_BOARD]; board::SIZE_BOARD],
     hash: &mut u64,
     piece: usize,
     ((line1, col1), (line2, col2)): ((isize, isize), (isize, isize)),
