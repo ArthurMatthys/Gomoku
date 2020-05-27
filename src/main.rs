@@ -9,8 +9,8 @@ use sdl2::event::Event;
 use sdl2::image::LoadTexture;
 use sdl2::keyboard::Keycode;
 use sdl2::render::{Texture, TextureCreator};
-
 use std::thread::sleep;
+
 use std::time::Duration;
 use std::time::Instant;
 

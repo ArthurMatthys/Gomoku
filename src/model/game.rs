@@ -137,6 +137,7 @@ pub struct Game {
     pub has_changed: bool,
     pub result: Option<bool>,
     pub instant_win: bool,
+    pub winner: Option<bool>,
 }
 
 impl Game {
@@ -183,6 +184,7 @@ impl Game {
                 forbidden: vec![],
                 capture: vec![],
                 instant_win: false,
+                winner: None,
             },
             events,
         ))
@@ -591,6 +593,8 @@ impl Game {
             if self.players.0.nb_of_catch >= 5 || self.players.1.nb_of_catch >= 5 {
                 self.result = None;
                 self.instant_win = true;
+                self.next_player();
+                self.winner = self.player_to_pawn();
                 true
             } else if let Some(winner) = self.result {
                 let x = self.history.pop();
@@ -599,6 +603,10 @@ impl Game {
                     if let Some(_) = after_turn_check::check_winner(self) {
                         self.next_player();
                         self.instant_win = true;
+                        if let Some(new_push) = x {
+                            self.history.push(new_push);
+                        }
+                        self.winner = self.player_to_pawn();
                         true
                     } else {
                         self.next_player();
@@ -625,6 +633,10 @@ impl Game {
                     } else {
                         self.result = None;
                         self.instant_win = true;
+                        self.winner = match self.player_to_pawn() {
+                            Some(a) => Some(!a),
+                            _ => unreachable!(),
+                        };
                         true
                     }
                 }

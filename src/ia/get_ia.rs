@@ -40,7 +40,7 @@ macro_rules! get_space {
             for y in 0..19 {
                 let value = $board[x][y];
                 if value == None {
-                    capture::DIRS.iter().for_each(|&(dx, dy)| {
+                    for &(dx, dy) in capture::DIRS.iter() {
                         let new_x = x as isize + dx;
                         let new_y = y as isize + dy;
                         if valid_pos!(new_x, new_y)
@@ -49,13 +49,14 @@ macro_rules! get_space {
                             if !double_three::check_double_three_hint(
                                 $board,
                                 $actual_player,
-                                new_x,
-                                new_y,
+                                //get_opp!($actual_player),
+                                x as isize,
+                                y as isize,
                             ) {
                                 ret.push((x, y));
                             }
                         }
-                    })
+                    }
                 }
             }
         }
@@ -330,6 +331,7 @@ fn alpha_beta_w_memory_hint(
                     unreachable!();
                 }
                 let removed = change_board(board, new_x, new_y, actual, table, zhash);
+                *actual_catch += removed.len() as isize;
                 //TODO
                 //game.ia_change_board_from_input_hint(
                 //    available_positions[i].0,
@@ -352,6 +354,7 @@ fn alpha_beta_w_memory_hint(
                     &mut (-*alpha),
                 );
                 value = -val;
+                *actual_catch -= removed.len() as isize;
                 remove_last_pawn(board, new_x, new_y, actual, removed, table, zhash);
                 //TODO DONE
                 //game.ia_clear_last_move_hint(table, zhash);
