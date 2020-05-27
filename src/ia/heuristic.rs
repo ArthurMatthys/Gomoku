@@ -82,7 +82,7 @@ const TEN_STEP_WIN: i64 = 000001000;
 const SCORE_TAKE: i64 = 000000010;
 
 fn score_to_points(
-    nb_caught: isize,
+    nb_caught: &mut isize,
     (
         nb_catch,
         nb_5,
@@ -100,7 +100,7 @@ fn score_to_points(
     depth: &mut i8,
 ) -> i64 {
     let mut total = 0i64;
-    match nb_caught {
+    match *nb_caught {
         4 => {
             if nb_catch > 1 {
                 total += INSTANT_WIN;
@@ -387,8 +387,8 @@ fn score_to_points(
 pub fn first_heuristic_hint(
     board: &mut [[Option<bool>; SIZE_BOARD]; SIZE_BOARD],
     player_actual: Option<bool>,
-    player_actual_catch: isize,
-    player_opposite_catch: isize,
+    player_actual_catch: &mut isize,
+    player_opposite_catch: &mut isize,
     depth: &mut i8,
 ) -> i64 {
     // nb_of catch/5 in a row/5 in a row can take/4 open/4 semi-open/4 close

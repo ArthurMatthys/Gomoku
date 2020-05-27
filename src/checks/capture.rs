@@ -1,28 +1,41 @@
 use super::super::model::game;
 use super::super::render::board;
 
-pub const DIRS: [(isize, isize); 8] = [(1,1), (1,0), (1,-1), (0,1), (0,-1), (-1,1), (-1,0), (-1,-1)];
+pub const DIRS: [(isize, isize); 8] = [
+    (1, 1),
+    (1, 0),
+    (1, -1),
+    (0, 1),
+    (0, -1),
+    (-1, 1),
+    (-1, 0),
+    (-1, -1),
+];
 
-pub fn valid_dir((line, col): &(isize, isize), (dir_line, dir_col): (isize, isize), moves: isize) -> bool {
+pub fn valid_dir(
+    (line, col): &(isize, isize),
+    (dir_line, dir_col): (isize, isize),
+    moves: isize,
+) -> bool {
     let (final_line, final_col) = (*line + moves * dir_line, *col + moves * dir_col);
-    if final_line < 0 || final_col < 0 ||  final_line >= 19 || final_col >= 19 {
+    if final_line < 0 || final_col < 0 || final_line >= 19 || final_col >= 19 {
         false
     } else {
         let delta_line = moves * dir_line;
-            // final_index / board::SIZE_BOARD as isize - *index / board::SIZE_BOARD as isize;
+        // final_index / board::SIZE_BOARD as isize - *index / board::SIZE_BOARD as isize;
         let delta_col = moves * dir_col;
-            // final_index % board::SIZE_BOARD as isize - *index % board::SIZE_BOARD as isize;
+        // final_index % board::SIZE_BOARD as isize - *index % board::SIZE_BOARD as isize;
         // println!("final_index:{} - delta_line:{} - delta_col:{} - index: {} - moves: {}", final_index, delta_line, delta_col, index, moves);
         // println!("-------------------");
         match (dir_line, dir_col) {
-            (1,1) => delta_line == moves && delta_col == moves,
-            (1,0) => delta_line == moves && delta_col == 0,
-            (1,-1) => delta_line == moves && delta_col == -moves,
-            (0,1) => delta_line == 0 && delta_col == moves,
-            (0,-1) => delta_line == 0 && delta_col == -moves,
-            (-1,1) => delta_line == -moves && delta_col == moves,
-            (-1,0) => delta_line == -moves && delta_col == 0,
-            (-1,-1) => delta_line == -moves && delta_col == -moves,
+            (1, 1) => delta_line == moves && delta_col == moves,
+            (1, 0) => delta_line == moves && delta_col == 0,
+            (1, -1) => delta_line == moves && delta_col == -moves,
+            (0, 1) => delta_line == 0 && delta_col == moves,
+            (0, -1) => delta_line == 0 && delta_col == -moves,
+            (-1, 1) => delta_line == -moves && delta_col == moves,
+            (-1, 0) => delta_line == -moves && delta_col == 0,
+            (-1, -1) => delta_line == -moves && delta_col == -moves,
             _ => unreachable!(),
         }
     }
@@ -37,8 +50,12 @@ fn explore_capture(
     type_of_index: bool,
     counter: usize,
 ) -> Option<((isize, isize), (isize, isize))> {
-    if *index_line >= 0 && *index_line < 361 && *index_col >= 0 && *index_col < 361
-        && counter < 2 && board[*index_line as usize][*index_col as usize] == Some(!type_of_index)
+    if *index_line >= 0
+        && *index_line < 361
+        && *index_col >= 0
+        && *index_col < 361
+        && counter < 2
+        && board[*index_line as usize][*index_col as usize] == Some(!type_of_index)
     {
         explore_capture(
             board,
@@ -47,12 +64,20 @@ fn explore_capture(
             type_of_index,
             counter + 1,
         )
-    } else if *index_line >= 0 && *index_col >= 0
-        && *index_line < 361 && *index_col < 361
+    } else if *index_line >= 0
+        && *index_col >= 0
+        && *index_line < 361
+        && *index_col < 361
         && counter == 2
         && board[*index_line as usize][*index_col as usize] == Some(type_of_index)
     {
-        Some(((*index_line - direction_line, *index_col - direction_col), (*index_line - direction_line * 2, *index_col - direction_col * 2)))
+        Some((
+            (*index_line - direction_line, *index_col - direction_col),
+            (
+                *index_line - direction_line * 2,
+                *index_col - direction_col * 2,
+            ),
+        ))
     } else {
         None
     }
@@ -65,7 +90,11 @@ fn explore_capture_check(
     type_of_index: bool,
     counter: usize,
 ) -> Option<((isize, isize), (isize, isize))> {
-    if valid_dir(&(*index_line, *index_col), (direction_line, direction_col), 3) {
+    if valid_dir(
+        &(*index_line, *index_col),
+        (direction_line, direction_col),
+        3,
+    ) {
         explore_capture(
             board,
             (direction_line, direction_col),
@@ -88,7 +117,13 @@ pub fn check_capture(game: &mut game::Game) -> Option<Vec<((isize, isize), (isiz
             Some(
                 DIRS.iter()
                     .filter_map(|&x| {
-                        explore_capture_check(&game.board, x, &(*line as isize, *col as isize), piece, 0)
+                        explore_capture_check(
+                            &game.board,
+                            x,
+                            &(*line as isize, *col as isize),
+                            piece,
+                            0,
+                        )
                     })
                     .collect::<Vec<((isize, isize), (isize, isize))>>(),
             )
@@ -120,8 +155,11 @@ pub fn find_capture(game: &mut game::Game) -> Vec<(usize, usize)> {
     ret
 }
 
-pub fn can_capture(game: &mut game::Game, to_capture: Vec<(isize,isize)>) -> Option<Vec<(usize,usize)>> {
-    let mut ret: Vec<(usize,usize)> = vec![];
+pub fn can_capture(
+    game: &mut game::Game,
+    to_capture: Vec<(isize, isize)>,
+) -> Option<Vec<(usize, usize)>> {
+    let mut ret: Vec<(usize, usize)> = vec![];
     for i in 0..19 {
         for j in 0..19 {
             if game.board[i][j] != None || game.is_forbidden_from_index(i, j) {
@@ -129,10 +167,13 @@ pub fn can_capture(game: &mut game::Game, to_capture: Vec<(isize,isize)>) -> Opt
             } else {
                 game.change_board_value_hint(i, j);
                 if let Some(taken) = check_capture(game) {
-                    for ((a,b),(c,d)) in taken.iter() {
+                    for ((a, b), (c, d)) in taken.iter() {
                         // (a,b)
-                        if to_capture.iter().any(|(x,y)| x == a && y == b || x == c && y == d) {
-                            ret.push((i,j));
+                        if to_capture
+                            .iter()
+                            .any(|(x, y)| x == a && y == b || x == c && y == d)
+                        {
+                            ret.push((i, j));
                         }
                     }
                 }

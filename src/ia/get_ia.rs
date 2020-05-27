@@ -2,6 +2,7 @@
 // use rand::distributions::{Distribution, Uniform};
 // use rand::thread_rng;
 use super::super::checks::capture;
+use super::super::checks::double_three;
 use super::super::checks::search_space;
 use super::super::model::game;
 use super::super::model::player;
@@ -14,6 +15,8 @@ use super::zobrist::Move;
 use super::zobrist::TypeOfEl;
 use rand::seq::SliceRandom;
 // use super::super::player;
+
+const DEPTH_MAX: i8 = 3;
 
 macro_rules! string_of_index {
     ($line:expr, $col:expr) => {{
@@ -31,23 +34,31 @@ macro_rules! valid_pos {
 }
 
 macro_rules! get_space {
-    ($board:expr) => {{
+    ($board:expr, $actual_player:expr) => {{
         let mut ret = vec![];
-        $board.iter().enumerate().for_each(|(x, line)| {
-            line.iter().enumerate().for_each(|(y, value)| {
-                if *value == None {
+        for x in 0..19 {
+            for y in 0..19 {
+                let value = $board[x][y];
+                if value == None {
                     capture::DIRS.iter().for_each(|&(dx, dy)| {
                         let new_x = x as isize + dx;
                         let new_y = y as isize + dy;
                         if valid_pos!(new_x, new_y)
                             && $board[new_x as usize][new_y as usize] != None
                         {
-                            ret.push((x, y));
+                            if !double_three::check_double_three_hint(
+                                $board,
+                                $actual_player,
+                                new_x,
+                                new_y,
+                            ) {
+                                ret.push((x, y));
+                            }
                         }
                     })
                 }
-            })
-        });
+            }
+        }
         ret
     }};
 }
@@ -76,6 +87,39 @@ macro_rules! add_zhash {
         *$zhash ^= $table[$x as usize][$y as usize][zobrist::ZPIECES[$piece]];
     };
 }
+
+macro_rules! winner_move {
+    ($board:expr, $last_move:expr) => {{
+        if let Some((x, y)) = $last_move {
+            let ways = [-1, 1];
+            let pawn = $board[x][y];
+            let res = capture::DIRS
+                .iter()
+                .map(|&(dx, dy)| {
+                    let mut count = 1;
+                    let mut new_x = x as isize;
+                    let mut new_y = y as isize;
+                    ways.iter().for_each(|&way| loop {
+                        new_x += dx * way;
+                        new_y += dy * way;
+                        if valid_pos!(new_x, new_y)
+                            && $board[new_x as usize][new_y as usize] == pawn
+                        {
+                            count += 1;
+                        } else {
+                            break;
+                        }
+                    });
+                    count >= 5
+                })
+                .collect::<Vec<bool>>();
+            res.iter().any(|&x| x)
+        } else {
+            false
+        }
+    }};
+}
+
 fn remove_last_pawn(
     board: &mut [[Option<bool>; SIZE_BOARD]; SIZE_BOARD],
     x: usize,
@@ -87,6 +131,7 @@ fn remove_last_pawn(
 ) {
     let old = get_opp!(pawn);
     board[x][y] = None;
+    add_zhash!(table, zhash, x, y, get_zindex_from_pawn!(pawn));
     removed.iter().for_each(|&((x1, y1), (x2, y2))| {
         add_zhash!(table, zhash, x1, y1, get_zindex_from_pawn!(old));
         board[x1 as usize][y1 as usize] = old;
@@ -111,20 +156,26 @@ fn change_board(
         let mut count = 0;
         let mut new_x = x as isize;
         let mut new_y = y as isize;
-        for _ in 0..2 {
+        for _ in 0..3 {
             new_x += dx;
             new_y += dy;
             if valid_pos!(new_x, new_y) && board[new_x as usize][new_y as usize] == opp {
                 count += 1;
-            } else {
+            } else if count == 2
+                && valid_pos!(new_x, new_y)
+                && board[new_x as usize][new_y as usize] == pawn
+            {
                 break;
+            } else {
+                count = 0;
             }
         }
         if count == 2 {
             let (x1, y1) = (new_x - dx, new_y - dy);
+            let (x2, y2) = (x1 - dx, y1 - dy);
             board[x1 as usize][y1 as usize] = None;
             add_zhash!(table, zhash, x1, y1, get_zindex_from_pawn!(opp));
-            board[new_x as usize][new_y as usize] = None;
+            board[x2 as usize][y2 as usize] = None;
             add_zhash!(table, zhash, new_x, new_y, get_zindex_from_pawn!(opp));
             removed.push(((x1, y1), (new_x, new_y)));
         }
@@ -133,13 +184,11 @@ fn change_board(
     removed
 }
 
-const DEPTH_MAX: i8 = 3;
-
 fn alpha_beta_w_memory_hint(
     board: &mut [[Option<bool>; SIZE_BOARD]; SIZE_BOARD],
     actual: Option<bool>,
-    actual_catch: isize,
-    opp_catch: isize,
+    actual_catch: &mut isize,
+    opp_catch: &mut isize,
     last_move: Option<(usize, usize)>,
     table: &[[[u64; 2]; SIZE_BOARD]; SIZE_BOARD],
     zhash: &mut u64,
@@ -182,40 +231,8 @@ fn alpha_beta_w_memory_hint(
         }
     }
 
-    macro_rules! winner_move {
-        ($board:expr, $last_move:expr) => {{
-            if let Some((x, y)) = $last_move {
-                let ways = [-1, 1];
-                let pawn = board[x][y];
-                let res = capture::DIRS
-                    .iter()
-                    .map(|&(dx, dy)| {
-                        let mut count = 1;
-                        let mut new_x = x as isize;
-                        let mut new_y = y as isize;
-                        ways.iter().for_each(|&way| loop {
-                            new_x += dx * way;
-                            new_y += dy * way;
-                            if valid_pos!(new_x, new_y)
-                                && $board[new_x as usize][new_y as usize] == pawn
-                            {
-                                count += 1;
-                            } else {
-                                break;
-                            }
-                        });
-                        count >= 5
-                    })
-                    .collect::<Vec<bool>>();
-                res.iter().any(|&x| x)
-            } else {
-                false
-            }
-        }};
-    }
-
     // Process Leaf or end of game
-    if *depth == 0 || winner_move!(board, last_move) {
+    if *depth == 0 || winner_move!(board, last_move) || *actual_catch >= 5 || *opp_catch >= 5 {
         // value = evaluate(board);
         // Line below --> debug
 
@@ -272,6 +289,7 @@ fn alpha_beta_w_memory_hint(
             Move::Some((i, j)) => {
                 //add TODO (modify zhash)
                 let removed = change_board(board, i, j, actual, table, zhash);
+                *actual_catch += removed.len() as isize;
                 //game.ia_change_board_from_input_hint(i, j, &table, zhash);
                 // Collect value of this branch
                 let (tmp_best, _) = alpha_beta_w_memory_hint(
@@ -288,6 +306,7 @@ fn alpha_beta_w_memory_hint(
                     &mut (-*alpha),
                 );
                 best_value = -tmp_best;
+                *actual_catch -= removed.len() as isize;
                 // Remove pawn TODO DONE
                 remove_last_pawn(board, i, j, actual, removed, table, zhash);
                 //game.ia_clear_last_move_hint(table, zhash);
@@ -302,7 +321,7 @@ fn alpha_beta_w_memory_hint(
     if best_value < *beta {
         // TODO search_space
         //let available_positions = search_space::search_space(game);
-        let available_positions = get_space!(board);
+        let available_positions = get_space!(board, actual);
         for i in 0..available_positions.len() {
             if Move::Some(available_positions[i]) != tte.r#move {
                 let (new_x, new_y) = available_positions[i];
@@ -387,7 +406,8 @@ fn ia(
     (table, mut hash): ([[[u64; 2]; SIZE_BOARD]; SIZE_BOARD], u64),
 ) -> (usize, usize) {
     let player = game.get_actual_player();
-    let opponent = game.get_opponent();
+    let mut player_catch = game.get_actual_player().nb_of_catch;
+    let mut opponent_catch = game.get_opponent().nb_of_catch;
     let mut board = game.board;
     // let mut best_position: (usize, usize) = (0,0);
     // let mut best_score = 0;
@@ -397,8 +417,8 @@ fn ia(
     match alpha_beta_w_memory_hint(
         &mut board,
         player.bool_type,
-        player.nb_of_catch,
-        opponent.nb_of_catch,
+        &mut player_catch,
+        &mut opponent_catch,
         None,
         &table,
         &mut hash,
