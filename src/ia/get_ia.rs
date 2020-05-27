@@ -16,7 +16,7 @@ use super::zobrist::TypeOfEl;
 use rand::seq::SliceRandom;
 // use super::super::player;
 
-const DEPTH_MAX: i8 = 3;
+const DEPTH_MAX: i8 = 5;
 
 macro_rules! string_of_index {
     ($line:expr, $col:expr) => {{
@@ -237,7 +237,7 @@ fn alpha_beta_w_memory_hint(
         // value = evaluate(board);
         // Line below --> debug
 
-        value = heuristic::first_heuristic_hint(board, actual, actual_catch, opp_catch, depth);
+        value = -heuristic::first_heuristic_hint(board, actual, actual_catch, opp_catch, depth);
         //println!("value : {}", value);
         // Stocke-t-on ou non ici ??
         if value <= *alpha {
@@ -363,12 +363,16 @@ fn alpha_beta_w_memory_hint(
                     best_value = value;
                     best_mov = Move::Some((new_x, new_y));
                 }
-                if best_value > *alpha {
-                    *alpha = best_value;
-                }
-                if best_value >= *beta {
+                *alpha = value.max(*alpha);
+                if *alpha >= *beta {
                     break;
                 }
+                //                if best_value > *alpha {
+                //                    *alpha = best_value;
+                //                }
+                //                if best_value >= *beta {
+                //                    break;
+                //                }
             }
         }
     }

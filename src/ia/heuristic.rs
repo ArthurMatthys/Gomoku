@@ -73,8 +73,8 @@ fn evaluate_board(
     score_tab
 }
 
-const INSTANT_WIN: i64 = 1000000000000;
-const TWO_STEP_WIN: i64 = 000100000000;
+const INSTANT_WIN: i64 = 001000000;
+const TWO_STEP_WIN: i64 = 000100000;
 const FOUR_STEP_WIN: i64 = 000010000;
 const SIX_STEP_WIN: i64 = 000001000;
 const EIGHT_STEP_WIN: i64 = 000000100;
@@ -637,6 +637,7 @@ pub fn first_heuristic_hint(
     //    print_tuple(good_points);
     //    print_tuple(bad_points);
     //    println!("end heuristic");
+
     score_to_points(player_opposite_catch, good_points, depth)
         - score_to_points(player_actual_catch, bad_points, depth)
 }
