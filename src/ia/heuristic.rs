@@ -73,7 +73,7 @@ fn evaluate_board(
     score_tab
 }
 
-const INSTANT_WIN: i64 = 001000000;
+const INSTANT_WIN: i64 = 010000000;
 const TWO_STEP_WIN: i64 = 000100000;
 const FOUR_STEP_WIN: i64 = 000010000;
 const SIX_STEP_WIN: i64 = 000001000;
@@ -142,6 +142,30 @@ pub fn first_heuristic_hint(
     let score_board: [[[(i8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD] =
         evaluate_board(board);
 
+    //    for i in 0..19 {
+    //        for j in 0..19 {
+    //            match board[j][i] {
+    //                Some(true) => print!("B"),
+    //                Some(false) => print!("N"),
+    //                None => print!("E"),
+    //            }
+    //            score_board[j][i]
+    //                .iter()
+    //                .for_each(|&(value, _, _)| print!("{:2}", value));
+    //            print!(" ");
+    //        }
+    //        println!();
+    //    }
+    for i in 0..19 {
+        for j in 0..19 {
+            match board[j][i] {
+                Some(true) => print!("⊖"),
+                Some(false) => print!("⊕"),
+                None => print!("_"),
+            }
+        }
+        println!();
+    }
     let check_free_space = |dir: usize,
                             x: usize,
                             y: usize,
@@ -174,7 +198,6 @@ pub fn first_heuristic_hint(
                     || new_x < 0
                     || new_y >= SIZE_BOARD as isize
                     || new_y < 0
-                    || board[new_x as usize][new_y as usize] != status_pawn
                 {
                     break;
                 }
@@ -271,7 +294,7 @@ pub fn first_heuristic_hint(
             if dir == new_dir {
                 continue;
             } else {
-                match score_board[x][y][dir] {
+                match score_board[x][y][new_dir] {
                     (2, Some(true), Some(false)) => return true,
                     (2, Some(false), Some(true)) => return true,
                     _ => continue,
@@ -371,17 +394,24 @@ pub fn first_heuristic_hint(
         }
     }
 
-    //    let print_tuple =
-    //        |(a, b, c, d, e, f, g, h, i, j, k, l): (u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8)| {
-    //            println!(
-    //                "{},{},{},{},{},{},{},{},{},{},{},{},",
-    //                a, b, c, d, e, f, g, h, i, j, k, l,
-    //            )
-    //        };
-    //    print_tuple(good_points);
-    //    print_tuple(bad_points);
-    //    println!("end heuristic");
+    let print_tuple =
+        |(a, b, c, d, e, f, g, h, i, j, k, l): (u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8)| {
+            println!(
+                "{:3},{:3},{:3},{:3},{:3},{:3},{:3},{:3},{:3},{:3},{:3},{:3},",
+                a, b, c, d, e, f, g, h, i, j, k, l,
+            )
+        };
+    println!("d__,t__, c__,5r_,5rt,4o_,4so,4c_,3o_,3so,3c_,2o_,2so,2c_");
+    print!("{:3},{:3}", depth, player_actual_catch);
+    print_tuple(good_points);
+    print!("{:3},{:3}", depth, player_opposite_catch);
+    print_tuple(bad_points);
+    //println!("end heuristic");
+    // nb_of catch/5 in a row/5 in a row can take/4 open/4 semi-open/4 close
+    // 3 open/3 semi-open/3 close/2 open/2 semi-open/2 close
 
-    score_to_points(player_opposite_catch, good_points, depth)
-        - score_to_points(player_actual_catch, bad_points, depth)
+    let ret = score_to_points(player_actual_catch, good_points, depth)
+        - 10 * score_to_points(player_opposite_catch, bad_points, depth);
+    println!("heuristic value : {}", ret);
+    ret
 }

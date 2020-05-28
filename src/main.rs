@@ -218,6 +218,20 @@ pub fn main() {
         //                .for_each(|(x, y)| print!("{}//", string_of_index!(x, y)));
         //            println!();
         //        }
+        if game.has_changed {
+            let mut d = 0i8;
+            let mut c1 = 0isize;
+            let mut c2 = 0isize;
+
+            let _ = heuristic::first_heuristic_hint(
+                &mut game.board,
+                Some(true),
+                &mut c1,
+                &mut c2,
+                &mut d,
+            );
+            println!("--------------");
+        }
         if game.check_win() {
             break 'running;
         }

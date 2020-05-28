@@ -237,7 +237,13 @@ fn alpha_beta_w_memory_hint(
         // value = evaluate(board);
         // Line below --> debug
 
-        value = -heuristic::first_heuristic_hint(board, actual, actual_catch, opp_catch, depth);
+        value = -heuristic::first_heuristic_hint(
+            board,
+            get_opp!(actual),
+            opp_catch,
+            actual_catch,
+            depth,
+        );
         //println!("value : {}", value);
         // Stocke-t-on ou non ici ??
         if value <= *alpha {
