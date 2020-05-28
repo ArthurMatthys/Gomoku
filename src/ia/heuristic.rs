@@ -605,7 +605,8 @@ pub fn first_heuristic_hint(
                         actual_tuple.1 += 1;
                     }
                 }
-                _ => {
+                (a,_,_) => {
+                    println!("in a row: {}", a);
                     sleep(Duration::new(20, 0));
                     unreachable!()
                 }
