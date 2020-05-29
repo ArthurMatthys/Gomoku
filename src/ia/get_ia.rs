@@ -388,8 +388,8 @@ fn ab_negascout(
 ) -> (i64, Option<(usize, usize)>) {
 
     if *current_depth == DEPTH_MAX || *actual_catch >= 5 || winner_move!(board, last_move) {
-        return (heuristic::first_heuristic_hint(board, actual, actual_catch, opp_catch, &mut (DEPTH_MAX - *current_depth)), None)
-        // return (-10, None);
+        // return (heuristic::first_heuristic_hint(board, actual, actual_catch, opp_catch, &mut (DEPTH_MAX - *current_depth)), None)
+        return (-10, None);
     }
 
     // Otherwise bubble up values from below
@@ -401,18 +401,19 @@ fn ab_negascout(
     // Collect moves
     let available_positions = get_space!(board, actual);
     // let available_positions2 = get_space!(board, actual);
-
+    
     // Go through each move
     for (line, col) in available_positions {
         // // debug
         // if board[line][col] != None {
         //     unreachable!();
         // }
-        let removed = change_board(board, line, col, actual, table, zhash);
+        let mut copy_board = board.clone();
+        let removed = change_board(&mut copy_board, line, col, actual, table, zhash);
         *actual_catch += removed.len() as isize;
 
         // Recurse
-        let (recursed_score,_) = ab_negascout(board,
+        let (recursed_score,_) = ab_negascout(&mut copy_board,
                                                 table,
                                                 zhash,
                                                 &mut (*current_depth + 1),
@@ -425,8 +426,8 @@ fn ab_negascout(
         
         let current_score = -recursed_score;
         
-        *actual_catch -= removed.len() as isize;
-        remove_last_pawn(board, line, col, actual, removed, table, zhash);
+        // *actual_catch -= removed.len() as isize;
+        // remove_last_pawn(board, line, col, actual, removed, table, zhash);
 
         // println!("debug: {}|{}|{}", *current_depth, current_score, best_score);
         // Update the best score
@@ -438,7 +439,7 @@ fn ab_negascout(
                 best_move = Some((line, col));
             } else {
                 // println!("update_score, depth:{}", *current_depth);
-                let (o_recursed_score,_) = ab_negascout(board,
+                let (o_recursed_score,_) = ab_negascout(&mut copy_board,
                                                 table,
                                                 zhash,
                                                 &mut (*current_depth + 1),
@@ -509,11 +510,13 @@ fn aspiration(
     last_move: Option<(usize, usize)>,
     previous: i64,
 ) -> (i64,(usize, usize)) {
-    println!("prevous {}", previous);
-    let mut alpha = previous - (heuristic::INSTANT_WIN * DEPTH_MAX as i64 * 2);
-    let mut beta = previous + (heuristic::INSTANT_WIN * DEPTH_MAX as i64 * 2);
+    // println!("prevous {}", previous);
+    // let mut alpha = previous - (heuristic::INSTANT_WIN * DEPTH_MAX as i64 * 2);
+    // let mut beta = previous + (heuristic::INSTANT_WIN * DEPTH_MAX as i64 * 2);
 
-    loop {
+    let mut alpha = MIN_INFINITY;
+    let mut beta = MAX_INFINITY;
+    // loop {
         let (result,r#move) = ab_negascout(
                                     board,
                                     table,
@@ -526,19 +529,19 @@ fn aspiration(
                                     &mut alpha,
                                     &mut beta,
                                 );
-        if result <= alpha {
-            alpha = MIN_INFINITY;
-        } else if result >= beta {
-            beta = MAX_INFINITY;
-        } else {
+    //     if result <= alpha {
+    //         alpha = MIN_INFINITY;
+    //     } else if result >= beta {
+    //         beta = MAX_INFINITY;
+    //     } else {
             // let ten_millis = time::Duration::from_millis(500);
             // thread::sleep(ten_millis);
             match r#move {
                 Some(x) => return(result,x),
                 _ => unreachable!(),
             }
-        }
-    }
+        // }
+    // }
 }
 
 fn ia(
