@@ -389,7 +389,7 @@ fn ab_negamax(
         // in recurse
         println!("leaf/winning, depth:{}", *current_depth);
         // return (heuristic::first_heuristic_hint(board, actual, actual_catch, opp_catch, &mut (DEPTH_MAX - *current_depth)), None)
-        return (10, None);
+        return (-10, None);
     }
 
     // Otherwise bubble up values from below
@@ -485,6 +485,8 @@ fn ia(
     let mut player_catch = game.get_actual_player().nb_of_catch;
     let mut opponent_catch = game.get_opponent().nb_of_catch;
     let mut board = game.board;
+    let pawn = game.player_to_pawn();
+    
     // let mut depth_max = DEPTH_MAX;
     // let mut tt = zobrist::initialize_transposition_table();
 
@@ -492,7 +494,7 @@ fn ia(
         &mut board,
         &table,
         &mut hash,
-        player.bool_type,
+        pawn,
         &mut player_catch,
         &mut opponent_catch,
         None,
