@@ -132,6 +132,7 @@ pub struct Game {
     pub board: [[Option<bool>; board::SIZE_BOARD]; board::SIZE_BOARD],
     pub forbidden: Vec<(usize, usize)>,
     pub capture: Vec<(usize, usize)>,
+    pub previous_score: i64,
 
     pub type_of_party: TypeOfParty,
     pub has_changed: bool,
@@ -184,6 +185,7 @@ impl Game {
                 forbidden: vec![],
                 capture: vec![],
                 instant_win: false,
+                previous_score: 0,
                 winner: None,
             },
             events,
