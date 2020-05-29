@@ -388,8 +388,8 @@ fn ab_negamax(
     if *current_depth == DEPTH_MAX || winner_move!(board, last_move) || *actual_catch >= 5 {
         // in recurse
         println!("leaf/winning, depth:{}", *current_depth);
-        // return (heuristic::first_heuristic_hint(board, actual, actual_catch, opp_catch, &mut (DEPTH_MAX - *current_depth)), None)
-        return (-10, None);
+        return (heuristic::first_heuristic_hint(board, actual, actual_catch, opp_catch, &mut (DEPTH_MAX - *current_depth)), None)
+        // return (-10, None);
     }
 
     // Otherwise bubble up values from below
