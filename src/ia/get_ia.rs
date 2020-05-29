@@ -388,8 +388,8 @@ fn ab_negamax(
     if *current_depth == DEPTH_MAX || winner_move!(board, last_move) || *actual_catch >= 5 {
         // in recurse
         println!("leaf/winning, depth:{}", *current_depth);
-        return (heuristic::first_heuristic_hint(board, actual, actual_catch, opp_catch, &mut (DEPTH_MAX - *current_depth)), None)
-        // return (-10, None);
+        // return (heuristic::first_heuristic_hint(board, actual, actual_catch, opp_catch, &mut (DEPTH_MAX - *current_depth)), None)
+        return (10, None);
     }
 
     // Otherwise bubble up values from below
@@ -406,25 +406,28 @@ fn ab_negamax(
         // if board[line][col] != None {
         //     unreachable!();
         // }
-        let removed = change_board(board, line, col, actual, table, zhash);
-        *actual_catch += removed.len() as isize;
+        let mut board_cloned = board.clone();
+        let mut catch = actual_catch.clone();
+
+        let removed = change_board(&mut board_cloned, line, col, actual, table, zhash);
+        catch += removed.len() as isize;
 
         // Recurse
-        let (recursed_score,_) = ab_negamax(board,
+        let (recursed_score,_) = ab_negamax(&mut board_cloned,
                                             table,
                                             zhash,
                                             &mut (*current_depth + 1),
                                             get_opp!(actual),
                                             opp_catch,
-                                            actual_catch,
+                                            &mut catch,
                                             Some((line,col)),
                                             &mut (-*beta),
                                             &mut (-i64::max(*alpha, best_score)));
         
         let current_score = -recursed_score;
         
-        *actual_catch -= removed.len() as isize;
-        remove_last_pawn(board, line, col, actual, removed, table, zhash);
+        // *actual_catch -= removed.len() as isize;
+        // remove_last_pawn(board, line, col, actual, removed, table, zhash);
 
         println!("debug: {}|{}|{}", *current_depth, current_score, best_score);
         // Update the best score
