@@ -418,8 +418,8 @@ fn ab_negamax(
             println!();
         }
 
-        let mut board_cloned = board.clone();
-        let mut catch = actual_catch.clone();
+        // let mut board_cloned = board.clone();
+        // let mut catch = actual_catch.clone();
         // println!("board_copy - before change | catch:{}", catch);
         // for i in 0..19 {
         //     for j in 0..19 {
@@ -432,16 +432,13 @@ fn ab_negamax(
         //     println!();
         // }
 
-        // let removed = change_board(&mut board_cloned, line, col, actual, table, zhash);
-        // catch += removed.len() as isize;
-
-        let removed = change_board(&mut board_cloned, line, col, actual, table, zhash);
-        catch += removed.len() as isize;
+        let removed = change_board(board, line, col, actual, table, zhash);
+        *actual_catch += removed.len() as isize;
 
         println!("board - after change | catch:{} | depth: {}", *actual_catch, current_depth);
         for i in 0..19 {
             for j in 0..19 {
-                match board_cloned[j][i] {
+                match board[j][i] {
                     Some(true) => print!("⊖"),
                     Some(false) => print!("⊕"),
                     None => print!("_"),
@@ -451,21 +448,21 @@ fn ab_negamax(
         }
 
         // Recurse
-        let (recursed_score,_) = ab_negamax(&mut board_cloned,
+        let (recursed_score,_) = ab_negamax(board,
                                             table,
                                             zhash,
                                             &mut (*current_depth + 1),
                                             get_opp!(actual),
                                             opp_catch,
-                                            &mut catch,
+                                            actual_catch,
                                             Some((line,col)),
                                             &mut (-*beta),
                                             &mut (-i64::max(*alpha, best_score)));
         
         let current_score = -recursed_score;
         
-        // *actual_catch -= removed.len() as isize;
-        // remove_last_pawn(board, line, col, actual, removed, table, zhash);
+        *actual_catch -= removed.len() as isize;
+        remove_last_pawn(board, line, col, actual, removed, table, zhash);
 
         println!("board - after repair | catch:{} | depth: {}", *actual_catch, current_depth);
         for i in 0..19 {
