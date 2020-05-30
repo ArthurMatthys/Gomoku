@@ -16,7 +16,7 @@ use super::zobrist::TypeOfEl;
 use rand::seq::SliceRandom;
 // use super::super::player;
 
-const DEPTH_MAX: i8 = 5;
+const DEPTH_MAX: i8 = 2;
 const MIN_INFINITY: i64 = i64::min_value() + 1;
 const MAX_INFINITY: i64 = i64::max_value();
 
@@ -370,7 +370,7 @@ fn change_board(
 // }
 
 // negamax_try
-fn ab_negamax(
+fn negamax(
     board: &mut [[Option<bool>; SIZE_BOARD]; SIZE_BOARD],
     table: &[[[u64; 2]; SIZE_BOARD]; SIZE_BOARD],
     zhash: &mut u64,
@@ -379,16 +379,14 @@ fn ab_negamax(
     actual_catch: &mut isize,
     opp_catch: &mut isize,
     last_move: Option<(usize, usize)>,
-    alpha: &mut i64,
-    beta: &mut i64,
 ) -> (i64, Option<(usize, usize)>) {
 
     // println!("entry: {}", current_depth);
     if *current_depth == DEPTH_MAX || *actual_catch >= 5 || winner_move!(board, last_move) {
         // in recurse
         // println!("leaf/winning, depth:{}", *current_depth);
-        // return (heuristic::first_heuristic_hint(board, actual, actual_catch, opp_catch, &mut (DEPTH_MAX - *current_depth)), None)
-        return (-10, None);
+        return (heuristic::first_heuristic_hint(board, actual, actual_catch, opp_catch, &mut (DEPTH_MAX - *current_depth)), None)
+        // return (10, None);
     }
 
     // Otherwise bubble up values from below
@@ -448,16 +446,14 @@ fn ab_negamax(
         }
 
         // Recurse
-        let (recursed_score,_) = ab_negamax(board,
+        let (recursed_score,_) = negamax(board,
                                             table,
                                             zhash,
                                             &mut (*current_depth + 1),
                                             get_opp!(actual),
                                             opp_catch,
                                             actual_catch,
-                                            Some((line,col)),
-                                            &mut (-*beta),
-                                            &mut (-i64::max(*alpha, best_score)));
+                                            Some((line,col)));
         
         let current_score = -recursed_score;
         
@@ -479,15 +475,8 @@ fn ab_negamax(
         // println!("debug: {}|{}|{}", *current_depth, current_score, best_score);
         // Update the best score
         if current_score > best_score {
-            // println!("update_score, depth:{}", *current_depth);
             best_score = current_score;
             best_move = Some((line, col));
-    
-            // If we’re outside the bounds, then prune: exit immediately
-            if best_score >= *beta {
-                // println!("prune, depth:{}", *current_depth);
-                return (best_score, best_move);
-            }
         }
         
     }
@@ -509,7 +498,7 @@ fn  get_best_move(
     alpha: &mut i64,
     beta: &mut i64,
 ) -> (usize, usize) {
-    let (_, r#move): (i64,Option<(usize, usize)>) = ab_negamax(
+    let (_, r#move): (i64,Option<(usize, usize)>) = negamax(
                                                     board,
                                                     table,
                                                     zhash,
@@ -517,10 +506,7 @@ fn  get_best_move(
                                                     actual,
                                                     actual_catch,
                                                     opp_catch,
-                                                    last_move,
-                                                    alpha,
-                                                    beta,
-                                                );
+                                                    last_move);
     match r#move {
         Some(x) => x,
         _ => unreachable!(),
