@@ -141,7 +141,20 @@ pub fn first_heuristic_hint(
     let mut bad_points = (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
     let score_board: [[[(i8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD] =
         evaluate_board(board);
-
+        for i in 0..19 {
+            for j in 0..19 {
+                match board[j][i] {
+                    Some(true) => print!("B"),
+                    Some(false) => print!("N"),
+                    None => print!("E"),
+                }
+                score_board[j][i]
+                    .iter()
+                    .for_each(|&(value, _, _)| print!("{:2}", value));
+                print!(" ");
+            }
+            println!();
+        }
     let check_free_space = |dir: usize,
                             x: usize,
                             y: usize,

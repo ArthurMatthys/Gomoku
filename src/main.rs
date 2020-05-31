@@ -221,9 +221,11 @@ pub fn main() {
         if game.check_win() {
             break 'running;
         }
-        //        if game.has_changed {
-        //            heuristic::first_heuristic(game.board, None);
-        //        }
+        // ARTHUR
+               if game.has_changed {
+                   println!("arthur's logic");
+                   heuristic::first_heuristic_hint(&mut game.board, Some(true), &mut 0, &mut 1, &mut 1);
+               }
         window::render_window(&mut game, &images, &font);
         // DEBUG for check
         // if result { use std::process; println!("GAGNE") ; process::exit(0x0100); }

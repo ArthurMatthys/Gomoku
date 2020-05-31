@@ -16,7 +16,7 @@ use super::zobrist::TypeOfEl;
 use rand::seq::SliceRandom;
 // use super::super::player;
 
-const DEPTH_MAX: i8 = 5;
+const DEPTH_MAX: i8 = 2;
 const MIN_INFINITY: i64 = i64::min_value() + 1;
 const MAX_INFINITY: i64 = i64::max_value();
 
@@ -385,10 +385,22 @@ fn ab_negamax(
 
     // println!("entry: {}", current_depth);
     if *current_depth == DEPTH_MAX || *actual_catch >= 5 || winner_move!(board, last_move) {
+        let lol = heuristic::first_heuristic_hint(board, actual, actual_catch, opp_catch, &mut (DEPTH_MAX - *current_depth));
+        println!("evaluation - first print | catch:{} | depth: {}| heur: {}", actual_catch, current_depth, lol);
+        for i in 0..19 {
+            for j in 0..19 {
+                match board[j][i] {
+                    Some(true) => print!("⊖"),
+                    Some(false) => print!("⊕"),
+                    None => print!("_"),
+                }
+            }
+            println!();
+        }
         // in recurse
         // println!("leaf/winning, depth:{}", *current_depth);
-        // return (heuristic::first_heuristic_hint(board, actual, actual_catch, opp_catch, &mut (DEPTH_MAX - *current_depth)), None)
-        return (-10, None);
+        return (lol, None);
+        // return (10, None);
     }
 
     // Otherwise bubble up values from below
@@ -594,6 +606,7 @@ pub fn get_ia(game: &mut game::Game) -> (usize, usize) {
         }
         _ => {
             let ret = ia(game, (table, hash));
+            println!("move found");
             ret
         }
     }
