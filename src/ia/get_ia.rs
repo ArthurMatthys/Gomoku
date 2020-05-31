@@ -18,7 +18,7 @@ use rand::seq::SliceRandom;
 use std::{thread, time};
 // use super::super::player;
 
-const DEPTH_MAX: i8 = 5;
+const DEPTH_MAX: i8 = 2;
 const MIN_INFINITY: i64 = i64::min_value() + 1;
 const MAX_INFINITY: i64 = i64::max_value();
 
@@ -164,25 +164,23 @@ fn change_board(
         for _ in 0..3 {
             new_x += dx;
             new_y += dy;
-            if valid_pos!(new_x, new_y) && board[new_x as usize][new_y as usize] == opp {
-                count += 1;
-            } else if count == 2
-                && valid_pos!(new_x, new_y)
-                && board[new_x as usize][new_y as usize] == pawn
-            {
-                break;
-            } else {
+            if !valid_pos!(new_x, new_y) {
                 count = 0;
+                break;
+            } else if board[new_x as usize][new_y as usize] != opp {
+                break;
+            } else if board[new_x as usize][new_y as usize] == opp {
+                count += 1;
             }
         }
-        if count == 2 {
+        if count == 2 && board[new_x as usize][new_y as usize] == pawn {
             let (x1, y1) = (new_x - dx, new_y - dy);
             let (x2, y2) = (x1 - dx, y1 - dy);
             board[x1 as usize][y1 as usize] = None;
             add_zhash!(table, zhash, x1, y1, get_zindex_from_pawn!(opp));
             board[x2 as usize][y2 as usize] = None;
             add_zhash!(table, zhash, new_x, new_y, get_zindex_from_pawn!(opp));
-            removed.push(((x1, y1), (new_x, new_y)));
+            removed.push(((x1, y1), (x2, y2)));
         }
     }
 
@@ -389,7 +387,7 @@ fn ab_negascout(
 
     if *current_depth == DEPTH_MAX || *actual_catch >= 5 || winner_move!(board, last_move) {
         // return (heuristic::first_heuristic_hint(board, actual, actual_catch, opp_catch, &mut (DEPTH_MAX - *current_depth)), None)
-        return (-10, None);
+        return (10, None);
     }
 
     // Otherwise bubble up values from below
@@ -401,25 +399,66 @@ fn ab_negascout(
     // Collect moves
     let available_positions = get_space!(board, actual);
     // let available_positions2 = get_space!(board, actual);
-    
     // Go through each move
     for (line, col) in available_positions {
         // // debug
-        // if board[line][col] != None {
-        //     unreachable!();
+        if board[line][col] != None {
+            unreachable!();
+        }
+
+        println!("--------------------------");
+        println!("board - first print | catch:{} | depth: {}", actual_catch, current_depth);
+        for i in 0..19 {
+            for j in 0..19 {
+                match board[j][i] {
+                    Some(true) => print!("⊖"),
+                    Some(false) => print!("⊕"),
+                    None => print!("_"),
+                }
+            }
+            println!();
+        }
+
+        let mut board_cloned = board.clone();
+        let mut catch = actual_catch.clone();
+        // *actual_catch += removed.len() as isize;
+        // println!("board_copy - before change | catch:{}", catch);
+        // for i in 0..19 {
+        //     for j in 0..19 {
+        //         match board_cloned[j][i] {
+        //             Some(true) => print!("⊖"),
+        //             Some(false) => print!("⊕"),
+        //             None => print!("_"),
+        //         }
+        //     }
+        //     println!();
         // }
-        let mut copy_board = board.clone();
-        let removed = change_board(&mut copy_board, line, col, actual, table, zhash);
-        *actual_catch += removed.len() as isize;
+
+        // let removed = change_board(board, line, col, actual, table, zhash);
+        // *actual_catch += removed.len() as isize;
+        let removed = change_board(&mut board_cloned, line, col, actual, table, zhash);
+        catch += removed.len() as isize;
+
+        println!("board - after change | catch:{} | depth: {}", *actual_catch, current_depth);
+        for i in 0..19 {
+            for j in 0..19 {
+                match board_cloned[j][i] {
+                    Some(true) => print!("⊖"),
+                    Some(false) => print!("⊕"),
+                    None => print!("_"),
+                }
+            }
+            println!();
+        }
 
         // Recurse
-        let (recursed_score,_) = ab_negascout(&mut copy_board,
+        let (recursed_score,_) = ab_negascout(&mut board_cloned,
                                                 table,
                                                 zhash,
                                                 &mut (*current_depth + 1),
                                                 get_opp!(actual),
                                                 opp_catch,
-                                                actual_catch,
+                                                &mut catch,
                                                 Some((line,col)),
                                                 &mut (-adaptive_beta),
                                                 &mut (-i64::max(*alpha, best_score)));
@@ -439,13 +478,13 @@ fn ab_negascout(
                 best_move = Some((line, col));
             } else {
                 // println!("update_score, depth:{}", *current_depth);
-                let (o_recursed_score,_) = ab_negascout(&mut copy_board,
+                let (o_recursed_score,_) = ab_negascout(&mut board_cloned,
                                                 table,
                                                 zhash,
                                                 &mut (*current_depth + 1),
                                                 get_opp!(actual),
                                                 opp_catch,
-                                                actual_catch,
+                                                &mut catch,
                                                 Some((line,col)),
                                                 &mut (-*beta),
                                                 &mut (-current_score));
@@ -634,6 +673,7 @@ pub fn get_ia(game: &mut game::Game) -> (usize, usize) {
         }
         _ => {
             let ret = ia(game, (table, hash));
+            println!("move found");
             ret
         }
     }
