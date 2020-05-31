@@ -9,35 +9,19 @@ pub enum TypeOfEl {
     Lowerbound,
     Upperbound,
     Exact,
-    Empty,
 }
-
-// Type of element in TT
-#[derive(Copy, Clone, PartialEq)]
-pub enum Move {
-    Unitialized,
-    Some((usize, usize)),
-}
-
-//impl Move {
-//    pub fn unwrap_unsafe(&self) -> (usize, usize) {
-//        match self {
-//            Move::Some((i, j)) => (*i, *j),
-//            _ => unreachable!(),
-//        }
-//    }
-//}
 
 // Transposition table
 #[derive(Clone, Copy)]
 pub struct TT {
+    pub is_valid: bool,
     // Zobrist key, to check for collision
     pub key: u64,
     // Values
     pub value: i64,
     pub r#type: TypeOfEl,
     pub depth: i8,
-    pub r#move: Move,
+    pub r#move: Option<(usize, usize)>,
 }
 
 // Transposition table of at least 2^20 entries
@@ -46,10 +30,11 @@ pub struct TT {
 pub fn initialize_transposition_table() -> Vec<TT> {
     let initialized_struct = TT {
         key: 0,
+        is_valid: false,
         value: 0,
-        r#type: TypeOfEl::Empty,
+        r#type: TypeOfEl::Exact,
         depth: 0,
-        r#move: Move::Unitialized,
+        r#move: None,
     };
     vec![initialized_struct; 4194319]
 }
@@ -61,19 +46,10 @@ pub fn retrieve_tt_from_hash(tt: &Vec<TT>, zhash: &u64) -> TT {
 pub fn store_tt_entry(
     tt: &mut Vec<TT>,
     zhash: &mut u64,
-    value: &i64,
-    flag: TypeOfEl,
-    depth: &mut i8,
-    status: Move,
+    tte: TT
 ) -> () {
     let len = tt.len();
-    tt[(*zhash % len as u64) as usize] = TT {
-        key: *zhash,
-        value: *value,
-        r#type: flag,
-        depth: *depth,
-        r#move: status,
-    }
+    tt[(*zhash % len as u64) as usize] = tte;
 }
 
 // Zobrist hash
