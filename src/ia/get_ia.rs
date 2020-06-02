@@ -381,6 +381,7 @@ fn ab_negamax(
     last_move: Option<(usize, usize)>,
     alpha: &mut i64,
     beta: &mut i64,
+    color: &mut i8
 ) -> (i64, Option<(usize, usize)>) {
     // println!("entry: {}", current_depth);
     if *current_depth == DEPTH_MAX || *actual_catch >= 5 || winner_move!(board, last_move) {
@@ -391,9 +392,10 @@ fn ab_negamax(
             opp_catch,
             &mut (DEPTH_MAX - *current_depth),
         );
+        // let lol = 10;
         println!(
             "evaluation - first print | catch:{} | depth: {}| heur: {}",
-            actual_catch, current_depth, lol
+            actual_catch, current_depth, (lol * (*color as i64))
         );
         for i in 0..19 {
             for j in 0..19 {
@@ -418,7 +420,7 @@ fn ab_negamax(
         //            None,
         //        );
         // println!("leaf/winning, depth:{}", *current_depth);
-        return (lol, None);
+        return (lol * (*color as i64), None);
         // return (10, None);
     }
 
@@ -490,15 +492,24 @@ fn ab_negamax(
             table,
             zhash,
             &mut (*current_depth + 1),
-            get_opp!(actual),
-            opp_catch,
+            actual,
             actual_catch,
+            opp_catch,
             Some((line, col)),
             &mut (-*beta),
-            &mut (-i64::max(*alpha, best_score)),
+            &mut (-*alpha),
+            &mut (-*color)
         );
 
-        let current_score = -recursed_score;
+        let x = -recursed_score;
+        if x > best_score {
+            best_score = x;
+            best_move = Some((line, col));
+        }
+        if x > *alpha {
+            *alpha = x;
+            best_move = Some((line, col));
+        }
 
         *actual_catch -= removed.len() as isize;
         remove_last_pawn(board, line, col, actual, removed, table, zhash);
@@ -522,17 +533,14 @@ fn ab_negamax(
 
         // println!("debug: {}|{}|{}", *current_depth, current_score, best_score);
         // Update the best score
-        if current_score > best_score {
-            // println!("update_score, depth:{}", *current_depth);
-            best_score = current_score;
-            best_move = Some((line, col));
-
             // If we’re outside the bounds, then prune: exit immediately
-            if best_score >= *beta {
+            if *alpha >= *beta {
+                // best_move = Some((line, col));
+                return (*alpha, best_move);
                 // println!("prune, depth:{}", *current_depth);
-                return (best_score, best_move);
+            //    break ;
             }
-        }
+
     }
     //    println!(
     //        "normal_end: {}|{}|{}",
@@ -573,6 +581,7 @@ fn get_best_move(
         last_move,
         alpha,
         beta,
+        &mut 1,
     );
     match r#move {
         Some(x) => x,
