@@ -384,6 +384,27 @@ fn ab_negamax(
 ) -> (i64, Option<(usize, usize)>) {
     // println!("entry: {}", current_depth);
     if *current_depth == DEPTH_MAX || *actual_catch >= 5 || winner_move!(board, last_move) {
+        let lol = heuristic::first_heuristic_hint(
+            board,
+            actual,
+            actual_catch,
+            opp_catch,
+            &mut (DEPTH_MAX - *current_depth),
+        );
+        println!(
+            "evaluation - first print | catch:{} | depth: {}| heur: {}",
+            actual_catch, current_depth, lol
+        );
+        for i in 0..19 {
+            for j in 0..19 {
+                match board[j][i] {
+                    Some(true) => print!("⊖"),
+                    Some(false) => print!("⊕"),
+                    None => print!("_"),
+                }
+            }
+            println!();
+        }
         // in recurse
         //        println!("leaf/winning, depth:{}", *current_depth);
         //        return (
@@ -397,8 +418,8 @@ fn ab_negamax(
         //            None,
         //        );
         // println!("leaf/winning, depth:{}", *current_depth);
-        // return (heuristic::first_heuristic_hint(board, actual, actual_catch, opp_catch, &mut (DEPTH_MAX - *current_depth)), None)
-        return (-10, None);
+        return (lol, None);
+        // return (10, None);
     }
 
     // Otherwise bubble up values from below
@@ -623,6 +644,7 @@ pub fn get_ia(game: &mut game::Game) -> (usize, usize) {
         }
         _ => {
             let ret = ia(game, (table, hash));
+            println!("move found");
             ret
         }
     }
