@@ -503,9 +503,11 @@ fn ab_negamax(
         *actual_catch -= removed.len() as isize;
         remove_last_pawn(board, line, col, actual, removed, table, zhash);
 
+        let test: i64 = -1;
+        
         println!(
-            "board - after repair | catch:{} | depth: {}",
-            *actual_catch, current_depth
+            "board - after repair | catch:{} | depth: {} | current_score: {}",
+            *actual_catch, current_depth, recursed_score * test.pow((*current_depth) as u32)
         );
         for i in 0..19 {
             for j in 0..19 {
@@ -559,6 +561,7 @@ fn get_best_move(
     alpha: &mut i64,
     beta: &mut i64,
 ) -> (usize, usize) {
+    println!("ENTRY RECURS");
     let (_, r#move): (i64, Option<(usize, usize)>) = ab_negamax(
         board,
         table,

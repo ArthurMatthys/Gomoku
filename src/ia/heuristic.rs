@@ -109,6 +109,7 @@ fn score_to_points(
             }
         }
         a => total += SCORE_TAKE.pow((1 + a as u8 + nb_catch / 2) as u32),
+        // a => total += 0,
     }
     total += (nb_5 / 5) as i64 * INSTANT_WIN;
     total += (nb_5_take / 5) as i64 * TWO_STEP_WIN;
