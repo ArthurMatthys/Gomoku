@@ -233,6 +233,9 @@ pub fn main() {
         sleep(Duration::new(0, 1_000_000_000u32 / 60));
     }
     if game.instant_win {
+        use std::process;
+
+        process::exit(0x0100);
         window::render_window(&mut game, &images, &font);
         'ending: loop {
             for event in events.poll_iter() {

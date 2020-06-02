@@ -14,7 +14,7 @@ use super::zobrist;
 use rand::seq::SliceRandom;
 // use super::super::player;
 
-const DEPTH_MAX: i8 = 2;
+const DEPTH_MAX: i8 = 5;
 const MIN_INFINITY: i64 = i64::min_value() + 1;
 const MAX_INFINITY: i64 = i64::max_value();
 
@@ -218,8 +218,8 @@ fn ab_negamax_tt(
 
     // End game
     if *current_depth == DEPTH_MAX || *actual_catch >= 5 || winner_move!(board, last_move) {
-        let lol = heuristic::first_heuristic_hint(board, actual, actual_catch, opp_catch, &mut (DEPTH_MAX - *current_depth));
-        // let lol = 10;
+        // let lol = heuristic::first_heuristic_hint(board, actual, actual_catch, opp_catch, &mut (DEPTH_MAX - *current_depth));
+        let lol = -10;
         println!("evaluation - first print | catch:{} | depth: {}| heur: {}", actual_catch, current_depth, lol);
         for i in 0..19 {
             for j in 0..19 {
