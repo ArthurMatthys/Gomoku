@@ -18,6 +18,7 @@ use rand::seq::SliceRandom;
 
 const DEPTH_MAX: i8 = 3;
 const MIN_INFINITY: i64 = i64::min_value() + 1;
+const MAX_INFINITY: i64 = i64::max_value();
 
 macro_rules! string_of_index {
     ($line:expr, $col:expr) => {{
@@ -161,25 +162,23 @@ fn change_board(
         for _ in 0..3 {
             new_x += dx;
             new_y += dy;
-            if valid_pos!(new_x, new_y) && board[new_x as usize][new_y as usize] == opp {
-                count += 1;
-            } else if count == 2
-                && valid_pos!(new_x, new_y)
-                && board[new_x as usize][new_y as usize] == pawn
-            {
-                break;
-            } else {
+            if !valid_pos!(new_x, new_y) {
                 count = 0;
+                break;
+            } else if board[new_x as usize][new_y as usize] != opp {
+                break;
+            } else if board[new_x as usize][new_y as usize] == opp {
+                count += 1;
             }
         }
-        if count == 2 {
+        if count == 2 && board[new_x as usize][new_y as usize] == pawn {
             let (x1, y1) = (new_x - dx, new_y - dy);
             let (x2, y2) = (x1 - dx, y1 - dy);
             board[x1 as usize][y1 as usize] = None;
             add_zhash!(table, zhash, x1, y1, get_zindex_from_pawn!(opp));
             board[x2 as usize][y2 as usize] = None;
             add_zhash!(table, zhash, new_x, new_y, get_zindex_from_pawn!(opp));
-            removed.push(((x1, y1), (new_x, new_y)));
+            removed.push(((x1, y1), (x2, y2)));
         }
     }
 
@@ -384,28 +383,31 @@ fn ab_negamax(
     beta: &mut i64,
 ) -> (i64, Option<(usize, usize)>) {
     // println!("entry: {}", current_depth);
-    if *current_depth == DEPTH_MAX || winner_move!(board, last_move) || *actual_catch >= 5 {
+    if *current_depth == DEPTH_MAX || *actual_catch >= 5 || winner_move!(board, last_move) {
         // in recurse
-        println!("leaf/winning, depth:{}", *current_depth);
-        return (
-            heuristic::first_heuristic_hint(
-                board,
-                actual,
-                actual_catch,
-                opp_catch,
-                &mut (DEPTH_MAX - *current_depth),
-            ),
-            None,
-        );
+        //        println!("leaf/winning, depth:{}", *current_depth);
+        //        return (
+        //            heuristic::first_heuristic_hint(
+        //                board,
+        //                actual,
+        //                actual_catch,
+        //                opp_catch,
+        //                &mut (DEPTH_MAX - *current_depth),
+        //            ),
+        //            None,
+        //        );
+        // println!("leaf/winning, depth:{}", *current_depth);
+        // return (heuristic::first_heuristic_hint(board, actual, actual_catch, opp_catch, &mut (DEPTH_MAX - *current_depth)), None)
+        return (-10, None);
     }
 
     // Otherwise bubble up values from below
     let mut best_move: Option<(usize, usize)> = None;
-    let mut best_score = i64::min_value() + 1;
+    let mut best_score = MIN_INFINITY;
 
     // Collect moves
     let available_positions = get_space!(board, actual);
-    let available_positions2 = get_space!(board, actual);
+    // let available_positions2 = get_space!(board, actual);
 
     // Go through each move
     for (line, col) in available_positions {
@@ -413,8 +415,53 @@ fn ab_negamax(
         // if board[line][col] != None {
         //     unreachable!();
         // }
+        println!("--------------------------");
+        println!(
+            "board - first print | catch:{} | depth: {}",
+            actual_catch, current_depth
+        );
+        for i in 0..19 {
+            for j in 0..19 {
+                match board[j][i] {
+                    Some(true) => print!("⊖"),
+                    Some(false) => print!("⊕"),
+                    None => print!("_"),
+                }
+            }
+            println!();
+        }
+
+        // let mut board_cloned = board.clone();
+        // let mut catch = actual_catch.clone();
+        // println!("board_copy - before change | catch:{}", catch);
+        // for i in 0..19 {
+        //     for j in 0..19 {
+        //         match board_cloned[j][i] {
+        //             Some(true) => print!("⊖"),
+        //             Some(false) => print!("⊕"),
+        //             None => print!("_"),
+        //         }
+        //     }
+        //     println!();
+        // }
+
         let removed = change_board(board, line, col, actual, table, zhash);
         *actual_catch += removed.len() as isize;
+
+        println!(
+            "board - after change | catch:{} | depth: {}",
+            *actual_catch, current_depth
+        );
+        for i in 0..19 {
+            for j in 0..19 {
+                match board[j][i] {
+                    Some(true) => print!("⊖"),
+                    Some(false) => print!("⊕"),
+                    None => print!("_"),
+                }
+            }
+            println!();
+        }
 
         // Recurse
         let (recursed_score, _) = ab_negamax(
@@ -435,29 +482,48 @@ fn ab_negamax(
         *actual_catch -= removed.len() as isize;
         remove_last_pawn(board, line, col, actual, removed, table, zhash);
 
-        println!("debug: {}|{}|{}", *current_depth, current_score, best_score);
+        println!(
+            "board - after repair | catch:{} | depth: {}",
+            *actual_catch, current_depth
+        );
+        for i in 0..19 {
+            for j in 0..19 {
+                match board[j][i] {
+                    Some(true) => print!("⊖"),
+                    Some(false) => print!("⊕"),
+                    None => print!("_"),
+                }
+            }
+            println!();
+        }
+
+        // println!("debug: {}|{}|{}", *current_depth, current_score, best_score);
         // Update the best score
         if current_score > best_score {
-            println!("update_score, depth:{}", *current_depth);
+            // println!("update_score, depth:{}", *current_depth);
             best_score = current_score;
             best_move = Some((line, col));
 
             // If we’re outside the bounds, then prune: exit immediately
             if best_score >= *beta {
-                println!("prune, depth:{}", *current_depth);
+                // println!("prune, depth:{}", *current_depth);
                 return (best_score, best_move);
             }
         }
     }
-    println!(
-        "normal_end: {}|{}|{}",
-        available_positions2.len(),
-        *current_depth,
-        match best_move {
-            None => "None",
-            Some(_) => "otra",
-        }
-    );
+    //    println!(
+    //        "normal_end: {}|{}|{}",
+    //        available_positions2.len(),
+    //        *current_depth,
+    //        match best_move {
+    //            None => "None",
+    //            Some(_) => "otra",
+    //        }
+    //    );
+    // println!("normal_end: {}|{}|{}", available_positions2.len(), *current_depth, match best_move {
+    //     None => "None",
+    //     Some(_) => "otra",
+    // });
     (best_score, best_move)
 }
 
@@ -498,6 +564,8 @@ fn ia(
     let mut player_catch = game.get_actual_player().nb_of_catch;
     let mut opponent_catch = game.get_opponent().nb_of_catch;
     let mut board = game.board;
+    let pawn = game.player_to_pawn();
+
     // let mut depth_max = DEPTH_MAX;
     // let mut tt = zobrist::initialize_transposition_table();
 
@@ -505,12 +573,12 @@ fn ia(
         &mut board,
         &table,
         &mut hash,
-        player.bool_type,
+        pawn,
         &mut player_catch,
         &mut opponent_catch,
         None,
-        &mut (i64::min_value() + 1),
-        &mut (i64::max_value()),
+        &mut MIN_INFINITY,
+        &mut MAX_INFINITY,
     )
 
     // match alpha_beta_w_memory_hint(

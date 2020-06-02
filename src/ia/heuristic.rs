@@ -135,6 +135,36 @@ pub fn first_heuristic_hint(
     player_opposite_catch: &mut isize,
     depth: &mut i8,
 ) -> i64 {
+    let (good_points, bad_points) = get_alignements(board, player_actual);
+    let print_tuple =
+        |(a, b, c, d, e, f, g, h, i, j, k, l): (u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8)| {
+            println!(
+                "{:3},{:3},{:3},{:3},{:3},{:3},{:3},{:3},{:3},{:3},{:3},{:3},",
+                a, b, c, d, e, f, g, h, i, j, k, l,
+            )
+        };
+    println!("d__,t__, c__,5r_,5rt,4o_,4so,4c_,3o_,3so,3c_,2o_,2so,2c_");
+    print!("{:3},{:3}", depth, player_actual_catch);
+    print_tuple(good_points);
+    print!("{:3},{:3}", depth, player_opposite_catch);
+    print_tuple(bad_points);
+    //println!("end heuristic");
+    // nb_of catch/5 in a row/5 in a row can take/4 open/4 semi-open/4 close
+    // 3 open/3 semi-open/3 close/2 open/2 semi-open/2 close
+
+    let ret = score_to_points(player_actual_catch, good_points, depth)
+        - score_to_points(player_opposite_catch, bad_points, depth);
+    println!("heuristic value : {}", ret);
+    ret
+}
+
+fn get_alignements(
+    board: &mut [[Option<bool>; SIZE_BOARD]; SIZE_BOARD],
+    player_actual: Option<bool>,
+) -> (
+    (u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8),
+    (u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8),
+) {
     // nb_of catch/5 in a row/5 in a row can take/4 open/4 semi-open/4 close
     // 3 open/3 semi-open/3 close/2 open/2 semi-open/2 close
     let mut good_points = (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
@@ -372,7 +402,7 @@ pub fn first_heuristic_hint(
                         actual_tuple.1 += 1;
                     }
                 }
-                (a,_,_) => {
+                (a, _, _) => {
                     println!("in a row: {}", a);
                     sleep(Duration::new(20, 0));
                     unreachable!()
@@ -394,25 +424,200 @@ pub fn first_heuristic_hint(
             };
         }
     }
+    (good_points, bad_points)
+}
 
-    let print_tuple =
-        |(a, b, c, d, e, f, g, h, i, j, k, l): (u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8)| {
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn test_equals(
+        t1: (u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8),
+        t2: (u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8),
+    ) -> bool {
+        t1.0 == t2.0
+            && t1.1 == t2.1
+            && t1.2 == t2.2
+            && t1.3 == t2.3
+            && t1.4 == t2.4
+            && t1.5 == t2.5
+            && t1.6 == t2.6
+            && t1.7 == t2.7
+            && t1.8 == t2.8
+            && t1.9 == t2.9
+            && t1.10 == t2.10
+            && t1.11 == t2.11
+    }
+
+    fn test_board(
+        white_pos: Vec<(usize, usize)>,
+        black_pos: Vec<(usize, usize)>,
+        t1: (u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8),
+        t2: (u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8),
+    ) -> bool {
+        let mut test_board = [[None; SIZE_BOARD]; SIZE_BOARD];
+        white_pos
+            .iter()
+            .for_each(|&(x, y)| test_board[x][y] = Some(true));
+        black_pos
+            .iter()
+            .for_each(|&(x, y)| test_board[x][y] = Some(false));
+        let (v1, v2) = get_alignements(&mut test_board, Some(false));
+        let print_tuple = |(a, b, c, d, e, f, g, h, i, j, k, l): (
+            u8,
+            u8,
+            u8,
+            u8,
+            u8,
+            u8,
+            u8,
+            u8,
+            u8,
+            u8,
+            u8,
+            u8,
+        )| {
             println!(
                 "{:3},{:3},{:3},{:3},{:3},{:3},{:3},{:3},{:3},{:3},{:3},{:3},",
                 a, b, c, d, e, f, g, h, i, j, k, l,
             )
         };
-    println!("d__,t__, c__,5r_,5rt,4o_,4so,4c_,3o_,3so,3c_,2o_,2so,2c_");
-    print!("{:3},{:3}", depth, player_actual_catch);
-    print_tuple(good_points);
-    print!("{:3},{:3}", depth, player_opposite_catch);
-    print_tuple(bad_points);
-    //println!("end heuristic");
+        print_tuple(v1);
+        print_tuple(v2);
+        let (vec1, vec2) = get_alignements(&mut test_board, Some(true));
+        test_equals(v1, t1) && test_equals(v2, t2) && test_equals(vec1, t2) && test_equals(vec2, t1)
+    }
+
     // nb_of catch/5 in a row/5 in a row can take/4 open/4 semi-open/4 close
     // 3 open/3 semi-open/3 close/2 open/2 semi-open/2 close
+    #[test]
+    fn test_twos_0() {
+        let black_pos = vec![(8, 8), (8, 9), (9, 8)];
+        let white_pos = vec![];
+        assert!(test_board(
+            white_pos,
+            black_pos,
+            (0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0),
+            (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+        ));
+    }
+    #[test]
+    fn test_twos_1() {
+        let black_pos = vec![(8, 8), (8, 9), (9, 8)];
+        let white_pos = vec![(8, 7)];
+        assert!(test_board(
+            white_pos,
+            black_pos,
+            (0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 2, 0),
+            (2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+        ));
+    }
+    #[test]
+    fn test_twos_2() {
+        let black_pos = vec![(8, 8), (8, 9), (9, 8)];
+        let white_pos = vec![(8, 7), (8, 10)];
+        assert!(test_board(
+            white_pos,
+            black_pos,
+            (0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 2),
+            (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+        ));
+    }
+    #[test]
+    fn test_twos_3() {
+        let black_pos = vec![(8, 8), (8, 9), (9, 8)];
+        let white_pos = vec![(8, 7), (8, 10), (10, 8)];
+        assert!(test_board(
+            white_pos,
+            black_pos,
+            (0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2),
+            (2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+        ));
+    }
+    #[test]
+    fn test_twos_4() {
+        let black_pos = vec![(8, 8), (8, 9), (9, 8), (9, 9)];
+        let white_pos = vec![];
+        assert!(test_board(
+            white_pos,
+            black_pos,
+            (0, 0, 0, 0, 0, 0, 0, 0, 0, 12, 0, 0),
+            (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+        ));
+    }
+    #[test]
+    fn test_twos_5() {
+        let black_pos = vec![(8, 8)];
+        let white_pos = vec![
+            (8, 9),
+            (8, 10),
+            (9, 8),
+            (10, 8),
+            (8, 7),
+            (8, 6),
+            (7, 8),
+            (6, 8),
+        ];
+        assert!(test_board(
+            white_pos,
+            black_pos,
+            (8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+            (0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 8, 0),
+        ));
+    }
+    #[test]
+    fn test_twos_6() {
+        let black_pos = vec![(8, 8), (8, 9)];
+        let white_pos = vec![(7, 8), (6, 8)];
+        assert!(test_board(
+            white_pos,
+            black_pos,
+            (2, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0),
+            (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0),
+        ));
+    }
 
-    let ret = score_to_points(player_actual_catch, good_points, depth)
-        - 10 * score_to_points(player_opposite_catch, bad_points, depth);
-    println!("heuristic value : {}", ret);
-    ret
+    #[test]
+    fn test_threes_0() {
+        let black_pos = vec![(8, 8), (8, 9), (8, 10)];
+        let white_pos = vec![];
+        assert!(test_board(
+            white_pos,
+            black_pos,
+            (0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0),
+            (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+        ));
+    }
+    #[test]
+    fn test_threes_1() {
+        let black_pos = vec![(8, 8), (8, 9), (8, 10)];
+        let white_pos = vec![(8, 7)];
+        assert!(test_board(
+            white_pos,
+            black_pos,
+            (0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0),
+            (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+        ));
+    }
+    #[test]
+    fn test_threes_2() {
+        let black_pos = vec![(8, 8), (8, 9), (8, 10)];
+        let white_pos = vec![(8, 7), (8, 11)];
+        assert!(test_board(
+            white_pos,
+            black_pos,
+            (0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0),
+            (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+        ));
+    }
+
+    #[test]
+    fn test_fours() {
+        ()
+    }
+
+    #[test]
+    fn test_fives() {
+        ()
+    }
 }
