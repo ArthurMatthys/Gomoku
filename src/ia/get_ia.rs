@@ -16,7 +16,7 @@ use super::zobrist::TypeOfEl;
 use rand::seq::SliceRandom;
 // use super::super::player;
 
-const DEPTH_MAX: i8 = 3;
+const DEPTH_MAX: i8 = 4;
 const MIN_INFINITY: i64 = i64::min_value() + 1;
 const MAX_INFINITY: i64 = i64::max_value();
 
@@ -575,9 +575,9 @@ fn get_best_move(
         table,
         zhash,
         &mut 0,
-        actual,
-        actual_catch,
+        get_opp!(actual),
         opp_catch,
+        actual_catch,
         last_move,
         alpha,
         beta,
@@ -657,6 +657,17 @@ pub fn get_ia(game: &mut game::Game) -> (usize, usize) {
         _ => {
             let ret = ia(game, (table, hash));
             println!("move found");
+            println!("board without move :");
+            for i in 0..19 {
+                for j in 0..19 {
+                    match game.board[j][i] {
+                        Some(true) => print!("⊖"),
+                        Some(false) => print!("⊕"),
+                        None => print!("_"),
+                    }
+                }
+                println!();
+            }
             ret
         }
     }
