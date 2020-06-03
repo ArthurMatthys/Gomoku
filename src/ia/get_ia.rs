@@ -374,6 +374,7 @@ fn ab_negamax(
     board: &mut [[Option<bool>; SIZE_BOARD]; SIZE_BOARD],
     table: &[[[u64; 2]; SIZE_BOARD]; SIZE_BOARD],
     zhash: &mut u64,
+    tt: &mut Vec<zobrist::TT>,
     current_depth: &mut i8,
     actual: Option<bool>,
     actual_catch: &mut isize,
@@ -491,6 +492,7 @@ fn ab_negamax(
             board,
             table,
             zhash,
+            tt,
             &mut (*current_depth + 1),
             actual,
             actual_catch,
@@ -562,6 +564,7 @@ fn get_best_move(
     board: &mut [[Option<bool>; SIZE_BOARD]; SIZE_BOARD],
     table: &[[[u64; 2]; SIZE_BOARD]; SIZE_BOARD],
     zhash: &mut u64,
+    tt: &mut Vec<zobrist::TT>,
     actual: Option<bool>,
     actual_catch: &mut isize,
     opp_catch: &mut isize,
@@ -574,6 +577,7 @@ fn get_best_move(
         board,
         table,
         zhash,
+        tt,
         &mut 0,
         get_opp!(actual),
         opp_catch,
@@ -600,12 +604,13 @@ fn ia(
     let pawn = game.player_to_pawn();
 
     // let mut depth_max = DEPTH_MAX;
-    // let mut tt = zobrist::initialize_transposition_table();
+    let mut tt = zobrist::initialize_transposition_table();
 
     get_best_move(
         &mut board,
         &table,
         &mut hash,
+        &mut tt,
         pawn,
         &mut player_catch,
         &mut opponent_catch,
