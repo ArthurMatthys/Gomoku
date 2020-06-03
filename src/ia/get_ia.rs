@@ -384,6 +384,23 @@ fn ab_negamax(
     beta: &mut i64,
     color: &mut i8
 ) -> (i64, Option<(usize, usize)>) {
+    let alpha_orig = *alpha;
+    let mut tte = zobrist::retrieve_tt_from_hash(tt, zhash);
+    
+    if tte.is_valid && tte.depth == DEPTH_MAX - *current_depth {
+        if tte.r#type == zobrist::TypeOfEl::Exact {
+            return (tte.value, tte.r#move);
+        } else if tte.r#type == zobrist::TypeOfEl::Lowerbound  {
+            *alpha = i64::max(*alpha, tte.value);
+        } else if tte.r#type == zobrist::TypeOfEl::Upperbound {
+             *beta = i64::min(*beta, tte.value);
+        }
+
+        if *alpha >= *beta {
+            return (tte.value, tte.r#move);
+        }
+    }
+
     // println!("entry: {}", current_depth);
     if *current_depth == DEPTH_MAX || *actual_catch >= 5 || winner_move!(board, last_move) {
         let lol = heuristic::first_heuristic_hint(
@@ -537,10 +554,11 @@ fn ab_negamax(
         // Update the best score
             // If we’re outside the bounds, then prune: exit immediately
             if *alpha >= *beta {
+                best_score = *alpha;
                 // best_move = Some((line, col));
-                return (*alpha, best_move);
+                // return (*alpha, best_move);
                 // println!("prune, depth:{}", *current_depth);
-            //    break ;
+               break ;
             }
 
     }
@@ -557,6 +575,21 @@ fn ab_negamax(
     //     None => "None",
     //     Some(_) => "otra",
     // });
+    
+    if best_score <= alpha_orig {
+        tte.r#type = zobrist::TypeOfEl::Upperbound;
+     } else if best_score >= *beta {
+        tte.r#type = zobrist::TypeOfEl::Lowerbound;
+     } else {
+        tte.r#type = zobrist::TypeOfEl::Exact;
+     }
+     tte.is_valid = true;
+     tte.key = *zhash;
+     tte.value = best_score;
+     tte.r#move = best_move;
+     tte.depth = *current_depth;
+     zobrist::store_tt_entry(tt, zhash, tte);
+
     (best_score, best_move)
 }
 
