@@ -3,16 +3,11 @@
 // use rand::thread_rng;
 use super::super::checks::capture;
 use super::super::checks::double_three;
-use super::super::checks::search_space;
 use super::super::model::game;
-use super::super::model::player;
 use super::super::render::board::SIZE_BOARD;
-use std::time::Duration;
 // use super::super::model::player;
 use super::heuristic;
 use super::zobrist;
-use super::zobrist::Move;
-use super::zobrist::TypeOfEl;
 use rand::seq::SliceRandom;
 // use super::super::player;
 
@@ -20,14 +15,14 @@ const DEPTH_MAX: i8 = 3;
 const MIN_INFINITY: i64 = i64::min_value() + 1;
 const MAX_INFINITY: i64 = i64::max_value();
 
-macro_rules! string_of_index {
-    ($line:expr, $col:expr) => {{
-        let col: char = std::char::from_u32('A' as u32 + *$col as u32)
-            .expect("Could not convert number to char");
-        let line = *$line;
-        format!("{}{}", col, line)
-    }};
-}
+//macro_rules! string_of_index {
+//    ($line:expr, $col:expr) => {{
+//        let col: char = std::char::from_u32('A' as u32 + *$col as u32)
+//            .expect("Could not convert number to char");
+//        let line = *$line;
+//        format!("{}{}", col, line)
+//    }};
+//}
 
 macro_rules! valid_pos {
     ($x: expr, $y: expr) => {

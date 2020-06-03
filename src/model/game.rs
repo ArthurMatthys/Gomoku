@@ -279,51 +279,51 @@ impl Game {
     }
 
     // Modify board when IA processing implementation including zhash changes
-    pub fn ia_change_board_from_input_hint(
-        &mut self,
-        line: usize,
-        col: usize,
-        table: &[[[u64; 2]; 19]; 19],
-        zhash: &mut u64,
-    ) -> () {
-        match self.board[line][col] {
-            Some(_) => {
-                print!("{}/{}", line, col);
-                sleep(Duration::new(1, 0));
-                unreachable!()
-            }
-            None => {
-                self.ia_change_board_value(line, col, table, zhash);
-                self.next_player()
-            }
-        }
-    }
-
-    // Modify board when IA processing implementation including zhash changes,
-    // Capture included
-    fn ia_change_board_value(
-        &mut self,
-        line: usize,
-        col: usize,
-        table: &[[[u64; 2]; 19]; 19],
-        zhash: &mut u64,
-    ) -> () {
-        self.board[line][col] = self.player_to_pawn();
-        zobrist::add_pawn_zhash(table, zhash, (line, col, self.player_turn as usize));
-        self.history.push((line, col));
-        if let Some(ret) = capture::check_capture(self) {
-            let opponent = match self.player_turn {
-                0 => 1,
-                1 => 0,
-                _ => unreachable!(),
-            };
-
-            ret.iter().for_each(|&x| {
-                self.clear_board_index(x, line, col);
-                zobrist::capture_zhash(table, zhash, opponent, x);
-            });
-        }
-    }
+    //    pub fn ia_change_board_from_input_hint(
+    //        &mut self,
+    //        line: usize,
+    //        col: usize,
+    //        table: &[[[u64; 2]; 19]; 19],
+    //        zhash: &mut u64,
+    //    ) -> () {
+    //        match self.board[line][col] {
+    //            Some(_) => {
+    //                print!("{}/{}", line, col);
+    //                sleep(Duration::new(1, 0));
+    //                unreachable!()
+    //            }
+    //            None => {
+    //                self.ia_change_board_value(line, col, table, zhash);
+    //                self.next_player()
+    //            }
+    //        }
+    //    }
+    //
+    //    // Modify board when IA processing implementation including zhash changes,
+    //    // Capture included
+    //    fn ia_change_board_value(
+    //        &mut self,
+    //        line: usize,
+    //        col: usize,
+    //        table: &[[[u64; 2]; 19]; 19],
+    //        zhash: &mut u64,
+    //    ) -> () {
+    //        self.board[line][col] = self.player_to_pawn();
+    //        zobrist::add_pawn_zhash(table, zhash, (line, col, self.player_turn as usize));
+    //        self.history.push((line, col));
+    //        if let Some(ret) = capture::check_capture(self) {
+    //            let opponent = match self.player_turn {
+    //                0 => 1,
+    //                1 => 0,
+    //                _ => unreachable!(),
+    //            };
+    //
+    //            ret.iter().for_each(|&x| {
+    //                self.clear_board_index(x, line, col);
+    //                zobrist::capture_zhash(table, zhash, opponent, x);
+    //            });
+    //        }
+    //    }
 
     pub fn change_board_from_click(&mut self, x: i32, y: i32) {
         let new_x = x as usize / board::SQUARE_SIZE;
@@ -373,52 +373,52 @@ impl Game {
         }
     }
 
-    pub fn ia_clear_last_move_hint(&mut self, table: &[[[u64; 2]; 19]; 19], zhash: &mut u64) -> () {
-        let mut new_history = vec![];
-        if let Some((line, col)) = self.history.pop() {
-            let mut nbr = 0;
-            self.board[line][col] = None;
-            // remove opponent's pawn from zhash
-            zobrist::add_pawn_zhash(
-                table,
-                zhash,
-                (
-                    line,
-                    col,
-                    match self.player_turn {
-                        0 => 1,
-                        1 => 0,
-                        _ => unreachable!(),
-                    },
-                ),
-            );
-            for (x, ((line_y, col_y), (line_z, col_z))) in self.history_capture.iter() {
-                if *x == (line, col) {
-                    self.board[*line_y][*col_y] = self.player_to_pawn();
-                    self.board[*line_z][*col_z] = self.player_to_pawn();
-                    // Remove my pawn from zhash
-                    zobrist::add_pawn_zhash(
-                        table,
-                        zhash,
-                        (*line_y, *col_y, self.player_turn as usize),
-                    );
-                    zobrist::add_pawn_zhash(
-                        table,
-                        zhash,
-                        (*line_z, *col_z, self.player_turn as usize),
-                    );
-                    nbr += 1;
-                } else {
-                    new_history.push((*x, ((*line_y, *col_y), (*line_z, *col_z))));
-                }
-            }
-            for _ in 0..nbr {
-                self.minus_capture();
-            }
-            self.history_capture = new_history;
-            self.next_player();
-        }
-    }
+    //    pub fn ia_clear_last_move_hint(&mut self, table: &[[[u64; 2]; 19]; 19], zhash: &mut u64) -> () {
+    //        let mut new_history = vec![];
+    //        if let Some((line, col)) = self.history.pop() {
+    //            let mut nbr = 0;
+    //            self.board[line][col] = None;
+    //            // remove opponent's pawn from zhash
+    //            zobrist::add_pawn_zhash(
+    //                table,
+    //                zhash,
+    //                (
+    //                    line,
+    //                    col,
+    //                    match self.player_turn {
+    //                        0 => 1,
+    //                        1 => 0,
+    //                        _ => unreachable!(),
+    //                    },
+    //                ),
+    //            );
+    //            for (x, ((line_y, col_y), (line_z, col_z))) in self.history_capture.iter() {
+    //                if *x == (line, col) {
+    //                    self.board[*line_y][*col_y] = self.player_to_pawn();
+    //                    self.board[*line_z][*col_z] = self.player_to_pawn();
+    //                    // Remove my pawn from zhash
+    //                    zobrist::add_pawn_zhash(
+    //                        table,
+    //                        zhash,
+    //                        (*line_y, *col_y, self.player_turn as usize),
+    //                    );
+    //                    zobrist::add_pawn_zhash(
+    //                        table,
+    //                        zhash,
+    //                        (*line_z, *col_z, self.player_turn as usize),
+    //                    );
+    //                    nbr += 1;
+    //                } else {
+    //                    new_history.push((*x, ((*line_y, *col_y), (*line_z, *col_z))));
+    //                }
+    //            }
+    //            for _ in 0..nbr {
+    //                self.minus_capture();
+    //            }
+    //            self.history_capture = new_history;
+    //            self.next_player();
+    //        }
+    //    }
 
     fn add_history_capture(
         &mut self,
@@ -646,42 +646,42 @@ impl Game {
         }
     }
 
-    pub fn check_win_hint(&mut self) -> bool {
-        if self.players.0.nb_of_catch >= 5 || self.players.1.nb_of_catch >= 5 {
-            true
-        } else if let Some(_) = after_turn_check::check_winner(self) {
-            true
-        } else {
-            false
-        }
-    }
+    //    pub fn check_win_hint(&mut self) -> bool {
+    //        if self.players.0.nb_of_catch >= 5 || self.players.1.nb_of_catch >= 5 {
+    //            true
+    //        } else if let Some(_) = after_turn_check::check_winner(self) {
+    //            true
+    //        } else {
+    //            false
+    //        }
+    //    }
+    //}
+    //impl Game {
+    //    pub fn check_win(&mut self) -> bool {
+    //        if !self.has_changed {
+    //            false
+    //        } else {
+    //            if self.players.0.nb_of_catch >= 5 || self.players.1.nb_of_catch >= 5 {
+    //                self.result = Some(true;
+    //                true
+    //            } else if let Some(indexes) = after_turn_check::check_winner(self) {
+    //                if let Some(captures) = capture::can_capture(self, indexes) {
+    //                    self.add_impossible_vec_index(valid_pos::all_except(captures));
+    //                    false
+    //                } else {
+    //                    let player = self.get_actual_player();
+    //                    if player.nb_of_catch == 4 {
+    //                        let captures = capture::find_capture(self);
+    //                        self.add_impossible_vec_index(valid_pos::all_except(captures));
+    //                        false
+    //                    } else {
+    //                        self.result = true;
+    //                        true
+    //                    }
+    //                }
+    //            } else {
+    //                false
+    //            }
+    //        }
+    //    }
 }
-//impl Game {
-//    pub fn check_win(&mut self) -> bool {
-//        if !self.has_changed {
-//            false
-//        } else {
-//            if self.players.0.nb_of_catch >= 5 || self.players.1.nb_of_catch >= 5 {
-//                self.result = Some(true;
-//                true
-//            } else if let Some(indexes) = after_turn_check::check_winner(self) {
-//                if let Some(captures) = capture::can_capture(self, indexes) {
-//                    self.add_impossible_vec_index(valid_pos::all_except(captures));
-//                    false
-//                } else {
-//                    let player = self.get_actual_player();
-//                    if player.nb_of_catch == 4 {
-//                        let captures = capture::find_capture(self);
-//                        self.add_impossible_vec_index(valid_pos::all_except(captures));
-//                        false
-//                    } else {
-//                        self.result = true;
-//                        true
-//                    }
-//                }
-//            } else {
-//                false
-//            }
-//        }
-//    }
-//}

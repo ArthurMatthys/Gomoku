@@ -2,7 +2,7 @@ use super::super::checks::after_turn_check::DIRECTIONS;
 
 use super::super::render::board::SIZE_BOARD;
 
-use super::super::model::player;
+//use super::super::model::player;
 use std::thread::sleep;
 use std::time::Duration;
 
@@ -79,7 +79,7 @@ const FOUR_STEP_WIN: i64 = 000010000;
 const SIX_STEP_WIN: i64 = 000001000;
 const EIGHT_STEP_WIN: i64 = 000000100;
 const TEN_STEP_WIN: i64 = 000000010;
-const SCORE_TAKE: i64 = 000000100;
+//const SCORE_TAKE: i64 = 000000100;
 
 fn score_to_points(
     nb_caught: &mut isize,
@@ -101,14 +101,16 @@ fn score_to_points(
 ) -> i64 {
     let mut total = 0i64;
     match *nb_caught {
+        5..=8 => total += INSTANT_WIN,
         4 => {
-            if nb_catch > 1 {
+            if nb_catch > 2 {
                 total += INSTANT_WIN;
-            } else if nb_catch == 1 {
+            } else if nb_catch == 2 {
                 total += TWO_STEP_WIN;
             }
         }
-        a => total += SCORE_TAKE.pow((1 + a as u8 + nb_catch / 2) as u32),
+        //a => total += SCORE_TAKE.pow((1 + a as u8 + nb_catch / 2) as u32),
+        a => total += 0,
     }
     total += (nb_5 / 5) as i64 * INSTANT_WIN;
     total += (nb_5_take / 5) as i64 * TWO_STEP_WIN;
@@ -576,6 +578,28 @@ mod tests {
             (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0),
         ));
     }
+    #[test]
+    fn test_twos_7() {
+        let black_pos = vec![(8, 8), (9, 8)];
+        let white_pos = vec![(6, 8), (11, 8)];
+        assert!(test_board(
+            white_pos,
+            black_pos,
+            (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2),
+            (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+        ));
+    }
+    #[test]
+    fn test_twos_8() {
+        let black_pos = vec![(1, 1), (1, 2)];
+        let white_pos = vec![(1, 4)];
+        assert!(test_board(
+            white_pos,
+            black_pos,
+            (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2),
+            (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+        ));
+    }
 
     #[test]
     fn test_threes_0() {
@@ -610,14 +634,80 @@ mod tests {
             (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
         ));
     }
-
     #[test]
-    fn test_fours() {
-        ()
+    fn test_threes_3() {
+        let black_pos = vec![(8, 8), (8, 9), (8, 10), (9, 8), (9, 9), (9, 10)];
+        let white_pos = vec![];
+        assert!(test_board(
+            white_pos,
+            black_pos,
+            (0, 0, 0, 0, 0, 0, 6, 0, 0, 14, 0, 0),
+            (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+        ));
+    }
+    #[test]
+    fn test_threes_4() {
+        let black_pos = vec![(8, 8), (8, 9), (8, 10), (9, 8), (9, 9), (9, 10)];
+        let white_pos = vec![(8, 7), (7, 7)];
+        assert!(test_board(
+            white_pos,
+            black_pos,
+            (0, 0, 0, 0, 0, 0, 3, 3, 0, 12, 2, 0),
+            (2, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0),
+        ));
+    }
+    #[test]
+    fn test_threes_5() {
+        let black_pos = vec![(8, 8), (8, 9), (8, 10), (9, 8), (9, 9), (9, 10)];
+        let white_pos = vec![(8, 7), (7, 7), (8, 12)];
+        assert!(test_board(
+            white_pos,
+            black_pos,
+            (0, 0, 0, 0, 0, 0, 3, 0, 3, 12, 2, 0),
+            (2, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0),
+        ));
+    }
+    #[test]
+    fn test_threes_6() {
+        let black_pos = vec![(1, 1), (1, 2), (1, 3)];
+        let white_pos = vec![(1, 4)];
+        assert!(test_board(
+            white_pos,
+            black_pos,
+            (0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0),
+            (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+        ));
+    }
+    #[test]
+    fn test_threes_7() {
+        let black_pos = vec![(2, 2), (1, 3), (0, 4)];
+        let white_pos = vec![];
+        assert!(test_board(
+            white_pos,
+            black_pos,
+            (0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0),
+            (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+        ));
+    }
+    #[test]
+    fn test_threes_8() {
+        let black_pos = vec![(0, 3), (1, 2), (2, 1)];
+        let white_pos = vec![];
+        assert!(test_board(
+            white_pos,
+            black_pos,
+            (0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0),
+            (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+        ));
     }
 
-    #[test]
-    fn test_fives() {
-        ()
-    }
+    //    #[test]
+    //    fn test_fours() {
+    //        ()
+    //    }
+    //
+    //    #[test]
+    //    fn test_fives() {
+    //        ()
+    //    }
 }
