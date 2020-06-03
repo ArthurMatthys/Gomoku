@@ -11,7 +11,7 @@ use std::time::Duration;
 // use super::super::model::player;
 use super::heuristic;
 use super::zobrist;
-use super::zobrist::Move;
+// use super::zobrist::Move;
 use super::zobrist::TypeOfEl;
 use rand::seq::SliceRandom;
 // use super::super::player;
