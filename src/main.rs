@@ -218,28 +218,28 @@ pub fn main() {
         //                .for_each(|(x, y)| print!("{}//", string_of_index!(x, y)));
         //            println!();
         //        }
-        if game.has_changed {
-            let mut d = 0i8;
-            let mut c1 = 0isize;
-            let mut c2 = 0isize;
+        // if game.has_changed {
+        //     let mut d = 0i8;
+        //     let mut c1 = 0isize;
+        //     let mut c2 = 0isize;
 
-            let _ = heuristic::first_heuristic_hint(
-                &mut game.board,
-                Some(true),
-                &mut c1,
-                &mut c2,
-                &mut d,
-            );
-            println!("--------------");
-        }
+        //     let _ = heuristic::first_heuristic_hint(
+        //         &mut game.board,
+        //         Some(true),
+        //         &mut c1,
+        //         &mut c2,
+        //         &mut d,
+        //     );
+        //     println!("--------------");
+        // }
         if game.check_win() {
             break 'running;
         }
         // ARTHUR
-               if game.has_changed {
-                   println!("arthur's logic");
-                   heuristic::first_heuristic_hint(&mut game.board, Some(true), &mut 0, &mut 1, &mut 1);
-               }
+            //    if game.has_changed {
+            //        println!("arthur's logic");
+            //        heuristic::first_heuristic_hint(&mut game.board, Some(true), &mut 0, &mut 1, &mut 1);
+            //    }
         window::render_window(&mut game, &images, &font);
         // DEBUG for check
         // if result { use std::process; println!("GAGNE") ; process::exit(0x0100); }
