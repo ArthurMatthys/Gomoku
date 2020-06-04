@@ -7,6 +7,7 @@ use super::super::checks::after_turn_check;
 use super::super::checks::capture;
 use super::super::checks::double_three;
 use super::super::checks::valid_pos;
+use super::super::ia::heuristic;
 use std::thread::sleep;
 use std::time::Duration;
 
@@ -597,34 +598,50 @@ impl Game {
                 self.winner = self.player_to_pawn();
                 true
             } else if let Some(winner) = self.result {
-                let x = self.history.pop();
-                self.next_player();
-                if Some(winner) == self.player_to_pawn() {
-                    if let Some(_) = after_turn_check::check_winner(self) {
-                        self.next_player();
-                        self.instant_win = true;
-                        if let Some(new_push) = x {
-                            self.history.push(new_push);
+                let score_board = heuristic::evaluate_board(&mut self.board);
+                for x in 0..19 {
+                    for y in 0..19 {
+                        if Some(!winner) == self.board[x][y] {
+                            for dir in 0..4 {
+                                if score_board[x][y][dir].0 == 5 {
+                                    self.instant_win = true;
+                                    self.winner = self.player_to_pawn();
+                                    return true;
+                                }
+                            }
                         }
-                        self.winner = self.player_to_pawn();
-                        true
-                    } else {
-                        self.next_player();
-                        if let Some(new_push) = x {
-                            self.history.push(new_push);
-                        }
-                        false
                     }
-                } else {
-                    if let Some(new_push) = x {
-                        self.history.push(new_push);
-                    }
-                    self.next_player();
-                    false
                 }
+                self.result = None;
+                self.check_win()
+            //let x = self.history.pop();
+            //self.next_player();
+            //if Some(winner) == self.player_to_pawn() {
+            //    if let Some(_) = after_turn_check::check_winner(self) {
+            //        self.next_player();
+            //        self.instant_win = true;
+            //        if let Some(new_push) = x {
+            //            self.history.push(new_push);
+            //        }
+            //        self.winner = self.player_to_pawn();
+            //        true
+            //    } else {
+            //        self.next_player();
+            //        if let Some(new_push) = x {
+            //            self.history.push(new_push);
+            //        }
+            //        false
+            //    }
+            //} else {
+            //    if let Some(new_push) = x {
+            //        self.history.push(new_push);
+            //    }
+            //    self.next_player();
+            //    false
+            //}
             } else if let Some(indexes) = after_turn_check::check_winner(self) {
                 self.result = self.player_to_pawn();
-                if let Some(_) = capture::can_capture(self, indexes) {
+                if capture::can_capture(self, indexes) {
                     false
                 } else {
                     let player = self.get_actual_player();

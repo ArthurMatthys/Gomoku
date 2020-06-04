@@ -1,3 +1,4 @@
+use super::super::ia::heuristic;
 use super::super::model::game;
 use super::super::render::board;
 
@@ -155,35 +156,47 @@ pub fn find_capture(game: &mut game::Game) -> Vec<(usize, usize)> {
     ret
 }
 
-pub fn can_capture(
-    game: &mut game::Game,
-    to_capture: Vec<(isize, isize)>,
-) -> Option<Vec<(usize, usize)>> {
-    let mut ret: Vec<(usize, usize)> = vec![];
-    for i in 0..19 {
-        for j in 0..19 {
-            if game.board[i][j] != None || game.is_forbidden_from_index(i, j) {
-                continue;
-            } else {
-                game.change_board_value_hint(i, j);
-                if let Some(taken) = check_capture(game) {
-                    for ((a, b), (c, d)) in taken.iter() {
-                        // (a,b)
-                        if to_capture
-                            .iter()
-                            .any(|(x, y)| x == a && y == b || x == c && y == d)
-                        {
-                            ret.push((i, j));
-                        }
-                    }
-                }
+pub fn can_capture(game: &mut game::Game, to_capture: Vec<(isize, isize)>) -> bool {
+    let score_board = heuristic::evaluate_board(&mut game.board);
+    for &(x, y) in to_capture.iter() {
+        let new_x = x as usize;
+        let new_y = y as usize;
+        for dir in 0..4 {
+            if score_board[new_x][new_y][dir].0 == 2
+                && ((score_board[new_x][new_y][dir].1 == Some(false)
+                    && score_board[new_x][new_y][dir].2 == Some(true))
+                    || (score_board[new_x][new_y][dir].1 == Some(true)
+                        && score_board[new_x][new_y][dir].2 == Some(false)))
+            {
+                return true;
             }
-            game.clear_last_move();
         }
     }
-    if ret.len() > 0 {
-        Some(ret)
-    } else {
-        None
-    }
+    false
+    //    for i in 0..19 {
+    //        for j in 0..19 {
+    //            if game.board[i][j] != None || game.is_forbidden_from_index(i, j) {
+    //                continue;
+    //            } else {
+    //                game.change_board_value_hint(i, j);
+    //                if let Some(taken) = check_capture(game) {
+    //                    for ((a, b), (c, d)) in taken.iter() {
+    //                        // (a,b)
+    //                        if to_capture
+    //                            .iter()
+    //                            .any(|(x, y)| x == a && y == b || x == c && y == d)
+    //                        {
+    //                            ret.push((i, j));
+    //                        }
+    //                    }
+    //                }
+    //            }
+    //            game.clear_last_move();
+    //        }
+    //    }
+    //    if ret.len() > 0 {
+    //        Some(ret)
+    //    } else {
+    //        None
+    //    }
 }

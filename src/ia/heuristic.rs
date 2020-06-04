@@ -12,7 +12,7 @@ macro_rules! valid_coord {
     };
 }
 
-fn evaluate_board(
+pub fn evaluate_board(
     board: &mut [[Option<bool>; SIZE_BOARD]; SIZE_BOARD],
 ) -> [[[(i8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD] {
     let mut score_tab: [[[(i8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD] =
@@ -73,13 +73,13 @@ fn evaluate_board(
     score_tab
 }
 
-const INSTANT_WIN: i64 = 010000000;
+const INSTANT_WIN: i64 = 100000000;
 const TWO_STEP_WIN: i64 = 000100000;
 const FOUR_STEP_WIN: i64 = 000010000;
 const SIX_STEP_WIN: i64 = 000001000;
 const EIGHT_STEP_WIN: i64 = 000000100;
 const TEN_STEP_WIN: i64 = 000000010;
-const SCORE_TAKE: i64 = 000000100;
+const SCORE_TAKE: i64 = 000000010;
 
 fn score_to_points(
     nb_caught: &mut isize,
@@ -101,18 +101,24 @@ fn score_to_points(
 ) -> i64 {
     let mut total = 0i64;
     match *nb_caught {
-        5..=8 => total += INSTANT_WIN,
+        5..=8 => return INSTANT_WIN,
         4 => {
             if nb_catch > 2 {
-                total += INSTANT_WIN;
+                return INSTANT_WIN;
             } else if nb_catch == 2 {
                 total += TWO_STEP_WIN;
             }
+            //        a => {let b = (a * 2) as u32;
+            //            total += SCORE_TAKE.pow(b.pow(nb_catch as u32 * 2));
+            //
+            //        }
         }
-        a => total += SCORE_TAKE.pow((1 + a as u8 + nb_catch / 2) as u32),
+        a => total += SCORE_TAKE.pow((a + 1) as u32) * nb_catch as i64,
         // a => total += 0,
     }
-    total += (nb_5 / 5) as i64 * INSTANT_WIN;
+    if nb_5 > 0 {
+        return INSTANT_WIN;
+    }
     total += (nb_5_take / 5) as i64 * TWO_STEP_WIN;
 
     total += (nb_4_o / 4) as i64 * TWO_STEP_WIN;
@@ -137,6 +143,7 @@ pub fn first_heuristic_hint(
     player_opposite_catch: &mut isize,
     depth: &mut i8,
 ) -> i64 {
+    println!("--------------");
     let (good_points, bad_points) = get_alignements(board, player_actual);
     let print_tuple =
         |(a, b, c, d, e, f, g, h, i, j, k, l): (u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8)| {
@@ -405,7 +412,7 @@ fn get_alignements(
                     }
                 }
                 (a, _, _) => {
-                    println!("in a row: {}", a);
+                    //                    println!("in a row: {}", a);
                     sleep(Duration::new(20, 0));
                     unreachable!()
                 }
@@ -464,6 +471,16 @@ mod tests {
         black_pos
             .iter()
             .for_each(|&(x, y)| test_board[x][y] = Some(false));
+        for i in 0..19 {
+            for j in 0..19 {
+                match test_board[j][i] {
+                    Some(true) => print!("⊖"),
+                    Some(false) => print!("⊕"),
+                    None => print!("_"),
+                }
+            }
+            println!();
+        }
         let (v1, v2) = get_alignements(&mut test_board, Some(false));
         let print_tuple = |(a, b, c, d, e, f, g, h, i, j, k, l): (
             u8,
@@ -706,8 +723,48 @@ mod tests {
     //        ()
     //    }
     //
-    //    #[test]
-    //    fn test_fives() {
-    //        ()
-    //    }
+    #[test]
+    fn test_fives_0() {
+        let black_pos = vec![(8, 6), (8, 7), (8, 8), (8, 9), (8, 10)];
+        let white_pos = vec![];
+        assert!(test_board(
+            white_pos,
+            black_pos,
+            (0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+            (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+        ));
+    }
+    #[test]
+    fn test_fives_1() {
+        let black_pos = vec![(8, 6), (8, 7), (8, 8), (9, 8), (8, 9), (8, 10)];
+        let white_pos = vec![(10, 8)];
+        assert!(test_board(
+            white_pos,
+            black_pos,
+            (0, 0, 5, 0, 0, 0, 0, 0, 0, 4, 2, 0),
+            (2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+        ));
+    }
+    #[test]
+    fn test_fives_2() {
+        let black_pos = vec![
+            (8, 6),
+            (8, 7),
+            (8, 8),
+            (9, 8),
+            (8, 9),
+            (8, 10),
+            (6, 6),
+            (6, 7),
+            (6, 9),
+            (6, 10),
+        ];
+        let white_pos = vec![(10, 8)];
+        assert!(test_board(
+            white_pos,
+            black_pos,
+            (0, 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+            (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+        ));
+    }
 }
