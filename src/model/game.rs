@@ -614,31 +614,6 @@ impl Game {
                 }
                 self.result = None;
                 self.check_win()
-            //let x = self.history.pop();
-            //self.next_player();
-            //if Some(winner) == self.player_to_pawn() {
-            //    if let Some(_) = after_turn_check::check_winner(self) {
-            //        self.next_player();
-            //        self.instant_win = true;
-            //        if let Some(new_push) = x {
-            //            self.history.push(new_push);
-            //        }
-            //        self.winner = self.player_to_pawn();
-            //        true
-            //    } else {
-            //        self.next_player();
-            //        if let Some(new_push) = x {
-            //            self.history.push(new_push);
-            //        }
-            //        false
-            //    }
-            //} else {
-            //    if let Some(new_push) = x {
-            //        self.history.push(new_push);
-            //    }
-            //    self.next_player();
-            //    false
-            //}
             } else if let Some(indexes) = after_turn_check::check_winner(self) {
                 self.result = self.player_to_pawn();
                 if capture::can_capture(self, indexes) {

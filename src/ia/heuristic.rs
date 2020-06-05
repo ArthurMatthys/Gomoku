@@ -73,7 +73,7 @@ pub fn evaluate_board(
     score_tab
 }
 
-const INSTANT_WIN: i64 = 100000000;
+pub const INSTANT_WIN: i64 = 100000000;
 const TWO_STEP_WIN: i64 = 000100000;
 const FOUR_STEP_WIN: i64 = 000010000;
 const SIX_STEP_WIN: i64 = 000001000;

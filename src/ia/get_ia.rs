@@ -11,7 +11,7 @@ use super::zobrist;
 use rand::seq::SliceRandom;
 // use super::super::player;
 
-const DEPTH_MAX: i8 = 3;
+const DEPTH_MAX: i8 = 6;
 const MIN_INFINITY: i64 = i64::min_value() + 1;
 const MAX_INFINITY: i64 = i64::max_value();
 
@@ -30,36 +30,171 @@ macro_rules! valid_pos {
     };
 }
 
-macro_rules! get_space {
-    ($board:expr, $actual_player:expr) => {{
-        let mut ret = vec![];
-        for x in 0..19 {
-            for y in 0..19 {
-                let value = $board[x][y];
-                if value == None {
-                    for &(dx, dy) in capture::DIRS.iter() {
-                        let new_x = x as isize + dx;
-                        let new_y = y as isize + dy;
-                        if valid_pos!(new_x, new_y)
-                            && $board[new_x as usize][new_y as usize] != None
-                        {
-                            if !double_three::check_double_three_hint(
-                                $board,
-                                $actual_player,
+macro_rules! get_dir {
+    ($dir:expr) => {
+        match $dir {
+            (1, 1) => (0, 1),
+            (-1, -1) => (0, 0),
+            (1, 0) => (1, 1),
+            (-1, 0) => (1, 0),
+            (1, -1) => (2, 1),
+            (-1, 1) => (2, 0),
+            (0, 1) => (3, 1),
+            (0, -1) => (3, 0),
+            (_, _) => unreachable!(),
+        }
+    };
+}
+
+macro_rules! get_other_edge {
+    ($tuple:expr, $dir:expr) => {
+        match $dir {
+            0 => $tuple.1,
+            1 => $tuple.2,
+            _ => unreachable!(),
+        }
+    };
+}
+
+const SCORE_ALLY: i64 = 1000;
+const SCORE_ENEMY: i64 = 100;
+
+fn get_board_score(
+    align: i8,
+    same_pawn: bool,
+    edge: Option<bool>,
+    nb_take: isize,
+    align_opp: i8,
+    edge_opp: Option<bool>,
+) -> i64 {
+    match same_pawn {
+        false => match align {
+            2 => {
+                //Can take
+                if edge == Some(true) {
+                    if nb_take == 4 {
+                        heuristic::INSTANT_WIN
+                    } else {
+                        //TODO
+                        0
+                    }
+                //SO
+                } else if edge == Some(false) {
+                    SCORE_ENEMY.pow(2)
+                //Close
+                } else {
+                    SCORE_ENEMY.pow(2) / 2
+                }
+            }
+            len => {
+                //Close
+                if edge == Some(true) {
+                    SCORE_ENEMY.pow(len as u32) * 2
+                //SO
+                } else if edge == Some(false) {
+                    SCORE_ENEMY.pow(len as u32) / 2
+                //Close
+                } else {
+                    SCORE_ENEMY.pow(len as u32)
+                }
+            }
+        },
+        true => {
+            if align == 5 {
+                return heuristic::INSTANT_WIN;
+            }
+            let edged = match edge {
+                Some(true) => 1,
+                Some(false) => 0,
+                None => 3,
+            } + match edge_opp {
+                Some(true) => 1,
+                Some(false) => 0,
+                None => 3,
+            };
+            match edged {
+                //open
+                0 => SCORE_ALLY.pow(align as u32),
+                //so
+                1 => SCORE_ALLY.pow(align as u32) / 2,
+                //close
+                2 => SCORE_ALLY.pow(align as u32) / 8,
+                //so with board
+                3 => SCORE_ALLY.pow(align as u32) / 4,
+                //close with board
+                4 => SCORE_ALLY.pow(align as u32) / 16,
+                //close *2
+                _ => 0,
+            }
+        }
+    }
+}
+
+fn get_space(
+    board: &mut [[Option<bool>; SIZE_BOARD]; SIZE_BOARD],
+    actual_player: Option<bool>,
+    actual_take: isize,
+) -> Vec<(usize, usize, i64)> {
+    let mut ret = vec![];
+    let score_board: [[[(i8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD] =
+        heuristic::evaluate_board(board);
+    for x in 0..19 {
+        for y in 0..19 {
+            let value = board[x][y];
+            if value == None {
+                for &(dx, dy) in capture::DIRS.iter() {
+                    let new_x = x as isize + dx;
+                    let new_y = y as isize + dy;
+                    let mut check = 0;
+                    let mut score = 0i64;
+                    if valid_pos!(new_x, new_y) && board[new_x as usize][new_y as usize] != None {
+                        if check != 0
+                            || !double_three::check_double_three_hint(
+                                board,
+                                actual_player,
                                 //get_opp!($actual_player),
                                 x as isize,
                                 y as isize,
-                            ) {
-                                ret.push((x, y));
-                                break;
+                            )
+                        {
+                            let mut edge_opp = None;
+                            let mut opp_align = 0;
+                            let opp_x = x as isize - dx;
+                            let opp_y = y as isize - dx;
+                            let (dir, way) = get_dir!((dx, dy));
+                            if valid_pos!(opp_x, opp_y) {
+                                if board[opp_x as usize][opp_y as usize] == value {
+                                    let opp_tuple =
+                                        score_board[opp_x as usize][opp_y as usize][dir];
+                                    opp_align = opp_tuple.0;
+                                    edge_opp = get_other_edge!(opp_tuple, (way + 1) % 2);
+                                } else if board[opp_x as usize][opp_y as usize] == None {
+                                    edge_opp = Some(false);
+                                } else {
+                                    edge_opp = Some(true);
+                                }
                             }
+                            check = 1;
+                            let tuple_focused = score_board[new_x as usize][new_y as usize][dir];
+                            score += get_board_score(
+                                tuple_focused.0,
+                                actual_player == board[new_x as usize][new_y as usize],
+                                get_other_edge!(tuple_focused, way),
+                                actual_take,
+                                opp_align,
+                                edge_opp,
+                            );
                         }
+                    }
+                    if check == 1 {
+                        ret.push((x, y, score));
                     }
                 }
             }
         }
-        ret
-    }};
+    }
+    ret.sort_by(|(_, _, score1), (_, _, score2)| score2.cmp(score1));
+    ret
 }
 
 macro_rules! get_zindex_from_pawn {
@@ -439,7 +574,7 @@ fn ab_negamax(
     let mut best_score = MIN_INFINITY;
 
     // Collect moves
-    let available_positions = get_space!(board, get_pawn!(actual, color));
+    let available_positions = get_space(board, get_pawn!(actual, color), *actual_catch);
     println!("--------------");
     println!("Board state");
     for i in 0..19 {
@@ -454,12 +589,12 @@ fn ab_negamax(
     }
     available_positions
         .iter()
-        .for_each(|&(x, y)| print!("({},{})//", x, y));
+        .for_each(|&(x, y, score)| print!("({},{},{})//", x, y, score));
     println!();
     // let available_positions2 = get_space!(board, actual);
 
     // Go through each move
-    for (line, col) in available_positions {
+    for (line, col, _) in available_positions {
         // // debug
         // if board[line][col] != None {
         //     unreachable!();
