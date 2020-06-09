@@ -24,7 +24,7 @@ use render::window;
 
 mod ia;
 use ia::get_ia;
-use ia::heuristic;
+//use ia::heuristic;
 
 mod checks;
 

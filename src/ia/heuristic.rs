@@ -73,13 +73,13 @@ pub fn evaluate_board(
     score_tab
 }
 
-pub const INSTANT_WIN: i64 = 100000000;
+pub const INSTANT_WIN: i64 = 10000000000000;
 const TWO_STEP_WIN: i64 = 000100000;
 const FOUR_STEP_WIN: i64 = 000010000;
 const SIX_STEP_WIN: i64 = 000001000;
-const EIGHT_STEP_WIN: i64 = 000000100;
+const FIVE_CAN_TAKE: i64 = 010000000;
 const TEN_STEP_WIN: i64 = 000000010;
-const SCORE_TAKE: i64 = 000000010;
+const SCORE_TAKE: i64 = 000000100;
 
 fn score_to_points(
     nb_caught: &mut isize,
@@ -119,19 +119,19 @@ fn score_to_points(
     if nb_5 > 0 {
         return INSTANT_WIN;
     }
-    total += (nb_5_take / 5) as i64 * TWO_STEP_WIN;
+    total += (nb_5_take / 5) as i64 * FIVE_CAN_TAKE;
 
     total += (nb_4_o / 4) as i64 * TWO_STEP_WIN;
-    total += (nb_4_so / 4) as i64 * FOUR_STEP_WIN;
-    total -= (nb_4_c / 4) as i64 * SIX_STEP_WIN;
+    total += (nb_4_so / 4) as i64 * TWO_STEP_WIN / 2;
+    total -= (nb_4_c / 4) as i64 * TWO_STEP_WIN / 4;
 
     total += (nb_3_o / 3) as i64 * FOUR_STEP_WIN;
-    total += (nb_3_so / 3) as i64 * SIX_STEP_WIN;
-    total -= (nb_3_c / 3) as i64 * EIGHT_STEP_WIN;
+    total += (nb_3_so / 3) as i64 * FOUR_STEP_WIN / 2;
+    total -= (nb_3_c / 3) as i64 * FOUR_STEP_WIN / 4;
 
     total += (nb_2_o / 2) as i64 * SIX_STEP_WIN;
-    total += (nb_2_so / 2) as i64 * EIGHT_STEP_WIN;
-    total -= (nb_2_c / 2) as i64 * TEN_STEP_WIN;
+    total += (nb_2_so / 2) as i64 * SIX_STEP_WIN / 2;
+    total -= (nb_2_c / 2) as i64 * SIX_STEP_WIN / 4;
 
     total * ((*depth + 1) as i64 * 2)
 }
@@ -411,7 +411,7 @@ fn get_alignements(
                         actual_tuple.1 += 1;
                     }
                 }
-                (a, _, _) => {
+                (_, _, _) => {
                     //                    println!("in a row: {}", a);
                     sleep(Duration::new(20, 0));
                     unreachable!()
@@ -756,6 +756,7 @@ mod tests {
             (8, 10),
             (6, 6),
             (6, 7),
+            (6, 8),
             (6, 9),
             (6, 10),
         ];
@@ -763,8 +764,8 @@ mod tests {
         assert!(test_board(
             white_pos,
             black_pos,
-            (0, 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-            (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+            (0, 5, 5, 0, 0, 0, 0, 0, 0, 4, 2, 0),
+            (2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
         ));
     }
 }

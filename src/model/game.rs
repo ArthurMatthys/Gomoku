@@ -8,10 +8,8 @@ use super::super::checks::capture;
 use super::super::checks::double_three;
 use super::super::checks::valid_pos;
 use super::super::ia::heuristic;
-use std::thread::sleep;
 use std::time::Duration;
 
-use super::super::ia::zobrist;
 use super::super::render::board;
 
 use super::player;
