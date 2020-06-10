@@ -97,10 +97,10 @@ fn score_to_points(
 ) -> i64 {
     let mut total = 0i64;
     match *nb_caught {
-        5..=8 => return INSTANT_WIN,
+        5..=8 => return INSTANT_WIN * (*depth as i64 + 1),
         4 => {
             if nb_catch > 2 {
-                return INSTANT_WIN;
+                return INSTANT_WIN * (*depth as i64 + 1);
             } else if nb_catch == 2 {
                 total += TWO_STEP_WIN;
             }
