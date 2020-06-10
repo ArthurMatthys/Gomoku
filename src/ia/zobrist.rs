@@ -9,72 +9,48 @@ pub enum TypeOfEl {
     Lowerbound,
     Upperbound,
     Exact,
-    Empty,
 }
-
-// Type of element in TT
-#[derive(Copy, Clone, PartialEq)]
-pub enum Move {
-    Unitialized,
-    Some((usize, usize)),
-}
-
-//impl Move {
-//    pub fn unwrap_unsafe(&self) -> (usize, usize) {
-//        match self {
-//            Move::Some((i, j)) => (*i, *j),
-//            _ => unreachable!(),
-//        }
-//    }
-//}
 
 // Transposition table
 #[derive(Clone, Copy)]
 pub struct TT {
+    pub is_valid: bool,
     // Zobrist key, to check for collision
     pub key: u64,
     // Values
     pub value: i64,
     pub r#type: TypeOfEl,
     pub depth: i8,
-    pub r#move: Move,
+    pub r#move: Option<(usize, usize)>,
 }
 
 // Transposition table of at least 2^20 entries
 // 2^22 here => 4 194 304 entries, from which we found
 // the next prime : 4194319 (to avoid hash collision)
-//pub fn initialize_transposition_table() -> Vec<TT> {
-//    let initialized_struct = TT {
-//        key: 0,
-//        value: 0,
-//        r#type: TypeOfEl::Empty,
-//        depth: 0,
-//        r#move: Move::Unitialized,
-//    };
-//    vec![initialized_struct; 4194319]
-//}
-//
-//pub fn retrieve_tt_from_hash(tt: &Vec<TT>, zhash: &u64) -> TT {
-//    tt[(*zhash % tt.len() as u64) as usize]
-//}
-//
-//pub fn store_tt_entry(
-//    tt: &mut Vec<TT>,
-//    zhash: &mut u64,
-//    value: &i64,
-//    flag: TypeOfEl,
-//    depth: &mut i8,
-//    status: Move,
-//) -> () {
-//    let len = tt.len();
-//    tt[(*zhash % len as u64) as usize] = TT {
-//        key: *zhash,
-//        value: *value,
-//        r#type: flag,
-//        depth: *depth,
-//        r#move: status,
-//    }
-//}
+pub fn initialize_transposition_table() -> Vec<TT> {
+    let initialized_struct = TT {
+        key: 0,
+        is_valid: false,
+        value: 0,
+        r#type: TypeOfEl::Exact,
+        depth: 0,
+        r#move: None,
+    };
+    vec![initialized_struct; 4194319]
+}
+
+pub fn retrieve_tt_from_hash(tt: &Vec<TT>, zhash: &u64) -> TT {
+    tt[(*zhash % tt.len() as u64) as usize]
+}
+
+pub fn store_tt_entry(
+    tt: &mut Vec<TT>,
+    zhash: &mut u64,
+    tte: TT
+) -> () {
+    let len = tt.len();
+    tt[(*zhash % len as u64) as usize] = tte;
+}
 
 // Zobrist hash
 pub const ZPIECES: [usize; 2] = [0, 1]; // 0 is black_pawn, 1 is white_pawn
@@ -116,20 +92,20 @@ pub fn board_to_zhash(
     (table, hash)
 }
 
-//pub fn add_pawn_zhash(
-//    table: &[[[u64; 2]; board::SIZE_BOARD]; board::SIZE_BOARD],
-//    hash: &mut u64,
-//    (line, col, piece): (usize, usize, usize),
-//) -> () {
-//    *hash ^= table[line][col][ZPIECES[piece]];
-//}
-//
-//pub fn capture_zhash(
-//    table: &[[[u64; 2]; board::SIZE_BOARD]; board::SIZE_BOARD],
-//    hash: &mut u64,
-//    piece: usize,
-//    ((line1, col1), (line2, col2)): ((isize, isize), (isize, isize)),
-//) -> () {
-//    add_pawn_zhash(table, hash, (line1 as usize, col1 as usize, piece));
-//    add_pawn_zhash(table, hash, (line2 as usize, col2 as usize, piece));
-//}
+pub fn add_pawn_zhash(
+    table: &[[[u64; 2]; board::SIZE_BOARD]; board::SIZE_BOARD],
+    hash: &mut u64,
+    (line, col, piece): (usize, usize, usize),
+) -> () {
+    *hash ^= table[line][col][ZPIECES[piece]];
+}
+
+pub fn capture_zhash(
+    table: &[[[u64; 2]; board::SIZE_BOARD]; board::SIZE_BOARD],
+    hash: &mut u64,
+    piece: usize,
+    ((line1, col1), (line2, col2)): ((isize, isize), (isize, isize)),
+) -> () {
+    add_pawn_zhash(table, hash, (line1 as usize, col1 as usize, piece));
+    add_pawn_zhash(table, hash, (line2 as usize, col2 as usize, piece));
+}

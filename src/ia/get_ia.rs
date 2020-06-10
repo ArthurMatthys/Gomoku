@@ -11,7 +11,6 @@ use super::zobrist;
 use rand::seq::SliceRandom;
 // use super::super::player;
 use std::thread::sleep;
-
 use std::time::Duration;
 
 const DEPTH_MAX: i8 = 4;
@@ -32,6 +31,7 @@ fn ab_negamax(
     board: &mut [[Option<bool>; SIZE_BOARD]; SIZE_BOARD],
     table: &[[[u64; 2]; SIZE_BOARD]; SIZE_BOARD],
     zhash: &mut u64,
+    tt: &mut Vec<zobrist::TT>,
     current_depth: &mut i8,
     actual: Option<bool>,
     actual_catch: &mut isize,
@@ -41,6 +41,23 @@ fn ab_negamax(
     beta: &mut i64,
     color: &mut i8,
 ) -> (i64, Option<(usize, usize)>) {
+    let mut tte = zobrist::retrieve_tt_from_hash(tt, zhash);
+    let alpha_orig = *alpha;
+
+    if tte.is_valid && tte.depth == DEPTH_MAX - *current_depth {
+        if tte.r#type == zobrist::TypeOfEl::Exact {
+            return (tte.value, tte.r#move);
+        } else if tte.r#type == zobrist::TypeOfEl::Lowerbound  {
+            *alpha = i64::max(*alpha, tte.value);
+        } else if tte.r#type == zobrist::TypeOfEl::Upperbound {
+             *beta = i64::min(*beta, tte.value);
+        }
+
+        if *alpha >= *beta {
+            return (tte.value, tte.r#move);
+        }
+    }
+
     if *current_depth == DEPTH_MAX || board_state_win(board, actual_catch, opp_catch) {
         let weight = heuristic::first_heuristic_hint(
             board,
@@ -68,6 +85,7 @@ fn ab_negamax(
             board,
             table,
             zhash,
+            tt,
             &mut (*current_depth + 1),
             get_opp!(actual),
             opp_catch,
@@ -92,9 +110,27 @@ fn ab_negamax(
         remove_last_pawn(board, line, col, actual, removed, table, zhash);
 
         if *alpha >= *beta {
-            return (*alpha, best_move);
+            best_score = *alpha;
+            best_move = Some((line, col));
+            break ;
+            // return (*alpha, best_move);
         }
     }
+
+    if best_score <= alpha_orig {
+        tte.r#type = zobrist::TypeOfEl::Upperbound;
+     } else if best_score >= *beta {
+        tte.r#type = zobrist::TypeOfEl::Lowerbound;
+     } else {
+        tte.r#type = zobrist::TypeOfEl::Exact;
+     }
+     tte.is_valid = true;
+     tte.key = *zhash;
+     tte.value = best_score;
+     tte.r#move = best_move;
+     tte.depth = *current_depth;
+     zobrist::store_tt_entry(tt, zhash, tte);
+
     (best_score, best_move)
 }
 
@@ -102,6 +138,7 @@ fn get_best_move(
     board: &mut [[Option<bool>; SIZE_BOARD]; SIZE_BOARD],
     table: &[[[u64; 2]; SIZE_BOARD]; SIZE_BOARD],
     zhash: &mut u64,
+    tt: &mut Vec<zobrist::TT>,
     actual: Option<bool>,
     actual_catch: &mut isize,
     opp_catch: &mut isize,
@@ -113,6 +150,7 @@ fn get_best_move(
         board,
         table,
         zhash,
+        tt,
         &mut 0,
         actual,
         actual_catch,
@@ -139,11 +177,13 @@ fn ia(
     let mut opponent_catch = game.get_opponent().nb_of_catch;
     let mut board = game.board;
     let pawn = game.player_to_pawn();
+    let mut tt = zobrist::initialize_transposition_table();
 
     get_best_move(
         &mut board,
         &table,
         &mut hash,
+        &mut tt,
         pawn,
         &mut player_catch,
         &mut opponent_catch,
