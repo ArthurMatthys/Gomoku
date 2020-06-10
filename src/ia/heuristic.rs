@@ -2,10 +2,6 @@ use super::super::checks::after_turn_check::DIRECTIONS;
 
 use super::super::render::board::SIZE_BOARD;
 
-//use super::super::model::player;
-use std::thread::sleep;
-use std::time::Duration;
-
 macro_rules! valid_coord {
     ($e:expr, $v:expr) => {
         $e >= 0 && $v >= 0 && ($e as usize) < SIZE_BOARD && ($v as usize) < SIZE_BOARD
@@ -143,28 +139,10 @@ pub fn first_heuristic_hint(
     player_opposite_catch: &mut isize,
     depth: &mut i8,
 ) -> i64 {
-    println!("--------------");
     let (good_points, bad_points) = get_alignements(board, player_actual);
-    let print_tuple =
-        |(a, b, c, d, e, f, g, h, i, j, k, l): (u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8)| {
-            println!(
-                "{:3},{:3},{:3},{:3},{:3},{:3},{:3},{:3},{:3},{:3},{:3},{:3},",
-                a, b, c, d, e, f, g, h, i, j, k, l,
-            )
-        };
-    println!("d__,t__, c__,5r_,5rt,4o_,4so,4c_,3o_,3so,3c_,2o_,2so,2c_");
-    print!("{:3},{:3}", depth, player_actual_catch);
-    print_tuple(good_points);
-    print!("{:3},{:3}", depth, player_opposite_catch);
-    print_tuple(bad_points);
-    //println!("end heuristic");
-    // nb_of catch/5 in a row/5 in a row can take/4 open/4 semi-open/4 close
-    // 3 open/3 semi-open/3 close/2 open/2 semi-open/2 close
 
-    let ret = score_to_points(player_actual_catch, good_points, depth)
-        - score_to_points(player_opposite_catch, bad_points, depth);
-    println!("heuristic value : {}", ret);
-    ret
+    score_to_points(player_actual_catch, good_points, depth)
+        - score_to_points(player_opposite_catch, bad_points, depth)
 }
 
 fn get_alignements(
@@ -181,30 +159,6 @@ fn get_alignements(
     let score_board: [[[(i8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD] =
         evaluate_board(board);
 
-    //    for i in 0..19 {
-    //        for j in 0..19 {
-    //            match board[j][i] {
-    //                Some(true) => print!("B"),
-    //                Some(false) => print!("N"),
-    //                None => print!("E"),
-    //            }
-    //            score_board[j][i]
-    //                .iter()
-    //                .for_each(|&(value, _, _)| print!("{:2}", value));
-    //            print!(" ");
-    //        }
-    //        println!();
-    //    }
-    for i in 0..19 {
-        for j in 0..19 {
-            match board[j][i] {
-                Some(true) => print!("⊖"),
-                Some(false) => print!("⊕"),
-                None => print!("_"),
-            }
-        }
-        println!();
-    }
     let check_free_space = |dir: usize,
                             x: usize,
                             y: usize,
@@ -411,11 +365,7 @@ fn get_alignements(
                         actual_tuple.1 += 1;
                     }
                 }
-                (_, _, _) => {
-                    //                    println!("in a row: {}", a);
-                    sleep(Duration::new(20, 0));
-                    unreachable!()
-                }
+                (_, _, _) => unreachable!(),
             }
         }
     };
