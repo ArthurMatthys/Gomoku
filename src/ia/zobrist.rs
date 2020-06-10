@@ -58,7 +58,7 @@ pub const ZPIECES: [usize; 2] = [0, 1]; // 0 is black_pawn, 1 is white_pawn
 // Initialize the first zobrist hash
 // We initialize a 3D array of 19x19 containing for each cell
 // An array of uniform random f64 number (2, one for each piece)
-fn init_zboard() -> [[[u64; 2]; board::SIZE_BOARD]; board::SIZE_BOARD] {
+pub fn init_zboard() -> [[[u64; 2]; board::SIZE_BOARD]; board::SIZE_BOARD] {
     let mut table = [[[0_u64; 2]; board::SIZE_BOARD]; board::SIZE_BOARD];
     let mut rng = rand::thread_rng();
 
@@ -76,20 +76,20 @@ fn init_zboard() -> [[[u64; 2]; board::SIZE_BOARD]; board::SIZE_BOARD] {
 // Function that initializes the zhash as a u64 accordingly to the current board's state
 pub fn board_to_zhash(
     board: &[[Option<bool>; board::SIZE_BOARD]; board::SIZE_BOARD],
-) -> ([[[u64; 2]; board::SIZE_BOARD]; board::SIZE_BOARD], u64) {
-    let table = init_zboard();
+    ztable: &[[[u64; 2]; board::SIZE_BOARD]; board::SIZE_BOARD]
+) -> u64 {
     let mut hash: u64 = 0;
 
     for line in 0..board::SIZE_BOARD {
         for col in 0..board::SIZE_BOARD {
             match board[line][col] {
                 None => (),
-                Some(true) => hash ^= table[line][col][ZPIECES[1]],
-                Some(false) => hash ^= table[line][col][ZPIECES[0]],
+                Some(true) => hash ^= ztable[line][col][ZPIECES[1]],
+                Some(false) => hash ^= ztable[line][col][ZPIECES[0]],
             }
         }
     }
-    (table, hash)
+    hash
 }
 
 pub fn add_pawn_zhash(

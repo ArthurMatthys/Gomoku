@@ -171,7 +171,7 @@ fn get_best_move(
 
 fn ia(
     game: &mut game::Game,
-    (table, mut hash): ([[[u64; 2]; SIZE_BOARD]; SIZE_BOARD], u64),
+    (table, mut hash): (&[[[u64; 2]; SIZE_BOARD]; SIZE_BOARD], u64),
 ) -> (usize, usize) {
     let mut player_catch = game.get_actual_player().nb_of_catch;
     let mut opponent_catch = game.get_opponent().nb_of_catch;
@@ -181,7 +181,7 @@ fn ia(
 
     get_best_move(
         &mut board,
-        &table,
+        table,
         &mut hash,
         &mut tt,
         pawn,
@@ -193,9 +193,8 @@ fn ia(
     )
 }
 
-pub fn get_ia(game: &mut game::Game) -> (usize, usize) {
-    let (table, hash): ([[[u64; 2]; SIZE_BOARD]; SIZE_BOARD], u64) =
-        zobrist::board_to_zhash(&game.board);
+pub fn get_ia(game: &mut game::Game, ztable: &[[[u64; 2]; SIZE_BOARD]; SIZE_BOARD]) -> (usize, usize) {
+    let hash: u64 = zobrist::board_to_zhash(&game.board, ztable);
     let mut rng = rand::thread_rng();
 
     match game.history.len() {
@@ -209,11 +208,11 @@ pub fn get_ia(game: &mut game::Game) -> (usize, usize) {
                 game::TypeOfParty::Longpro => {
                     ((9 + dir_line * 4) as usize, (9 + dir_col * 4) as usize)
                 }
-                game::TypeOfParty::Standard => ia(game, (table, hash)),
+                game::TypeOfParty::Standard => ia(game, (ztable, hash)),
             }
         }
         _ => {
-            let ret = ia(game, (table, hash));
+            let ret = ia(game, (ztable, hash));
             ret
         }
     }

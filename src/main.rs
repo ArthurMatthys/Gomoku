@@ -24,6 +24,7 @@ use render::window;
 
 mod ia;
 use ia::get_ia;
+use ia::zobrist;
 //use ia::heuristic;
 
 mod checks;
@@ -168,12 +169,13 @@ pub fn main() {
         .map(|x| get_image!(texture_creator, x))
         .collect::<Vec<Texture>>();
     game.set_changed();
+    let ztable = zobrist::init_zboard();
 
     let start_game = Instant::now();
     'running: loop {
         if game.actual_player_is_ai().expect("Wrong type of player") {
             let start = Instant::now();
-            let (line, col) = get_ia::get_ia(&mut game);
+            let (line, col) = get_ia::get_ia(&mut game, &ztable);
             let end = Instant::now();
             game.set_player_time(end.duration_since(start));
             game.change_board_from_input(line, col);
