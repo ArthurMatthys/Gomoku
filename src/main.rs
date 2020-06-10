@@ -169,6 +169,7 @@ pub fn main() {
         .collect::<Vec<Texture>>();
     game.set_changed();
 
+    let start_game = Instant::now();
     'running: loop {
         if game.actual_player_is_ai().expect("Wrong type of player") {
             let start = Instant::now();
@@ -219,6 +220,9 @@ pub fn main() {
 
         sleep(Duration::new(0, 1_000_000_000u32 / 60));
     }
+    let end_game = Instant::now();
+    let delta = end_game.duration_since(start_game);
+    println!("time : {}.{}", delta.as_secs(), delta.subsec_millis());
     if game.instant_win {
         window::render_window(&mut game, &images, &font);
         'ending: loop {
