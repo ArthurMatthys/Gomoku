@@ -40,17 +40,18 @@ fn ab_negamax(
     alpha: &mut i64,
     beta: &mut i64,
     color: &mut i8,
+    depth_max: &i8,
 ) -> (i64, Option<(usize, usize)>) {
     let mut tte = zobrist::retrieve_tt_from_hash(tt, zhash);
     let alpha_orig = *alpha;
 
-    if tte.is_valid && tte.depth == DEPTH_MAX - *current_depth {
+    if tte.is_valid && tte.depth >= *depth_max - *current_depth {
         if tte.r#type == zobrist::TypeOfEl::Exact {
             return (tte.value, tte.r#move);
-        } else if tte.r#type == zobrist::TypeOfEl::Lowerbound  {
+        } else if tte.r#type == zobrist::TypeOfEl::Lowerbound {
             *alpha = i64::max(*alpha, tte.value);
         } else if tte.r#type == zobrist::TypeOfEl::Upperbound {
-             *beta = i64::min(*beta, tte.value);
+            *beta = i64::min(*beta, tte.value);
         }
 
         if *alpha >= *beta {
@@ -58,7 +59,7 @@ fn ab_negamax(
         }
     }
 
-    if *current_depth == DEPTH_MAX || board_state_win(board, actual_catch, opp_catch) {
+    if *current_depth == *depth_max || board_state_win(board, actual_catch, opp_catch) {
         let weight = heuristic::first_heuristic_hint(
             board,
             actual,
@@ -94,6 +95,7 @@ fn ab_negamax(
             &mut (-*beta),
             &mut (-*alpha),
             &mut (-*color),
+            depth_max
         );
 
         let x = -recursed_score;
@@ -112,29 +114,87 @@ fn ab_negamax(
         if *alpha >= *beta {
             best_score = *alpha;
             best_move = Some((line, col));
-            break ;
+            break;
             // return (*alpha, best_move);
         }
     }
 
     if best_score <= alpha_orig {
         tte.r#type = zobrist::TypeOfEl::Upperbound;
-     } else if best_score >= *beta {
+    } else if best_score >= *beta {
         tte.r#type = zobrist::TypeOfEl::Lowerbound;
-     } else {
+    } else {
         tte.r#type = zobrist::TypeOfEl::Exact;
-     }
-     tte.is_valid = true;
-     tte.key = *zhash;
-     tte.value = best_score;
-     tte.r#move = best_move;
-     tte.depth = *current_depth;
-     zobrist::store_tt_entry(tt, zhash, tte);
+    }
+    tte.is_valid = true;
+    tte.key = *zhash;
+    tte.value = best_score;
+    tte.r#move = best_move;
+    tte.depth = *current_depth;
+    zobrist::store_tt_entry(tt, zhash, tte);
 
     (best_score, best_move)
 }
 
-fn get_best_move(
+
+
+
+
+fn get_best_move_mtdf(
+    board: &mut [[Option<bool>; SIZE_BOARD]; SIZE_BOARD],
+    table: &[[[u64; 2]; SIZE_BOARD]; SIZE_BOARD],
+    zhash: &mut u64,
+    tt: &mut Vec<zobrist::TT>,
+    actual: Option<bool>,
+    actual_catch: &mut isize,
+    opp_catch: &mut isize,
+    last_move: Option<(usize, usize)>,
+    alpha: &mut i64,
+    beta: &mut i64,
+    depth_max: &i8,
+    firstguess: i64,
+) -> (i64, (usize, usize)) {
+    let mut g = firstguess;
+    let mut ret = (0, (0,0));
+    let mut upperbnd = MAX_INFINITY;
+    let mut lowerbnd = MIN_INFINITY;
+    
+    while lowerbnd < upperbnd {
+        if g == lowerbnd {
+            *beta = g + 1;
+        } else {
+            *beta = g;
+        }
+        // *beta = i64::max(g, lowerbnd + 1);
+        let (score, r#move): (i64, Option<(usize, usize)>) = ab_negamax(
+            board,
+            table,
+            zhash,
+            tt,
+            &mut 0,
+            actual,
+            actual_catch,
+            opp_catch,
+            last_move,
+            &mut (*beta - 1),
+            beta,
+            &mut 1,
+            depth_max
+        );
+        ret = (score, r#move.unwrap());
+        g = score;
+        if g < *beta {
+            upperbnd = g;
+
+        } else {
+            lowerbnd = g;
+        }
+    }
+    ret
+}
+
+
+fn iterative_deepening(
     board: &mut [[Option<bool>; SIZE_BOARD]; SIZE_BOARD],
     table: &[[[u64; 2]; SIZE_BOARD]; SIZE_BOARD],
     zhash: &mut u64,
@@ -146,27 +206,30 @@ fn get_best_move(
     alpha: &mut i64,
     beta: &mut i64,
 ) -> (usize, usize) {
-    let (_, r#move): (i64, Option<(usize, usize)>) = ab_negamax(
-        board,
-        table,
-        zhash,
-        tt,
-        &mut 0,
-        actual,
-        actual_catch,
-        opp_catch,
-        last_move,
-        alpha,
-        beta,
-        &mut 1,
-    );
-    match r#move {
-        Some(x) => x,
-        _ => {
-            sleep(Duration::new(10, 0));
-            unreachable!();
-        }
+    let mut f = 0;
+    let mut ret = (0,0);
+    for d in 2..DEPTH_MAX {
+        let (score, r#move) = get_best_move_mtdf(
+            board,
+            table,
+            zhash,
+            tt,
+            actual,
+            actual_catch,
+            opp_catch,
+            last_move,
+            alpha,
+            beta,
+            &d,
+            f
+        );
+        f = score;
+        ret = r#move;
+        // if times_up() {
+        //     break;
+        // }
     }
+    ret
 }
 
 fn ia(
@@ -179,7 +242,7 @@ fn ia(
     let pawn = game.player_to_pawn();
     let mut tt = zobrist::initialize_transposition_table();
 
-    get_best_move(
+    iterative_deepening(
         &mut board,
         table,
         &mut hash,
@@ -193,7 +256,10 @@ fn ia(
     )
 }
 
-pub fn get_ia(game: &mut game::Game, ztable: &[[[u64; 2]; SIZE_BOARD]; SIZE_BOARD]) -> (usize, usize) {
+pub fn get_ia(
+    game: &mut game::Game,
+    ztable: &[[[u64; 2]; SIZE_BOARD]; SIZE_BOARD],
+) -> (usize, usize) {
     let hash: u64 = zobrist::board_to_zhash(&game.board, ztable);
     let mut rng = rand::thread_rng();
 
