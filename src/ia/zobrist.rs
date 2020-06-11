@@ -91,21 +91,3 @@ pub fn board_to_zhash(
     }
     hash
 }
-
-pub fn add_pawn_zhash(
-    table: &[[[u64; 2]; board::SIZE_BOARD]; board::SIZE_BOARD],
-    hash: &mut u64,
-    (line, col, piece): (usize, usize, usize),
-) -> () {
-    *hash ^= table[line][col][ZPIECES[piece]];
-}
-
-pub fn capture_zhash(
-    table: &[[[u64; 2]; board::SIZE_BOARD]; board::SIZE_BOARD],
-    hash: &mut u64,
-    piece: usize,
-    ((line1, col1), (line2, col2)): ((isize, isize), (isize, isize)),
-) -> () {
-    add_pawn_zhash(table, hash, (line1 as usize, col1 as usize, piece));
-    add_pawn_zhash(table, hash, (line2 as usize, col2 as usize, piece));
-}

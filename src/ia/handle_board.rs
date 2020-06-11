@@ -340,7 +340,7 @@ pub fn change_board(
             board[x1 as usize][y1 as usize] = None;
             add_zhash!(table, zhash, x1, y1, get_zindex_from_pawn!(opp));
             board[x2 as usize][y2 as usize] = None;
-            add_zhash!(table, zhash, new_x, new_y, get_zindex_from_pawn!(opp));
+            add_zhash!(table, zhash, x2, y2, get_zindex_from_pawn!(opp));
             removed.push(((x1, y1), (x2, y2)));
         }
     }

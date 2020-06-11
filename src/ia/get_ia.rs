@@ -45,7 +45,7 @@ fn ab_negamax(
     let mut tte = zobrist::retrieve_tt_from_hash(tt, zhash);
     let alpha_orig = *alpha;
 
-    if tte.is_valid && tte.depth >= *depth_max - *current_depth {
+    if tte.is_valid && (tte.depth == (*depth_max - *current_depth)) {
         if tte.r#type == zobrist::TypeOfEl::Exact {
             return (tte.value, tte.r#move);
         } else if tte.r#type == zobrist::TypeOfEl::Lowerbound {
@@ -65,7 +65,7 @@ fn ab_negamax(
             actual,
             actual_catch,
             opp_catch,
-            &mut (DEPTH_MAX - *current_depth),
+            &mut (*depth_max - *current_depth),
         );
         return (weight, None);
     }
@@ -130,71 +130,161 @@ fn ab_negamax(
     tte.key = *zhash;
     tte.value = best_score;
     tte.r#move = best_move;
-    tte.depth = *current_depth;
+    tte.depth = *depth_max - *current_depth;
     zobrist::store_tt_entry(tt, zhash, tte);
 
     (best_score, best_move)
 }
 
 
-
-
-
-fn get_best_move_mtdf(
-    board: &mut [[Option<bool>; SIZE_BOARD]; SIZE_BOARD],
-    table: &[[[u64; 2]; SIZE_BOARD]; SIZE_BOARD],
-    zhash: &mut u64,
-    tt: &mut Vec<zobrist::TT>,
-    actual: Option<bool>,
-    actual_catch: &mut isize,
-    opp_catch: &mut isize,
-    last_move: Option<(usize, usize)>,
-    alpha: &mut i64,
-    beta: &mut i64,
-    depth_max: &i8,
-    firstguess: i64,
-) -> (i64, (usize, usize)) {
-    let mut g = firstguess;
-    let mut ret = (0, (0,0));
-    let mut upperbnd = MAX_INFINITY;
-    let mut lowerbnd = MIN_INFINITY;
+// fn get_best_move_mtdf(
+//     board: &mut [[Option<bool>; SIZE_BOARD]; SIZE_BOARD],
+//     table: &[[[u64; 2]; SIZE_BOARD]; SIZE_BOARD],
+//     zhash: &mut u64,
+//     tt: &mut Vec<zobrist::TT>,
+//     actual: Option<bool>,
+//     actual_catch: &mut isize,
+//     opp_catch: &mut isize,
+//     last_move: Option<(usize, usize)>,
+//     alpha: &mut i64,
+//     beta: &mut i64,
+//     depth_max: &i8,
+//     firstguess: i64,
+// ) -> (usize, usize) {
+//     let mut g = firstguess;
+//     let mut ret = (0, (0,0));
+//     let mut upperbnd = MAX_INFINITY;
+//     let mut lowerbnd = MIN_INFINITY;
     
-    while lowerbnd < upperbnd {
-        if g == lowerbnd {
-            *beta = g + 1;
-        } else {
-            *beta = g;
-        }
-        // *beta = i64::max(g, lowerbnd + 1);
-        let (score, r#move): (i64, Option<(usize, usize)>) = ab_negamax(
-            board,
-            table,
-            zhash,
-            tt,
-            &mut 0,
-            actual,
-            actual_catch,
-            opp_catch,
-            last_move,
-            &mut (*beta - 1),
-            beta,
-            &mut 1,
-            depth_max
-        );
-        ret = (score, r#move.unwrap());
-        g = score;
-        if g < *beta {
-            upperbnd = g;
+//     while lowerbnd < upperbnd {
+//         if g == lowerbnd {
+//             *beta = g + 1;
+//          } else {
+//             *beta = g;
+//         }
+//         // *beta = i64::max(g, lowerbnd + 1);
+//         let (score, r#move): (i64, Option<(usize, usize)>) = ab_negamax(
+//             board,
+//             table,
+//             zhash,
+//             tt,
+//             &mut 0,
+//             actual,
+//             actual_catch,
+//             opp_catch,
+//             last_move,
+//             &mut (*beta - 1),
+//             beta,
+//             &mut 1,
+//             depth_max
+//         );
+//         ret = (score, r#move.unwrap());
+//         g = score;
+//         if g < *beta {
+//             upperbnd = g;
 
-        } else {
-            lowerbnd = g;
-        }
-    }
-    ret
-}
+//         } else {
+//             lowerbnd = g;
+//         }
+//     }
+//     ret.1
+// }
 
 
-fn iterative_deepening(
+// fn get_best_move_mtdf(
+//     board: &mut [[Option<bool>; SIZE_BOARD]; SIZE_BOARD],
+//     table: &[[[u64; 2]; SIZE_BOARD]; SIZE_BOARD],
+//     zhash: &mut u64,
+//     tt: &mut Vec<zobrist::TT>,
+//     actual: Option<bool>,
+//     actual_catch: &mut isize,
+//     opp_catch: &mut isize,
+//     last_move: Option<(usize, usize)>,
+//     alpha: &mut i64,
+//     beta: &mut i64,
+//     depth_max: &i8,
+//     firstguess: i64,
+// ) -> (i64, (usize, usize)) {
+//     println!("depth_max: {}", depth_max);
+//     let mut g = firstguess;
+//     let mut ret = (0, (0,0));
+//     let mut upperbnd = MAX_INFINITY;
+//     let mut lowerbnd = MIN_INFINITY;
+    
+//     while lowerbnd < upperbnd {
+//         if g == lowerbnd {
+//             *beta = g + 1;
+//          } else {
+//             *beta = g;
+//         }
+//         // *beta = i64::max(g, lowerbnd + 1);
+//         let (score, r#move): (i64, Option<(usize, usize)>) = ab_negamax(
+//             board,
+//             table,
+//             zhash,
+//             tt,
+//             &mut 0,
+//             actual,
+//             actual_catch,
+//             opp_catch,
+//             last_move,
+//             &mut (*beta - 1),
+//             beta,
+//             &mut 1,
+//             depth_max
+//         );
+//         ret = (score, r#move.unwrap());
+//         g = score;
+//         if g < *beta {
+//             upperbnd = g;
+
+//         } else {
+//             lowerbnd = g;
+//         }
+//     }
+//     ret
+// }
+
+
+// fn iterative_deepening(
+//     board: &mut [[Option<bool>; SIZE_BOARD]; SIZE_BOARD],
+//     table: &[[[u64; 2]; SIZE_BOARD]; SIZE_BOARD],
+//     zhash: &mut u64,
+//     tt: &mut Vec<zobrist::TT>,
+//     actual: Option<bool>,
+//     actual_catch: &mut isize,
+//     opp_catch: &mut isize,
+//     last_move: Option<(usize, usize)>,
+//     alpha: &mut i64,
+//     beta: &mut i64,
+// ) -> (usize, usize) {
+//     let mut f = 0;
+//     let mut ret = (0,0);
+//     for d in (2..DEPTH_MAX).step_by(2) {
+//         let (score, r#move) = get_best_move_mtdf(
+//             board,
+//             table,
+//             zhash,
+//             tt,
+//             actual,
+//             actual_catch,
+//             opp_catch,
+//             last_move,
+//             alpha,
+//             beta,
+//             &d,
+//             f
+//         );
+//         f = score;
+//         ret = r#move;
+//         // if times_up() {
+//         //     break;
+//         // }
+//     }
+//     ret
+// }
+
+fn iterative_deepening_abtt(
     board: &mut [[Option<bool>; SIZE_BOARD]; SIZE_BOARD],
     table: &[[[u64; 2]; SIZE_BOARD]; SIZE_BOARD],
     zhash: &mut u64,
@@ -206,28 +296,45 @@ fn iterative_deepening(
     alpha: &mut i64,
     beta: &mut i64,
 ) -> (usize, usize) {
-    let mut f = 0;
+    println!("jeprint");
     let mut ret = (0,0);
-    for d in 2..DEPTH_MAX {
-        let (score, r#move) = get_best_move_mtdf(
+    let mut tt_store = tt.clone();
+    // let mut alpha2 = *alpha;
+    // let mut beta2 = *beta;
+    // let mut actual_catch2 = *actual_catch;
+    // let mut opp_catch2 = *opp_catch;
+    let mut zhash2 = *zhash;
+    // println!("zhash: {}", zhash2);
+    // let d = DEPTH_MAX;
+    for d in 1..(DEPTH_MAX+1) {
+        // let mut tt_store = tt.clone();
+        // let mut tt2 = tt_store;
+        // let mut tt_store = tt.clone();
+    
+    // let mut zhash2 = *zhash;
+    let mut alpha2 = *alpha;
+    let mut beta2 = *beta;
+    let mut actual_catch2 = *actual_catch;
+    let mut opp_catch2 = *opp_catch;
+
+        // for d in (1..DEPTH_MAX).step_by(2) {
+       println!("debug: {}|{}|{}|{}|{}|{}|", *alpha, *beta, actual_catch2, opp_catch2, d, zhash2);
+        let (_score, r#move) = ab_negamax(
             board,
             table,
-            zhash,
-            tt,
+            &mut zhash2,
+            &mut tt_store,
+            &mut 0,
             actual,
-            actual_catch,
-            opp_catch,
+            &mut actual_catch2,
+            &mut opp_catch2,
             last_move,
-            alpha,
-            beta,
+            &mut alpha2,
+            &mut beta2,
+            &mut 1,
             &d,
-            f
         );
-        f = score;
-        ret = r#move;
-        // if times_up() {
-        //     break;
-        // }
+        ret = r#move.unwrap();
     }
     ret
 }
@@ -242,7 +349,7 @@ fn ia(
     let pawn = game.player_to_pawn();
     let mut tt = zobrist::initialize_transposition_table();
 
-    iterative_deepening(
+    iterative_deepening_abtt(
         &mut board,
         table,
         &mut hash,
@@ -254,6 +361,22 @@ fn ia(
         &mut MIN_INFINITY,
         &mut MAX_INFINITY,
     )
+
+    // get_best_move_mtdf(
+    //     &mut board,
+    //     table,
+    //     &mut hash,
+    //     &mut tt,
+    //     pawn,
+    //     &mut player_catch,
+    //     &mut opponent_catch,
+    //     None,
+    //     &mut MIN_INFINITY,
+    //     &mut MAX_INFINITY,
+    //     &DEPTH_MAX,
+    //     0
+    // )
+    
 }
 
 pub fn get_ia(
