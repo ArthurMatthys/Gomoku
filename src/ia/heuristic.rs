@@ -10,21 +10,22 @@ macro_rules! valid_coord {
 
 pub fn evaluate_board(
     board: &mut [[Option<bool>; SIZE_BOARD]; SIZE_BOARD],
-) -> [[[(i8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD] {
-    let mut score_tab: [[[(i8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD] =
-        [[[(-1, Some(false), Some(false)); 4]; SIZE_BOARD]; SIZE_BOARD];
+) -> [[[(u8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD] {
+    let mut score_tab: [[[(u8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD] =
+        [[[(0, Some(false), Some(false)); 4]; SIZE_BOARD]; SIZE_BOARD];
     for x in 0..SIZE_BOARD {
         for y in 0..SIZE_BOARD {
             if let Some(player) = board[x][y] {
                 // todo multithread
                 for dir in 0..4 {
-                    if score_tab[x][y][dir].0 != -1 {
+                    if score_tab[x][y][dir].0 != 0 {
                         continue;
                     } else {
-                        let mut count = 1i8;
+                        let mut count = 1u8;
                         let mut block_left = Some(false);
                         let mut block_right = Some(false);
-                        let mut indexes = vec![(x, y)];
+                        let mut indexes = Vec::with_capacity(15);
+                        indexes.push((x, y));
                         let direction = DIRECTIONS[dir];
                         for way in [-1, 1].iter() {
                             let mut step = 1isize;
@@ -134,12 +135,13 @@ fn score_to_points(
 
 pub fn first_heuristic_hint(
     board: &mut [[Option<bool>; SIZE_BOARD]; SIZE_BOARD],
+    score_board: &mut [[[(u8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD],
     player_actual: Option<bool>,
     player_actual_catch: &mut isize,
     player_opposite_catch: &mut isize,
     depth: &mut i8,
 ) -> i64 {
-    let (good_points, bad_points) = get_alignements(board, player_actual);
+    let (good_points, bad_points) = get_alignements(board, score_board, player_actual);
 
     score_to_points(player_actual_catch, good_points, depth)
         - score_to_points(player_opposite_catch, bad_points, depth)
@@ -147,6 +149,7 @@ pub fn first_heuristic_hint(
 
 fn get_alignements(
     board: &mut [[Option<bool>; SIZE_BOARD]; SIZE_BOARD],
+    score_board: &mut [[[(u8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD],
     player_actual: Option<bool>,
 ) -> (
     (u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8),
@@ -156,8 +159,6 @@ fn get_alignements(
     // 3 open/3 semi-open/3 close/2 open/2 semi-open/2 close
     let mut good_points = (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
     let mut bad_points = (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-    let score_board: [[[(i8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD] =
-        evaluate_board(board);
 
     let check_free_space = |dir: usize,
                             x: usize,

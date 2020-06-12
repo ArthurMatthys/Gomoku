@@ -100,6 +100,12 @@ pub fn check_double_three(game: &mut game::Game) -> Vec<(usize, usize)> {
     ret
 }
 
+macro_rules! valid_coord {
+    ($e:expr, $v:expr) => {
+        $e >= 0 && $v >= 0 && ($e as usize) < SIZE_BOARD && ($v as usize) < SIZE_BOARD
+    };
+}
+
 fn is_free_tree_hint(
     board: &mut [[Option<bool>; SIZE_BOARD]; SIZE_BOARD],
     (line, col): (isize, isize),
@@ -109,11 +115,18 @@ fn is_free_tree_hint(
     let mut parts = [[0, 0, 0, 0], [0, 0, 0, 0]];
     for i in [-1, 1].iter() {
         let index_part: usize = ((i + 1) / 2) as usize;
-        let mut moves: isize = 1;
+        //        let mut moves: isize = 1;
+        let new_dir_line = i * dir_line;
+        let new_dir_col = i * dir_col;
+        let mut new_index_line = line;
+        let mut new_index_col = col;
         loop {
-            if capture::valid_dir(&(line, col), (i * dir_line, i * dir_col), moves) {
-                let (new_index_line, new_index_col) =
-                    (line + dir_line * moves * i, col + dir_col * moves * i);
+            //            if capture::valid_dir(&(line, col), (i * dir_line, i * dir_col), moves) {
+            //                let (new_index_line, new_index_col) =
+            //                    (line + dir_line * moves * i, col + dir_col * moves * i);
+            new_index_line += new_dir_line;
+            new_index_col += new_dir_col;
+            if valid_coord!(new_index_line, new_index_col) {
                 match board[new_index_line as usize][new_index_col as usize] {
                     //  If I am on an empty position
                     None => {
@@ -148,8 +161,8 @@ fn is_free_tree_hint(
                     }
                     _ => unreachable!(),
                 };
-                // Check next move
-                moves += 1;
+            //                moves += 1;
+            // Check next move
             // If we are on an invalid position, break
             } else {
                 break;
@@ -183,7 +196,7 @@ pub fn check_double_three_hint(
     }
     let mut nbr_free_tree = 0;
     after_turn_check::DIRECTIONS.iter().for_each(|&dir| {
-        if is_free_tree_hint(board, (x, y), actual_player, dir) {
+        if nbr_free_tree >= 2 || is_free_tree_hint(board, (x, y), actual_player, dir) {
             nbr_free_tree += 1;
         }
     });

@@ -214,6 +214,14 @@ pub fn main() {
                 _ => {}
             }
         }
+        //        if game.history.len() == 1 {
+        //            let (dx, dy) = (1isize, -1isize);
+        //            let (new_x, new_y) = game.history[0];
+        //            game.change_board_from_input(
+        //                (new_x as isize + dx) as usize,
+        //                (new_y as isize + dy) as usize,
+        //            );
+        //        }
 
         if game.check_win() {
             break 'running;
