@@ -296,14 +296,14 @@ fn iterative_deepening_abtt(
     alpha: &mut i64,
     beta: &mut i64,
 ) -> (usize, usize) {
-    println!("jeprint");
+    // println!("jeprint");
     let mut ret = (0,0);
-    let mut tt_store = tt.clone();
+    // let mut tt_store = tt.clone();
     // let mut alpha2 = *alpha;
     // let mut beta2 = *beta;
     // let mut actual_catch2 = *actual_catch;
     // let mut opp_catch2 = *opp_catch;
-    let mut zhash2 = *zhash;
+    // let mut zhash2 = *zhash;
     // println!("zhash: {}", zhash2);
     // let d = DEPTH_MAX;
     for d in 1..(DEPTH_MAX+1) {
@@ -318,12 +318,12 @@ fn iterative_deepening_abtt(
     let mut opp_catch2 = *opp_catch;
 
         // for d in (1..DEPTH_MAX).step_by(2) {
-       println!("debug: {}|{}|{}|{}|{}|{}|", *alpha, *beta, actual_catch2, opp_catch2, d, zhash2);
+    //    println!("debug: {}|{}|{}|{}|{}|{}|", *alpha, *beta, actual_catch2, opp_catch2, d, *zhash);
         let (_score, r#move) = ab_negamax(
             board,
             table,
-            &mut zhash2,
-            &mut tt_store,
+            zhash,
+            tt,
             &mut 0,
             actual,
             &mut actual_catch2,
@@ -335,6 +335,7 @@ fn iterative_deepening_abtt(
             &d,
         );
         ret = r#move.unwrap();
+        // println!("debug2: {}|{}|{}|{}|{}|{}|", *alpha, *beta, actual_catch2, opp_catch2, d, *zhash);
     }
     ret
 }
