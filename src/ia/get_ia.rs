@@ -250,6 +250,7 @@ fn iterative_deepening_mtdf(
     let mut f = 0;
     let mut score_board = heuristic::evaluate_board(board);
     
+    // for d in [2, 3, 5].iter() {
     for d in (2..(DEPTH_MAX+1)).step_by(2) {
     let mut alpha2 = *alpha;
     let mut beta2 = *beta;
