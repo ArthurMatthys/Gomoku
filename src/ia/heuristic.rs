@@ -70,13 +70,14 @@ pub fn evaluate_board(
     score_tab
 }
 
-pub const INSTANT_WIN: i64 = 10000000000000;
+pub const INSTANT_WIN: i64 = 00010000000000;
 const TWO_STEP_WIN: i64 = 000100000;
 const FOUR_STEP_WIN: i64 = 000010000;
 const SIX_STEP_WIN: i64 = 000001000;
-const FIVE_CAN_TAKE: i64 = 010000000;
+const FIVE_CAN_TAKE: i64 = 1000000000;
 const TEN_STEP_WIN: i64 = 000000010;
 const SCORE_TAKE: i64 = 000000100;
+const MULTIPLIER: i64 = 10;
 
 fn score_to_points(
     nb_caught: &mut isize,
@@ -98,10 +99,10 @@ fn score_to_points(
 ) -> i64 {
     let mut total = 0i64;
     match *nb_caught {
-        5..=8 => return INSTANT_WIN,
+        5..=8 => return INSTANT_WIN * MULTIPLIER.pow(*depth as u32),
         4 => {
             if nb_catch > 2 {
-                return INSTANT_WIN;
+                return INSTANT_WIN * MULTIPLIER.pow(*depth as u32);
             } else if nb_catch == 2 {
                 total += TWO_STEP_WIN;
             }
@@ -110,13 +111,13 @@ fn score_to_points(
             //
             //        }
         }
-        a => total += SCORE_TAKE.pow((a + 1) as u32) * nb_catch as i64,
+        a => total += SCORE_TAKE.pow((a + 1) as u32 * 2) * nb_catch as i64,
         // a => total += 0,
     }
     if nb_5 > 0 {
-        return INSTANT_WIN;
+        return INSTANT_WIN * MULTIPLIER.pow(*depth as u32);
     }
-    total += (nb_5_take / 5) as i64 * FIVE_CAN_TAKE;
+    total += (nb_5_take / 5) as i64 * FIVE_CAN_TAKE * MULTIPLIER.pow(*depth as u32);
 
     total += (nb_4_o / 4) as i64 * TWO_STEP_WIN;
     total += (nb_4_so / 4) as i64 * TWO_STEP_WIN / 2;

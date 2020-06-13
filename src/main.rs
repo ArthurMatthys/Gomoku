@@ -29,6 +29,8 @@ use ia::zobrist;
 
 mod checks;
 
+const DEPTH_MAX: i8 = 5;
+
 macro_rules! string_of_index {
     ($line:expr, $col:expr) => {{
         let col: char = std::char::from_u32('A' as u32 + *$col as u32)
@@ -175,7 +177,7 @@ pub fn main() {
     'running: loop {
         if game.actual_player_is_ai().expect("Wrong type of player") {
             let start = Instant::now();
-            let (line, col) = get_ia::get_ia(&mut game, &ztable);
+            let (line, col) = get_ia::get_ia(&mut game, &ztable, &DEPTH_MAX);
             let end = Instant::now();
             game.set_player_time(end.duration_since(start));
             game.change_board_from_input(line, col);
@@ -205,9 +207,16 @@ pub fn main() {
                     }
                 }
                 Event::KeyDown {
-                    keycode: Some(Keycode::H),
+                    keycode: Some(Keycode::T),
                     ..
                 } => game.set_capture_pos(),
+                Event::KeyDown {
+                    keycode: Some(Keycode::H),
+                    ..
+                } => {
+                    let (line, col) = get_ia::get_ia(&mut game, &ztable, &4);
+                    game.set_best_move(line, col);
+                }
                 Event::KeyDown {
                     keycode: Some(a), ..
                 } => println!("{}", a),

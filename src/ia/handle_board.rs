@@ -11,7 +11,7 @@ const SCORE_TAKE: i64 = 100;
 
 macro_rules! valid_coord {
     ($x: expr, $y: expr) => {
-        $x > 0 && $x < SIZE_BOARD as isize && $y > 0 && $y < SIZE_BOARD as isize
+        $x >= 0 && $x < SIZE_BOARD as isize && $y >= 0 && $y < SIZE_BOARD as isize
     };
 }
 
