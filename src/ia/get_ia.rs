@@ -10,10 +10,7 @@ use super::heuristic;
 use super::zobrist;
 use rand::seq::SliceRandom;
 // use super::super::player;
-use std::thread::sleep;
-use std::time::Duration;
 
-const DEPTH_MAX: i8 = 5;
 const MIN_INFINITY: i64 = i64::min_value() + 1;
 const MAX_INFINITY: i64 = i64::max_value();
 
@@ -37,13 +34,11 @@ fn ab_negamax(
     actual: Option<bool>,
     actual_catch: &mut isize,
     opp_catch: &mut isize,
-    last_move: Option<(usize, usize)>,
     alpha: &mut i64,
     beta: &mut i64,
     color: &mut i8,
     depth_max: &i8,
 ) -> (i64, Option<(usize, usize)>) {
-    let mut trig = false;
     let mut tte = zobrist::retrieve_tt_from_hash(tt, zhash);
     let alpha_orig = *alpha;
 
@@ -61,7 +56,8 @@ fn ab_negamax(
         }
     }
 
-    if *current_depth == *depth_max || board_state_win(board, score_board, actual_catch, opp_catch) {
+    if *current_depth == *depth_max || board_state_win(board, score_board, actual_catch, opp_catch)
+    {
         let weight = heuristic::first_heuristic_hint(
             board,
             score_board,
@@ -76,6 +72,7 @@ fn ab_negamax(
     // Otherwise bubble up values from below
     let mut best_move: Option<(usize, usize)> = None;
     let mut best_score = MIN_INFINITY;
+    let mut trig = false;
 
     if tte.is_valid && tte.depth >= *depth_max - *current_depth {
         // println!("rentré");
@@ -95,7 +92,6 @@ fn ab_negamax(
                     get_opp!(actual),
                     opp_catch,
                     actual_catch,
-                    Some((line, col)),
                     &mut (-*beta),
                     &mut (-*alpha),
                     &mut (-*color),
@@ -140,7 +136,6 @@ fn ab_negamax(
                 get_opp!(actual),
                 opp_catch,
                 actual_catch,
-                Some((line, col)),
                 &mut (-*beta),
                 &mut (-*alpha),
                 &mut (-*color),
@@ -194,25 +189,23 @@ fn mtdf(
     actual: Option<bool>,
     actual_catch: &mut isize,
     opp_catch: &mut isize,
-    last_move: Option<(usize, usize)>,
-    alpha: &mut i64,
     beta: &mut i64,
     depth_max: &i8,
     firstguess: i64,
     score_board: &mut [[[(u8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD],
 ) -> (i64, (usize, usize)) {
     let mut g = firstguess;
-    let mut ret = (0, (0,0));
+    let mut ret = (0, (0, 0));
     let mut upperbnd = MAX_INFINITY;
     let mut lowerbnd = MIN_INFINITY;
-    
+
     while lowerbnd < upperbnd {
         // let mut score_board2 = heuristic::evaluate_board(board);
         let mut actual_catch2 = *actual_catch;
         let mut opp_catch2 = *opp_catch;
         if g == lowerbnd {
             *beta = g + 1;
-         } else {
+        } else {
             *beta = g;
         }
         // *beta = i64::max(g, lowerbnd + 1);
@@ -226,17 +219,15 @@ fn mtdf(
             actual,
             &mut actual_catch2,
             &mut opp_catch2,
-            last_move,
             &mut (*beta - 1),
             beta,
             &mut 1,
-            depth_max
+            depth_max,
         );
         ret = (score, r#move.unwrap());
         g = score;
         if g < *beta {
             upperbnd = g;
-
         } else {
             lowerbnd = g;
         }
@@ -252,9 +243,9 @@ fn iterative_deepening_mtdf(
     actual: Option<bool>,
     actual_catch: &mut isize,
     opp_catch: &mut isize,
-    last_move: Option<(usize, usize)>,
     alpha: &mut i64,
     beta: &mut i64,
+    depth_max: &i8,
     game: &mut game::Game,
 ) -> (usize, usize) {
     let mut ret = (0,0);
@@ -266,14 +257,14 @@ fn iterative_deepening_mtdf(
     let mut score_board = heuristic::evaluate_board(board);
     // println!("before- f: {}", f);
     // for d in [2, 3, 5].iter() {
-    for d in ((DEPTH_MAX - 2)..(DEPTH_MAX+1)).step_by(2) {
-    // let mut alpha2 = *alpha;
-    let mut beta2 = *beta;
-    let mut actual_catch2 = *actual_catch;
-    let mut opp_catch2 = *opp_catch;
+    for d in (2..(depth_max + 1)).step_by(2) {
+        let mut alpha2 = *alpha;
+        let mut beta2 = *beta;
+        let mut actual_catch2 = *actual_catch;
+        let mut opp_catch2 = *opp_catch;
 
         // for d in (1..DEPTH_MAX).step_by(2) {
-    //    println!("debug: {}|{}|{}|{}|{}|{}|", *alpha, *beta, actual_catch2, opp_catch2, d, *zhash);
+        //    println!("debug: {}|{}|{}|{}|{}|{}|", *alpha, *beta, actual_catch2, opp_catch2, d, *zhash);
         let (score, r#move) = mtdf(
             board,
             table,
@@ -282,12 +273,10 @@ fn iterative_deepening_mtdf(
             actual,
             &mut actual_catch2,
             &mut opp_catch2,
-            last_move,
-            alpha,
             &mut beta2,
             &d,
             f,
-            &mut score_board
+            &mut score_board,
         );
         ret = r#move;
         f = score;
@@ -305,6 +294,7 @@ fn iterative_deepening_mtdf(
 fn ia(
     game: &mut game::Game,
     (table, mut hash): (&[[[u64; 2]; SIZE_BOARD]; SIZE_BOARD], u64),
+    depth_max: &i8,
 ) -> (usize, usize) {
     let mut player_catch = game.get_actual_player().nb_of_catch;
     let mut opponent_catch = game.get_opponent().nb_of_catch;
@@ -332,9 +322,9 @@ fn ia(
         pawn,
         &mut player_catch,
         &mut opponent_catch,
-        None,
         &mut MIN_INFINITY,
         &mut MAX_INFINITY,
+        depth_max,
         game,
     )
 }
@@ -342,6 +332,7 @@ fn ia(
 pub fn get_ia(
     game: &mut game::Game,
     ztable: &[[[u64; 2]; SIZE_BOARD]; SIZE_BOARD],
+    depth_max: &i8,
 ) -> (usize, usize) {
     let hash: u64 = zobrist::board_to_zhash(&game.board, ztable);
     let mut rng = rand::thread_rng();
@@ -357,11 +348,11 @@ pub fn get_ia(
                 game::TypeOfParty::Longpro => {
                     ((9 + dir_line * 4) as usize, (9 + dir_col * 4) as usize)
                 }
-                game::TypeOfParty::Standard => ia(game, (ztable, hash)),
+                game::TypeOfParty::Standard => ia(game, (ztable, hash), depth_max),
             }
         }
         _ => {
-            let ret = ia(game, (ztable, hash));
+            let ret = ia(game, (ztable, hash), depth_max);
             ret
         }
     }

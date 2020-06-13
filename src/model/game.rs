@@ -131,6 +131,7 @@ pub struct Game {
     pub board: [[Option<bool>; board::SIZE_BOARD]; board::SIZE_BOARD],
     pub forbidden: Vec<(usize, usize)>,
     pub capture: Vec<(usize, usize)>,
+    pub best_move: Vec<(usize, usize)>,
 
     pub type_of_party: TypeOfParty,
     pub has_changed: bool,
@@ -183,6 +184,7 @@ impl Game {
                 result: None,
                 forbidden: vec![],
                 capture: vec![],
+                best_move: vec![],
                 instant_win: false,
                 winner: None,
                 firstguess: (0,0),
@@ -460,6 +462,10 @@ impl Game {
         self.capture = vec![];
     }
 
+    pub fn clear_best_move(&mut self) -> () {
+        self.best_move = vec![];
+    }
+
     fn add_impossible_index(&mut self, point: (usize, usize)) -> () {
         self.forbidden.push(point);
     }
@@ -474,10 +480,20 @@ impl Game {
         self.capture.push(point);
     }
 
+    fn add_best_move_index(&mut self, point: (usize, usize)) -> () {
+        self.best_move.push(point);
+    }
+
     fn add_capture_vec_index(&mut self, points: Vec<(usize, usize)>) -> () {
         points
             .iter()
             .for_each(|&point| self.add_capture_index(point));
+    }
+
+    fn add_best_move_vec_index(&mut self, points: Vec<(usize, usize)>) -> () {
+        points
+            .iter()
+            .for_each(|&point| self.add_best_move_index(point));
     }
 
     pub fn set_forbidden_pos(&mut self) -> () {
@@ -506,6 +522,14 @@ impl Game {
         self.has_changed = true;
     }
 
+    pub fn set_best_move(&mut self, x: usize, y: usize) -> () {
+        self.clear_best_move();
+        let mut new_vec = Vec::with_capacity(2);
+        new_vec.push((x, y));
+        self.add_best_move_vec_index(new_vec);
+        self.has_changed = true;
+    }
+
     pub fn is_forbidden_from_index(&self, line: usize, col: usize) -> bool {
         self.forbidden.iter().any(|&point| point == (line, col))
     }
@@ -518,8 +542,13 @@ impl Game {
         self.capture.iter().any(|&point| point == (x, y))
     }
 
+    pub fn is_best_move_from_coord(&self, x: usize, y: usize) -> bool {
+        self.best_move.iter().any(|&point| point == (x, y))
+    }
+
     pub fn set_changed(&mut self) -> () {
         self.set_forbidden_pos();
+        self.clear_best_move();
         self.clear_capture();
         self.has_changed = true;
     }
@@ -598,22 +627,26 @@ impl Game {
                 self.winner = self.player_to_pawn();
                 true
             } else if let Some(winner) = self.result {
-                let score_board = heuristic::evaluate_board(&mut self.board);
-                for x in 0..19 {
-                    for y in 0..19 {
-                        if Some(!winner) == self.board[x][y] {
-                            for dir in 0..4 {
-                                if score_board[x][y][dir].0 == 5 {
-                                    self.instant_win = true;
-                                    self.winner = self.player_to_pawn();
-                                    return true;
+                if self.result != self.player_to_pawn() {
+                    let score_board = heuristic::evaluate_board(&mut self.board);
+                    for x in 0..19 {
+                        for y in 0..19 {
+                            if Some(!winner) == self.board[x][y] {
+                                for dir in 0..4 {
+                                    if score_board[x][y][dir].0 == 5 {
+                                        self.instant_win = true;
+                                        self.winner = self.player_to_pawn();
+                                        return true;
+                                    }
                                 }
                             }
                         }
                     }
+                    self.result = None;
+                    self.check_win()
+                } else {
+                    false
                 }
-                self.result = None;
-                self.check_win()
             } else if let Some(indexes) = after_turn_check::check_winner(self) {
                 self.result = self.player_to_pawn();
                 if capture::can_capture(self, indexes) {
