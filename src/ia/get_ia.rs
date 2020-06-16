@@ -89,49 +89,95 @@ fn ab_negamax(
     // Otherwise bubble up values from below
     let mut best_move: Option<(usize, usize)> = None;
     let mut best_score = MIN_INFINITY;
+    let mut trig = false;
 
-    // Collect moves
-    let available_positions = get_space(board, score_board, actual, *actual_catch);
+    if tte.is_valid && tte.depth >= *depth_max - *current_depth {
+        // println!("rentré");
+        if let Some((line, col)) = tte.r#move {
+            if board[line][col] == None {
+                let removed = change_board(board, score_board, line, col, actual, table, zhash);
+                *actual_catch += removed.len() as isize;
 
-    for (line, col, _) in available_positions {
-        let removed = change_board(board, score_board, line, col, actual, table, zhash);
-        *actual_catch += removed.len() as isize;
+                // Recurse
+                let (recursed_score, _) = ab_negamax(
+                    board,
+                    table,
+                    score_board,
+                    zhash,
+                    tt,
+                    &mut (*current_depth + 1),
+                    get_opp!(actual),
+                    opp_catch,
+                    actual_catch,
+                    &mut (-*beta),
+                    &mut (-*alpha),
+                    &mut (-*color),
+                    depth_max
+                );
+                let x = -recursed_score;
 
-        // Recurse
-        let (recursed_score, _) = ab_negamax(
-            board,
-            table,
-            score_board,
-            zhash,
-            tt,
-            &mut (*current_depth + 1),
-            get_opp!(actual),
-            opp_catch,
-            actual_catch,
-            &mut (-*beta),
-            &mut (-*alpha),
-            &mut (-*color),
-            depth_max,
-        );
-
-        let x = -recursed_score;
-        if x > best_score {
-            best_score = x;
-            best_move = Some((line, col));
+                *actual_catch -= removed.len() as isize;
+                remove_last_pawn(board, score_board, line, col, actual, removed, table, zhash);
+                
+                
+                if x >= *beta {
+                    // println!("rentré_cutoff");
+                    best_score = x;
+                    best_move = tte.r#move;
+                    trig = true;
+                } 
+                // else {
+                //     best_score = MIN_INFINITY;
+                //     best_move = None;
+                // }
+            }
         }
-        if x > *alpha {
-            *alpha = x;
-            best_move = Some((line, col));
-        }
+    }
 
-        *actual_catch -= removed.len() as isize;
-        remove_last_pawn(board, score_board, line, col, actual, removed, table, zhash);
+    if !trig {
+        // Collect moves
+        let available_positions = get_space(board, score_board, actual, *actual_catch);
 
-        if *alpha >= *beta {
-            best_score = *alpha;
-            best_move = Some((line, col));
-            break;
-            // return (*alpha, best_move);
+        for (line, col, _) in available_positions {
+            let removed = change_board(board, score_board, line, col, actual, table, zhash);
+            *actual_catch += removed.len() as isize;
+
+            // Recurse
+            let (recursed_score, _) = ab_negamax(
+                board,
+                table,
+                score_board,
+                zhash,
+                tt,
+                &mut (*current_depth + 1),
+                get_opp!(actual),
+                opp_catch,
+                actual_catch,
+                &mut (-*beta),
+                &mut (-*alpha),
+                &mut (-*color),
+                depth_max
+            );
+
+            let x = -recursed_score;
+            if x > best_score {
+                best_score = x;
+                best_move = Some((line, col));
+            }
+            if x > *alpha {
+                *alpha = x;
+                best_move = Some((line, col));
+            }
+
+            *actual_catch -= removed.len() as isize;
+            remove_last_pawn(board, score_board, line, col, actual, removed, table, zhash);
+
+            if *alpha >= *beta {
+                best_score = *alpha;
+                best_move = Some((line, col));
+                break;
+                // return (*alpha, best_move);
+            }
         }
     }
 
@@ -152,43 +198,6 @@ fn ab_negamax(
     (best_score, best_move)
 }
 
-// fn get_best_move(
-//     board: &mut [[Option<bool>; SIZE_BOARD]; SIZE_BOARD],
-//     table: &[[[u64; 2]; SIZE_BOARD]; SIZE_BOARD],
-//     zhash: &mut u64,
-//     tt: &mut Vec<zobrist::TT>,
-//     actual: Option<bool>,
-//     actual_catch: &mut isize,
-//     opp_catch: &mut isize,
-//     last_move: Option<(usize, usize)>,
-//     alpha: &mut i64,
-//     beta: &mut i64,
-// ) -> (usize, usize) {
-//     let mut score_board = heuristic::evaluate_board(board);
-//     let (_, r#move): (i64, Option<(usize, usize)>) = ab_negamax(
-//         board,
-//         table,
-//         &mut score_board,
-//         zhash,
-//         tt,
-//         &mut 0,
-//         actual,
-//         actual_catch,
-//         opp_catch,
-//         last_move,
-//         alpha,
-//         beta,
-//         &mut 1,
-//     );
-//     match r#move {
-//         Some(x) => x,
-//         _ => {
-//             sleep(Duration::new(10, 0));
-//             unreachable!();
-//         }
-//     }
-// }
-
 fn mtdf(
     board: &mut [[Option<bool>; SIZE_BOARD]; SIZE_BOARD],
     table: &[[[u64; 2]; SIZE_BOARD]; SIZE_BOARD],
@@ -197,7 +206,6 @@ fn mtdf(
     actual: Option<bool>,
     actual_catch: &mut isize,
     opp_catch: &mut isize,
-    alpha: &mut i64,
     beta: &mut i64,
     depth_max: &i8,
     firstguess: i64,
@@ -255,11 +263,17 @@ fn iterative_deepening_mtdf(
     alpha: &mut i64,
     beta: &mut i64,
     depth_max: &i8,
+    game: &mut game::Game,
 ) -> (usize, usize) {
-    let mut ret = (0, 0);
-    let mut f = 0;
+    let mut ret = (0,0);
+    let mut f = match actual {
+        Some(true) => game.firstguess.0,
+        Some(false) => game.firstguess.1,
+        None => unreachable!()
+    };
     let mut score_board = heuristic::evaluate_board(board);
-
+    // println!("before- f: {}", f);
+    // for d in [2, 3, 5].iter() {
     for d in (2..(depth_max + 1)).step_by(2) {
         let mut alpha2 = *alpha;
         let mut beta2 = *beta;
@@ -276,7 +290,6 @@ fn iterative_deepening_mtdf(
             actual,
             &mut actual_catch2,
             &mut opp_catch2,
-            &mut alpha2,
             &mut beta2,
             &d,
             f,
@@ -286,6 +299,12 @@ fn iterative_deepening_mtdf(
         f = score;
         // println!("debug2: {}|{}|{}|{}|{}|{}|", *alpha, *beta, actual_catch2, opp_catch2, d, *zhash);
     }
+    match actual {
+        Some(true) => game.firstguess.0 = f,
+        Some(false) => game.firstguess.1 = f,
+        None => unreachable!()
+    };
+    // println!("after- f: {}", f);
     ret
 }
 
@@ -323,6 +342,7 @@ fn ia(
         &mut MIN_INFINITY,
         &mut MAX_INFINITY,
         depth_max,
+        game,
     )
 }
 

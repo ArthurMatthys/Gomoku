@@ -138,6 +138,7 @@ pub struct Game {
     pub result: Option<bool>,
     pub instant_win: bool,
     pub winner: Option<bool>,
+    pub firstguess: (i64, i64),
 }
 
 impl Game {
@@ -186,6 +187,7 @@ impl Game {
                 best_move: vec![],
                 instant_win: false,
                 winner: None,
+                firstguess: (0,0),
             },
             events,
         ))

@@ -2,6 +2,8 @@ extern crate rand;
 
 use super::super::render::board;
 
+const LENGTH_TT: u64 = 4194319;
+
 // Type of element in TT
 #[derive(Copy, Clone, PartialEq)]
 pub enum TypeOfEl {
@@ -35,16 +37,15 @@ pub fn initialize_transposition_table() -> Vec<TT> {
         depth: 0,
         r#move: None,
     };
-    vec![initialized_struct; 4194319]
+    vec![initialized_struct; LENGTH_TT as usize]
 }
 
 pub fn retrieve_tt_from_hash(tt: &Vec<TT>, zhash: &u64) -> TT {
-    tt[(*zhash % tt.len() as u64) as usize]
+    tt[(*zhash % LENGTH_TT) as usize]
 }
 
 pub fn store_tt_entry(tt: &mut Vec<TT>, zhash: &mut u64, tte: TT) -> () {
-    let len = tt.len();
-    tt[(*zhash % len as u64) as usize] = tte;
+    tt[(*zhash % LENGTH_TT) as usize] = tte;
 }
 
 // Zobrist hash
