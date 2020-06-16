@@ -461,6 +461,71 @@ pub fn get_space(
     ret.sort_by(|(_, _, score1), (_, _, score2)| score2.cmp(score1));
     ret
 }
+fn get_threats(
+    board: &mut [[Option<bool>; SIZE_BOARD]; SIZE_BOARD],
+    score_board: &mut [[[(u8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD],
+    player_actual: Option<bool>,
+    player_actual_catch: &mut isize,
+) -> (
+    Vec<(usize, usize)>,
+    Vec<((usize, usize), Vec<(usize, usize)>)>,
+) {
+    (vec![], vec![])
+}
+
+pub fn find_continuous_threats(
+    board: &mut [[Option<bool>; SIZE_BOARD]; SIZE_BOARD],
+    score_board: &mut [[[(u8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD],
+    player_actual: Option<bool>,
+    player_actual_catch: &mut isize,
+    player_opposite_catch: &mut isize,
+    depth: &mut i8,
+    depth_win: &mut i8,
+) -> Option<(usize, usize)> {
+    if *depth < *depth_win {
+        return None;
+    }
+    let (winning_pos, available_theats) =
+        get_threats(board, score_board, player_actual, player_actual_catch);
+
+    if winning_pos.len() > 0 {
+        *depth_win = *depth;
+        return Some(winning_pos[0]);
+    }
+
+    for (threat, counters) in available_theats.iter() {
+        let (x, y) = threat;
+        let removed = change_board_hint(board, score_board, *x, *y, player_actual);
+        *player_actual_catch += removed.len() as isize;
+
+        //        if (counter.len() == 0){
+        //            INSTANT_WIN
+        //        }
+        for (counter_x, counter_y) in counters.iter() {
+            let removed_counter =
+                change_board_hint(board, score_board, *counter_x, *counter_y, player_actual);
+            *player_opposite_catch += removed_counter.len() as isize;
+            let res = find_continuous_threats(
+                board,
+                score_board,
+                player_actual,
+                player_actual_catch,
+                player_opposite_catch,
+                &mut (*depth - 2),
+                depth_win,
+            );
+            *player_opposite_catch -= removed_counter.len() as isize;
+            remove_last_pawn_hint(board, score_board, *x, *y, player_actual, removed_counter);
+            if let Some(coords) = res {
+                return Some(coords);
+            }
+        }
+
+        *player_actual_catch -= removed.len() as isize;
+        remove_last_pawn_hint(board, score_board, *x, *y, player_actual, removed);
+    }
+    None
+}
 
 macro_rules! get_bool {
     ($e:expr) => {
@@ -567,6 +632,66 @@ macro_rules! get_opp {
             _ => unreachable!(),
         }
     };
+}
+
+pub fn remove_last_pawn_hint(
+    board: &mut [[Option<bool>; SIZE_BOARD]; SIZE_BOARD],
+    score_board: &mut [[[(u8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD],
+    x: usize,
+    y: usize,
+    pawn: Option<bool>,
+    removed: Vec<((isize, isize), (isize, isize))>,
+) {
+    let old = get_opp!(pawn);
+    change_score_board_remove(board, score_board, x as isize, y as isize);
+    board[x][y] = None;
+    removed.iter().for_each(|&((x1, y1), (x2, y2))| {
+        board[x1 as usize][y1 as usize] = old;
+        change_score_board_add(board, score_board, x1 as isize, y1 as isize);
+        board[x2 as usize][y2 as usize] = old;
+        change_score_board_add(board, score_board, x2 as isize, y2 as isize);
+    })
+}
+
+pub fn change_board_hint(
+    board: &mut [[Option<bool>; SIZE_BOARD]; SIZE_BOARD],
+    score_board: &mut [[[(u8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD],
+    x: usize,
+    y: usize,
+    pawn: Option<bool>,
+) -> Vec<((isize, isize), (isize, isize))> {
+    let mut removed = Vec::with_capacity(16);
+    board[x][y] = pawn;
+    change_score_board_add(board, score_board, x as isize, y as isize);
+    let opp = get_opp!(pawn);
+    for &(dx, dy) in DIRS.iter() {
+        let mut count = 0;
+        let mut new_x = x as isize;
+        let mut new_y = y as isize;
+        for _ in 0..3 {
+            new_x += dx;
+            new_y += dy;
+            if !valid_coord!(new_x, new_y) {
+                count = 0;
+                break;
+            } else if board[new_x as usize][new_y as usize] != opp {
+                break;
+            } else if board[new_x as usize][new_y as usize] == opp {
+                count += 1;
+            }
+        }
+        if count == 2 && board[new_x as usize][new_y as usize] == pawn {
+            let (x1, y1) = (new_x - dx, new_y - dy);
+            let (x2, y2) = (x1 - dx, y1 - dy);
+            change_score_board_remove(board, score_board, x1 as isize, y1 as isize);
+            board[x1 as usize][y1 as usize] = None;
+            change_score_board_remove(board, score_board, x2 as isize, y2 as isize);
+            board[x2 as usize][y2 as usize] = None;
+            removed.push(((x1, y1), (x2, y2)));
+        }
+    }
+
+    removed
 }
 
 pub fn remove_last_pawn(

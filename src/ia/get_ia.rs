@@ -4,7 +4,9 @@
 use super::super::checks::capture;
 use super::super::model::game;
 use super::super::render::board::SIZE_BOARD;
-use super::handle_board::{board_state_win, change_board, get_space, remove_last_pawn};
+use super::handle_board::{
+    board_state_win, change_board, find_continuous_threats, get_space, remove_last_pawn,
+};
 // use super::super::model::player;
 use super::heuristic;
 use super::zobrist;
@@ -13,6 +15,7 @@ use rand::seq::SliceRandom;
 
 const MIN_INFINITY: i64 = i64::min_value() + 1;
 const MAX_INFINITY: i64 = i64::max_value();
+const DEPTH_THREATS: i8 = 12;
 
 macro_rules! get_opp {
     ($e:expr) => {
@@ -42,6 +45,20 @@ fn ab_negamax(
     let mut tte = zobrist::retrieve_tt_from_hash(tt, zhash);
     let alpha_orig = *alpha;
 
+    if let Some((x, y)) = find_continuous_threats(
+        board,
+        score_board,
+        actual,
+        actual_catch,
+        opp_catch,
+        &mut DEPTH_THREATS,
+        &mut 0,
+    ) {
+        return (
+            heuristic::INSTANT_WIN * heuristic::MULTIPLIER.pow(*current_depth as u32),
+            Some((x, y)),
+        );
+    }
     if tte.is_valid && tte.depth == *depth_max - *current_depth {
         if tte.r#type == zobrist::TypeOfEl::Exact {
             return (tte.value, tte.r#move);
