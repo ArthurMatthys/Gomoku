@@ -7,7 +7,7 @@ use super::super::render::board::SIZE_BOARD;
 // use super::zobrist;
 
 
-const AVRG_MAX_MULTIPLE_THREATS: usize = 3;
+const AVRG_MAX_MULTIPLE_THREATS: usize = 1;
 const MAX_MULTIPLE_DEFENSE_MOVES: usize = 4;
 
 
@@ -65,17 +65,18 @@ pub fn threat_search_space(
     // 1. Initialize datastructures storing ready to be checked positions as well as threats
     let mut record: [[[bool; 4]; SIZE_BOARD]; SIZE_BOARD] = initialize_record(board, score_board, actual_player);
     
-    // let tot = vec![vec![0_u8]];
     // 1.2. Initialize Threat board -> Vec containing with_capacity data (3 avrg max_possible threats per position) | (4 max defensive) 
-    // DATASTRUCTURE NOT EASY WITH Rust memory management
-    // [Vec<Vec<T>>; 19] <== Impossible, or not really flexible, need Copy Trait -> implies a copy for each modification
-    // ===> EXTREMELY COSTLY IN RUST
-
-    let mut hell: Vec<(TypeOfThreat, Vec<(usize,usize)>)> = (0..AVRG_MAX_MULTIPLE_THREATS).map(|_| (TypeOfThreat::NONE, Vec::with_capacity(MAX_MULTIPLE_DEFENSE_MOVES))).collect();
-    
-    let store = [[&mut hell;19]; 19];
-    let mut threat_board: [[Vec<(TypeOfThreat, Vec<(usize,usize)>)>; SIZE_BOARD]; SIZE_BOARD] = (0..SIZE_BOARD).map(|_| (0..SIZE_BOARD).map(|_| hell).collect()).collect();
-    // [[vec; SIZE_BOARD]; SIZE_BOARD];
+    // Optimized version of : [[Vec<(enum, Vec<(usize,usize)>)>; SIZE_BOARD]; SIZE_BOARD]
+    let mut threat_board: Vec<Vec<Vec<(TypeOfThreat, Vec<(usize,usize)>)>>> = (0..SIZE_BOARD).map(|_|
+                                                                                    (0..SIZE_BOARD).map(|_| 
+                                                                                        (0..AVRG_MAX_MULTIPLE_THREATS).map(|_|
+                                                                                            (
+                                                                                                TypeOfThreat::NONE,
+                                                                                                Vec::with_capacity(MAX_MULTIPLE_DEFENSE_MOVES)
+                                                                                            )
+                                                                                        ).collect()
+                                                                                    ).collect()
+                                                                                ).collect();
 
 
 
@@ -86,6 +87,7 @@ pub fn threat_search_space(
                 // 2. For a given position, in a given direction, if not empty, check if an extremity can be used
                 // 3. If that's the case, find the corresponding response
                 // 4. Store the interesting values inside the datastructure
+                ()
             }
         }
     }
