@@ -2,18 +2,79 @@ use super::super::checks::after_turn_check::DIRECTIONS;
 use super::super::checks::capture::DIRS;
 use super::super::checks::double_three::check_double_three_hint;
 use super::super::render::board::SIZE_BOARD;
+// use super::handle_board::*;
 
-// use super::heuristic;
-// use super::zobrist;
+macro_rules! valid_coord {
+    (
+        $x: expr,
+        $y: expr
+    ) => {
+        $x >= 0 && $x < SIZE_BOARD as isize && $y >= 0 && $y < SIZE_BOARD as isize
+    };
+}
 
 
-const AVRG_MAX_MULTIPLE_THREATS: usize = 1;
+macro_rules! explore_align {
+    (
+        $board: expr,
+        $record: expr,
+        $new_line: expr,
+        $new_col: expr,
+        $actual_player: expr,
+        $dir: expr,
+        $orientation: expr
+    ) => {
+        while valid_coord!($new_line, $new_col) &&
+            $board[$new_line as usize][$new_col as usize] == $actual_player {
+                $new_line += (DIRECTIONS[$dir].0 * $orientation);
+                $new_col += (DIRECTIONS[$dir].1 * $orientation);
+                $record[$new_line as usize][$new_col as usize][$dir] = false;
+        }
+    };
+}
+
+macro_rules! explore_align_light {
+    (
+        $board: expr,
+        $new_line: expr,
+        $new_col: expr,
+        $actual_player: expr,
+        $dir: expr,
+        $orientation: expr
+    ) => {
+        while valid_coord!($new_line, $new_col) &&
+            $board[$new_line as usize][$new_col as usize] == $actual_player {
+                $new_line += (DIRECTIONS[$dir].0 * $orientation);
+                $new_col += (DIRECTIONS[$dir].1 * $orientation);
+        }
+    };
+}
+
+macro_rules! explore_one {
+    (
+        $new_line: expr,
+        $new_col: expr,
+        $dir: expr,
+        $orientation: expr
+    ) => {
+        ($new_line + (DIRECTIONS[$dir].0 * $orientation), $new_col + (DIRECTIONS[$dir].1 * $orientation))  
+    };
+}
+
+macro_rules! flatten {
+    (
+        $vec: expr
+    ) => {
+        $vec.into_iter().flatten().collect()
+    };
+}
+
+const AVRG_MAX_MULTIPLE_THREATS: usize = 2;
 const MAX_MULTIPLE_DEFENSE_MOVES: usize = 4;
-
 
 #[derive(Copy, Clone, PartialEq)]
 enum TypeOfThreat {
-    NONE,
+    // NONE,
     THREE_O,
     FOUR_O,
     FOUR_SO,
@@ -21,12 +82,6 @@ enum TypeOfThreat {
     FIVE,
     TAKE
 }
-
-// struct Threat {
-//     x: u8,
-//     y: u8,
-
-// }
 
 // Aim of function :
 // Initialize a record for efficient tracking of modifications afterwards
@@ -51,10 +106,157 @@ fn initialize_record(
     record
 }
 
-// (
-//     Vec<(usize, usize)>,
-//     Vec<((usize, usize), Vec<(usize, usize)>)>,
-// )
+fn capture_coordinates(
+    score_board: &mut [[[(u8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD],
+    board: &mut [[Option<bool>; SIZE_BOARD]; SIZE_BOARD],
+    actual_player: Option<bool>,
+    x: usize,
+    y: usize,
+    dir: usize,
+) -> Vec<(usize, usize)> {
+    let coordinates: Vec<(usize, usize)> = Vec::with_capacity(4);
+    
+    for new_dir in 0..4 {
+        if dir == new_dir {
+            continue;
+        } else {
+            let (mut new_line, mut new_col):(isize, isize) = (x as isize, y as isize);
+            
+            match score_board[x][y][new_dir] {
+                (2, Some(true), Some(false)) | (2, None, Some(false)) => {
+                    explore_align_light!(board, new_line, new_col, actual_player, new_dir, 1);
+                    coordinates.push((new_line as usize, new_col as usize));
+                },
+                (2, Some(false), Some(true)) | (2, Some(false), None) => {
+                    explore_align_light!(board, new_line, new_col, actual_player, new_dir, -1);
+                    coordinates.push((new_line as usize, new_col as usize));
+                },
+                _ => continue,
+            }
+        }
+    }
+    coordinates
+}
+
+fn connect_4(
+    (line, col): (usize, usize),
+    score_board: &mut [[[(u8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD],
+    board: &mut [[Option<bool>; SIZE_BOARD]; SIZE_BOARD],
+    record: &mut [[[bool; 4]; SIZE_BOARD]; SIZE_BOARD],
+    actual_player: Option<bool>,
+    actual_take: &mut isize,
+    dir: usize
+) -> Option<Vec<((usize,usize), TypeOfThreat, Vec<(usize,usize)>)>> {
+    let mut new_line: isize = line as isize;
+    let mut new_col: isize = col as isize;
+    let all_threats:Vec<((usize,usize), TypeOfThreat, Vec<(usize,usize)>)>;
+    let tmp_positions: Vec<Vec<(usize,usize)>>;
+
+    let explore_and_find_threats = |limit: usize, orientation: isize, cline: &isize, ccol: &isize, threat: TypeOfThreat| {
+        for expansion in 0..limit {
+            tmp_positions.push(
+                capture_coordinates(
+                    score_board,
+                    board,
+                    actual_player,
+                    *cline as usize,
+                    *ccol as usize,
+                    dir
+                )
+            );
+            explore_one!(cline, ccol, dir, orientation);
+         }
+         all_threats.push(
+            (
+                (new_line as usize, new_col as usize),
+                threat,
+                flatten!(tmp_positions)
+            )
+        );
+    };
+
+    let manage_so = |new_line: isize, new_col: isize, way:isize, opp_way: isize, threat: TypeOfThreat| {
+        explore_align!(board, record, new_line, new_col, actual_player, dir, way);
+        let (nline, ncol) = explore_one!(new_line, new_col, dir, way);
+        let (mut cline, mut ccol) = (new_line, new_col);
+        // retrieve defensive moves
+        if valid_coord!(nline, ncol) && board[nline as usize][ncol as usize] == actual_player
+            && score_board[nline as usize][ncol as usize][dir].0 > 0 {
+                match score_board[nline as usize][ncol as usize][dir].0 {
+                    x if x >= 5 => {  }, // WIN FOR SURE!!!!!!!!
+                    4 => { 
+                        all_threats.push(
+                            (
+                                (new_line as usize, new_col as usize),
+                                threat,
+                                capture_coordinates(
+                                    score_board,
+                                    board,
+                                    actual_player,
+                                    cline as usize,
+                                    ccol as usize,
+                                    dir
+                                )
+                            )
+                        );
+                     },
+                    3 => explore_and_find_threats(2, opp_way, &cline, &ccol, threat),
+                    2 => explore_and_find_threats(3, opp_way, &cline, &ccol, threat),
+                    1 => explore_and_find_threats(4, opp_way, &cline, &ccol, threat)
+                }  
+        } else {
+            explore_and_find_threats(5, opp_way, &cline, &ccol, TypeOfThreat::FOUR_SO);
+        }
+    };
+
+    if record[line][col][dir] {
+        match (score_board[line][col][dir].1, score_board[line][col][dir].2) {
+            (Some(true),Some(false)) | (None,Some(false)) => { manage_so(new_line, new_col, -1, 1, TypeOfThreat::FOUR_SO); Some(all_threats) },
+            (Some(false),Some(true)) | (Some(false),None) => { manage_so(new_line, new_col, 1, -1, TypeOfThreat::FOUR_SO); Some(all_threats) },
+            (Some(false),Some(false)) => {
+                let mut new_line2: isize = line as isize;
+                let mut new_col2: isize = col as isize;
+                manage_so(new_line, new_col, -1, 1, TypeOfThreat::FOUR_O);
+                manage_so(new_line2, new_col2, -1, 1, TypeOfThreat::FOUR_O);
+                Some(all_threats)
+             },
+            _ => { None },
+        }
+    } else { None }
+}
+
+// fn connect_3(
+//     (line, col): (usize, usize),
+//     board: &mut [[Option<bool>; SIZE_BOARD]; SIZE_BOARD],
+//     record: &mut [[[bool; 4]; SIZE_BOARD]; SIZE_BOARD],
+//     actual_player: Option<bool>,
+//     actual_take: &mut isize,
+//     left_side: Option<bool>,
+//     right_side: Option<bool>,
+//     dir: usize
+// ) -> () {
+// // ) -> Vec<((usize,usize), TypeOfThreat, Vec<(usize,usize)>)> {
+//     let all_threats:Vec<((usize,usize), TypeOfThreat, Vec<(usize,usize)>)> = vec![];
+
+//     if record[line][col][dir] {
+//         for orientation in [-1, 1].iter() {
+//             let mut new_line: isize = line as isize;
+//             let mut new_col: isize = col as isize;
+//             while valid_coord!(new_line, new_col) && board[new_line as usize][new_col as usize] == actual_player {
+//                 new_line = new_line + (DIRECTIONS[dir].0 * orientation);
+//                 new_col = new_col + (DIRECTIONS[dir].1 * orientation);
+//                 record[new_line as usize][new_col as usize][dir] = false;
+//             }
+//             if valid_coord!(new_line, new_col) && board[new_line as usize][new_col as usize] == None {
+//                 let del_line = new_line + (DIRECTIONS[dir].0 * orientation);
+//                 let del_col = new_col + (DIRECTIONS[dir].1 * orientation);
+//                 if valid_coord!(del_line, del_col) && board[del_line as usize][del_col as usize] == None {
+
+//                 }
+//             }
+//         }
+//     }
+// }
 
 pub fn threat_search_space(
     board: &mut [[Option<bool>; SIZE_BOARD]; SIZE_BOARD],
@@ -64,17 +266,12 @@ pub fn threat_search_space(
 ) -> () {
     // 1. Initialize datastructures storing ready to be checked positions as well as threats
     let mut record: [[[bool; 4]; SIZE_BOARD]; SIZE_BOARD] = initialize_record(board, score_board, actual_player);
-    
+
     // 1.2. Initialize Threat board -> Vec containing with_capacity data (3 avrg max_possible threats per position) | (4 max defensive) 
     // Optimized version of : [[Vec<(enum, Vec<(usize,usize)>)>; SIZE_BOARD]; SIZE_BOARD]
     let mut threat_board: Vec<Vec<Vec<(TypeOfThreat, Vec<(usize,usize)>)>>> = (0..SIZE_BOARD).map(|_|
                                                                                     (0..SIZE_BOARD).map(|_| 
-                                                                                        (0..AVRG_MAX_MULTIPLE_THREATS).map(|_|
-                                                                                            (
-                                                                                                TypeOfThreat::NONE,
-                                                                                                Vec::with_capacity(MAX_MULTIPLE_DEFENSE_MOVES)
-                                                                                            )
-                                                                                        ).collect()
+                                                                                        Vec::with_capacity(AVRG_MAX_MULTIPLE_THREATS)
                                                                                     ).collect()
                                                                                 ).collect();
 
@@ -84,9 +281,21 @@ pub fn threat_search_space(
     for line in 0..SIZE_BOARD {
         for col in 0..SIZE_BOARD {
             if board[line][col] == actual_player {
-                // 2. For a given position, in a given direction, if not empty, check if an extremity can be used
-                // 3. If that's the case, find the corresponding response
-                // 4. Store the interesting values inside the datastructure
+                for dir in 0..4 {
+                    // let ret: Vec<((usize,usize), TypeOfThreat, Vec<(usize,usize)>)> = 
+                    match score_board[line][col][dir].0 {
+                        5 => (), //Instant win ?
+                        4 => {  match connect_4((line, col), score_board, board, &mut record, actual_player, actual_take, dir ) {
+                                    None => (),
+                                    Some(x) => x.iter().for_each(|((x,y), typeOfThreat, Opp)| threat_board[*x][*y].push((*typeOfThreat, Opp.clone()))), // check borrow issue here
+                                } 
+                            },
+                        3 => (),
+                        2 => (),
+                        _ => unreachable!(),
+                    };
+                    // ret.iter().for_each(|&((x,y), typeOfThreat, Opp)| threat_board[x][y].push((typeOfThreat, Opp)));
+                }
                 ()
             }
         }
@@ -94,7 +303,10 @@ pub fn threat_search_space(
 
     // 5. Dispatch values inside the constructed datastructure in (1)
 
-    // [[Vec<(enum, Vec<(usize,usize)>)>; SIZE_BOARD]; SIZE_BOARD]
+    // (
+    //     Vec<(usize, usize)>,
+    //     Vec<((usize, usize), Vec<(usize, usize)>)>,
+    // )
 
 }
 
