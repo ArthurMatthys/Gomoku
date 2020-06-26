@@ -799,7 +799,7 @@ mod tests {
             }
             println!();
         }
-        let score_board = heuristic::evaluate_board(&mut test_board);
+        let mut score_board = heuristic::evaluate_board(&mut test_board);
         for i in 0..19 {
             for j in 0..19 {
                 match test_board[j][i] {
@@ -814,7 +814,7 @@ mod tests {
             }
             println!();
         }
-        board_state_win(&mut test_board, actual_take, opp_take)
+        board_state_win(&mut test_board, &mut score_board, actual_take, opp_take)
     }
 
     #[test]

@@ -433,7 +433,8 @@ mod tests {
             }
             println!();
         }
-        let (v1, v2) = get_alignements(&mut test_board, Some(false));
+        let mut score_board = evaluate_board(&mut test_board);
+        let (v1, v2) = get_alignements(&mut test_board, &mut score_board, Some(false) );
         let print_tuple = |(a, b, c, d, e, f, g, h, i, j, k, l): (
             u8,
             u8,
@@ -455,7 +456,7 @@ mod tests {
         };
         print_tuple(v1);
         print_tuple(v2);
-        let (vec1, vec2) = get_alignements(&mut test_board, Some(true));
+        let (vec1, vec2) = get_alignements(&mut test_board, &mut score_board, Some(true));
         test_equals(v1, t1) && test_equals(v2, t2) && test_equals(vec1, t2) && test_equals(vec2, t1)
     }
 

@@ -3,6 +3,7 @@ use super::super::checks::capture::DIRS;
 use super::super::checks::double_three::check_double_three_hint;
 use super::super::render::board::SIZE_BOARD;
 // use super::handle_board::*;
+use super::heuristic;
 
 macro_rules! valid_coord {
     (
@@ -238,7 +239,7 @@ fn connect_4(
     actual_player: Option<bool>,
     actual_take: &mut isize,
     dir: usize
-) -> Option<Vec<((usize,usize), TypeOfThreat, Vec<(usize,usize)>)>> {
+) -> Vec<((usize,usize), TypeOfThreat, Vec<(usize,usize)>)> {
     let mut new_line: isize = line as isize;
     let mut new_col: isize = col as isize;
     let mut all_threats:Vec<((usize,usize), TypeOfThreat, Vec<(usize,usize)>)> = vec![];
@@ -256,18 +257,18 @@ fn connect_4(
             // opp_way: isize,
             // threat: TypeOfThreat,
             // all_threats: &mut Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)>,
-            (Some(true),Some(false)) | (None,Some(false)) => { manage_so(score_board, board, record, actual_player, dir, new_line, new_col, -1, 1, TypeOfThreat::FOUR_SO, &mut all_threats); Some(all_threats) },
-            (Some(false),Some(true)) | (Some(false),None) => { manage_so(score_board, board, record, actual_player, dir, new_line, new_col, 1, -1, TypeOfThreat::FOUR_SO, &mut all_threats); Some(all_threats) },
+            (Some(true),Some(false)) | (None,Some(false)) => { manage_so(score_board, board, record, actual_player, dir, new_line, new_col, -1, 1, TypeOfThreat::FOUR_SO, &mut all_threats); all_threats },
+            (Some(false),Some(true)) | (Some(false),None) => { manage_so(score_board, board, record, actual_player, dir, new_line, new_col, 1, -1, TypeOfThreat::FOUR_SO, &mut all_threats); all_threats },
             (Some(false),Some(false)) => {
                 let mut new_line2: isize = line as isize;
                 let mut new_col2: isize = col as isize;
                 manage_so(score_board, board, record, actual_player, dir, new_line, new_col, -1, 1, TypeOfThreat::FOUR_O, &mut all_threats);
                 manage_so(score_board, board, record, actual_player, dir, new_line2, new_col2, -1, 1, TypeOfThreat::FOUR_O, &mut all_threats);
-                Some(all_threats)
+                all_threats
              },
-            _ => { None },
+            _ => { all_threats },
         }
-    } else { None }
+    } else { all_threats }
 }
 
 // fn connect_3(
@@ -330,10 +331,8 @@ pub fn threat_search_space(
                     // let ret: Vec<((usize,usize), TypeOfThreat, Vec<(usize,usize)>)> = 
                     match score_board[line][col][dir].0 {
                         5 => (), //Instant win ?
-                        4 => {  match connect_4((line, col), score_board, board, &mut record, actual_player, actual_take, dir ) {
-                                    None => (),
-                                    Some(x) => x.iter().for_each(|((x,y), typeOfThreat, Opp)| threat_board[*x][*y].push((*typeOfThreat, Opp.clone()))), // check borrow issue here !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                                }
+                        4 => {  let x = connect_4((line, col), score_board, board, &mut record, actual_player, actual_take, dir );
+                                x.iter().for_each(|((x,y), typeOfThreat, Opp)| threat_board[*x][*y].push((*typeOfThreat, Opp.clone()))); // check borrow issue here !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                             },
                         3 => (),
                         2 => (),
@@ -374,6 +373,9 @@ mod tests {
         black_pos: Vec<(usize, usize)>,
         actual_take: &mut isize,
         opp_take: &mut isize,
+        pos2check: (usize, usize),
+        actual_player: Option<bool>,
+        expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)>
     ) -> bool {
         let mut test_board = [[None; SIZE_BOARD]; SIZE_BOARD];
         white_pos
@@ -392,7 +394,8 @@ mod tests {
             }
             println!();
         }
-        let score_board = heuristic::evaluate_board(&mut test_board);
+        let mut score_board = heuristic::evaluate_board(&mut test_board);
+        let mut record: [[[bool; 4]; SIZE_BOARD]; SIZE_BOARD] = initialize_record(&mut test_board, &mut score_board, actual_player);
         for i in 0..19 {
             for j in 0..19 {
                 match test_board[j][i] {
@@ -407,8 +410,10 @@ mod tests {
             }
             println!();
         }
+        // for dir in 0..4 {
+            connect_4(pos2check, &mut score_board, &mut test_board, &mut record, actual_player, actual_take, 1) == expected_result
+        // }
         // debug
-        true
         // Retrieve the wanted threat
 
         // Compare output with given 
@@ -416,16 +421,24 @@ mod tests {
 
     }
     #[test]
-    fn win_take0() {
-        let black_pos = vec![];
+    fn threat_goood() {
+        let mut black_pos = vec![];
         let white_pos = vec![];
         let mut white_take = 0_isize;
         let mut black_take = 5_isize;
+        let expected_result:  Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![];
+        black_pos.push((9,8));
+        black_pos.push((9,7));
+        black_pos.push((9,6));
+        black_pos.push((9,5));
         assert!(test_threat(
             white_pos,
             black_pos,
             &mut white_take,
-            &mut black_take
+            &mut black_take,
+            (9, 9),
+            Some(true),
+            expected_result
         ))
     }
 
