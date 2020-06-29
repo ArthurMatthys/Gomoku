@@ -544,6 +544,20 @@ fn connect_2(
 
     ret
 }
+fn connect_3(
+    board: &mut [[Option<bool>; SIZE_BOARD]; SIZE_BOARD],
+    score_board: &mut [[[(u8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD],
+    (x, y): (usize, usize),
+    dir: isize,
+) -> Option<Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)>> {
+    let mut ret = vec![];
+    let focused_tuple = score_board[x][y][dir as usize];
+    if focused_tuple.1 != Some(false) || focused_tuple.2 != Some(false) {
+        return None;
+    }
+
+    Some(ret)
+}
 
 pub fn threat_search_space(
     board: &mut [[Option<bool>; SIZE_BOARD]; SIZE_BOARD],
@@ -757,19 +771,18 @@ mod tests {
         assert!(!test_capture_blank(white_pos, black_pos, Some(false), x, y))
     }
 
-fn connect_2(
-    board: &mut [[Option<bool>; SIZE_BOARD]; SIZE_BOARD],
-    score_board: &mut [[[(u8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD],
-    actual_player: Option<bool>,
-    (x, y): (usize, usize),
-    dir: usize,
+    //fn connect_2(
+    //    board: &mut [[Option<bool>; SIZE_BOARD]; SIZE_BOARD],
+    //    score_board: &mut [[[(u8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD],
+    //    actual_player: Option<bool>,
+    //    (x, y): (usize, usize),
+    //    dir: usize,
     fn test_connect_2(
         white_pos: Vec<(usize, usize)>,
         black_pos: Vec<(usize, usize)>,
         actual_player: Option<bool>,
-        (x,y): (usize,usize),
+        (x, y): (usize, usize),
         dir: usize,
-            
     ) -> bool {
         let mut test_board = [[None; SIZE_BOARD]; SIZE_BOARD];
         let mut score_tab: [[[(u8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD] =
