@@ -178,7 +178,7 @@ fn change_score_board_remove(
     }
 }
 
-fn change_score_board_add(
+pub fn change_score_board_add(
     board: &mut [[Option<bool>; SIZE_BOARD]; SIZE_BOARD],
     score_board: &mut [[[(u8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD],
     x: isize,
@@ -783,12 +783,16 @@ mod tests {
         opp_take: &mut isize,
     ) -> bool {
         let mut test_board = [[None; SIZE_BOARD]; SIZE_BOARD];
-        white_pos
-            .iter()
-            .for_each(|&(x, y)| test_board[x][y] = Some(true));
-        black_pos
-            .iter()
-            .for_each(|&(x, y)| test_board[x][y] = Some(false));
+        let mut score_tab: [[[(u8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD] =
+            [[[(0, Some(false), Some(false)); 4]; SIZE_BOARD]; SIZE_BOARD];
+        white_pos.iter().for_each(|&(x, y)| {
+            test_board[x][y] = Some(true);
+            change_score_board_add(&mut test_board, &mut score_tab, x as isize, y as isize);
+        });
+        black_pos.iter().for_each(|&(x, y)| {
+            test_board[x][y] = Some(false);
+            change_score_board_add(&mut test_board, &mut score_tab, x as isize, y as isize);
+        });
         for i in 0..19 {
             for j in 0..19 {
                 match test_board[j][i] {
@@ -799,7 +803,6 @@ mod tests {
             }
             println!();
         }
-        let score_board = heuristic::evaluate_board(&mut test_board);
         for i in 0..19 {
             for j in 0..19 {
                 match test_board[j][i] {
@@ -807,14 +810,14 @@ mod tests {
                     Some(false) => print!("N"),
                     None => print!("E"),
                 }
-                score_board[j][i].iter().for_each(|&(value, a, b)| {
+                score_tab[j][i].iter().for_each(|&(value, a, b)| {
                     print!("{:2}{}{}", value, get_bool!(a), get_bool!(b))
                 });
                 print!(" ");
             }
             println!();
         }
-        board_state_win(&mut test_board, actual_take, opp_take)
+        board_state_win(&mut test_board, &mut score_tab, actual_take, opp_take)
     }
 
     #[test]
@@ -988,24 +991,24 @@ mod tests {
         false
     }
 
-    #[test]
-    fn test_add_pawn_scoreboard0() {
-        let history_pos = vec![
-            (8, 8),
-            (7, 7),
-            (8, 9),
-            (9, 9),
-            (8, 10),
-            (8, 11),
-            (8, 7),
-            (8, 6),
-            (7, 7),
-            (9, 10),
-            (5, 5),
-            (4, 4),
-            (6, 6),
-        ];
-        let history_remove = vec![(8, 8)];
-        assert!(test_score_board(history_pos, history_remove))
-    }
+    //    #[test]
+    //    fn test_add_pawn_scoreboard0() {
+    //        let history_pos = vec![
+    //            (8, 8),
+    //            (7, 7),
+    //            (8, 9),
+    //            (9, 9),
+    //            (8, 10),
+    //            (8, 11),
+    //            (8, 7),
+    //            (8, 6),
+    //            (7, 7),
+    //            (9, 10),
+    //            (5, 5),
+    //            (4, 4),
+    //            (6, 6),
+    //        ];
+    //        let history_remove = vec![(8, 8)];
+    //        assert!(test_score_board(history_pos, history_remove))
+    //    }
 }

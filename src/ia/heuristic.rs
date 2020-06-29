@@ -390,6 +390,7 @@ fn get_alignements(
 
 #[cfg(test)]
 mod tests {
+    use super::super::handle_board::change_score_board_add;
     use super::*;
 
     fn test_equals(
@@ -417,12 +418,16 @@ mod tests {
         t2: (u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8),
     ) -> bool {
         let mut test_board = [[None; SIZE_BOARD]; SIZE_BOARD];
-        white_pos
-            .iter()
-            .for_each(|&(x, y)| test_board[x][y] = Some(true));
-        black_pos
-            .iter()
-            .for_each(|&(x, y)| test_board[x][y] = Some(false));
+        let mut score_tab: [[[(u8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD] =
+            [[[(0, Some(false), Some(false)); 4]; SIZE_BOARD]; SIZE_BOARD];
+        white_pos.iter().for_each(|&(x, y)| {
+            test_board[x][y] = Some(true);
+            change_score_board_add(&mut test_board, &mut score_tab, x as isize, y as isize);
+        });
+        black_pos.iter().for_each(|&(x, y)| {
+            test_board[x][y] = Some(false);
+            change_score_board_add(&mut test_board, &mut score_tab, x as isize, y as isize);
+        });
         for i in 0..19 {
             for j in 0..19 {
                 match test_board[j][i] {
@@ -433,7 +438,7 @@ mod tests {
             }
             println!();
         }
-        let (v1, v2) = get_alignements(&mut test_board, Some(false));
+        let (v1, v2) = get_alignements(&mut test_board, &mut score_tab, Some(false));
         let print_tuple = |(a, b, c, d, e, f, g, h, i, j, k, l): (
             u8,
             u8,
@@ -455,7 +460,7 @@ mod tests {
         };
         print_tuple(v1);
         print_tuple(v2);
-        let (vec1, vec2) = get_alignements(&mut test_board, Some(true));
+        let (vec1, vec2) = get_alignements(&mut test_board, &mut score_tab, Some(true));
         test_equals(v1, t1) && test_equals(v2, t2) && test_equals(vec1, t2) && test_equals(vec2, t1)
     }
 
