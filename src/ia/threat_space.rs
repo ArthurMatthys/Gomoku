@@ -227,6 +227,7 @@ fn manage_so(
                 _ => unreachable!()
             }  
     } else {
+        println!("WINFORSURE");
         explore_and_find_threats(score_board, board, 5, opp_way, &cline, &ccol, threat, actual_player, dir, all_threats, &new_line, &new_col);
     }
 }
@@ -263,7 +264,7 @@ fn connect_4(
                 let mut new_line2: isize = line as isize;
                 let mut new_col2: isize = col as isize;
                 manage_so(score_board, board, record, actual_player, dir, new_line, new_col, -1, 1, TypeOfThreat::FOUR_O, &mut all_threats);
-                manage_so(score_board, board, record, actual_player, dir, new_line2, new_col2, -1, 1, TypeOfThreat::FOUR_O, &mut all_threats);
+                manage_so(score_board, board, record, actual_player, dir, new_line2, new_col2, 1, -1, TypeOfThreat::FOUR_O, &mut all_threats);
                 all_threats
              },
             _ => { all_threats },
@@ -417,7 +418,8 @@ mod tests {
         //     println!();
         // }
         for dir in 0..4 {
-            let ret_debug = connect_4(pos2check, &mut score_board, &mut test_board, &mut record, actual_player, actual_take, 1);
+            let ret_debug = connect_4(pos2check, &mut score_board, &mut test_board, &mut record, actual_player, actual_take, dir);
+            println!("DEBUT°°°DEBUG_CONNECT: len({})", ret_debug.len());
             ret_debug.iter().for_each(|((x,y), typeOfThreat, Opp)| {  threat_board[*x][*y].push((*typeOfThreat, Opp.clone())) } );
             // ret_debug.iter().for_each(|&x| print!("{}", x)); 
             println!("DEBUG_CONNECT: len({})", ret_debug.len());
