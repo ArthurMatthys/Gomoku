@@ -331,15 +331,16 @@ pub fn threat_search_space(
                 for dir in 0..4 {
                     println!("passe5fois");
                     // let ret: Vec<((usize,usize), TypeOfThreat, Vec<(usize,usize)>)> = 
-                    match score_board[line][col][dir].0 {
-                        5 => (), //Instant win ?
-                        4 => {  let x = connect_4((line, col), score_board, board, &mut record, actual_player, actual_take, dir);
-                                x.iter().for_each(|((x,y), typeOfThreat, Opp)| threat_board[*x][*y].push((*typeOfThreat, Opp.clone()))); // check borrow issue here !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                            },
-                        3 => (),
-                        2 => (),
-                        _ => unreachable!(),
+                    let x = match score_board[line][col][dir].0 {
+                        5 => vec![], //Instant win ?
+                        // if record[x][y][dir]
+                        4 => { connect_4((line, col), score_board, board, &mut record, actual_player, actual_take, dir) },
+                        3 => vec![],
+                        2 => vec![],
+                        _ => vec![],
                     };
+                    // if not empty inside, ppush
+                    x.iter().for_each(|((x,y), typeOfThreat, Opp)| threat_board[*x][*y].push((*typeOfThreat, Opp.clone()))); // check borrow issue here !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                     // ret.iter().for_each(|&((x,y), typeOfThreat, Opp)| threat_board[x][y].push((typeOfThreat, Opp)));
                 }
                 ()
@@ -418,7 +419,10 @@ mod tests {
         //     println!();
         // }
         for dir in 0..4 {
-            let ret_debug = connect_4(pos2check, &mut score_board, &mut test_board, &mut record, actual_player, actual_take, dir);
+            let ret_debug = match score_board[pos2check.0][pos2check.1][dir].0 {
+                4 => { connect_4(pos2check, &mut score_board, &mut test_board, &mut record, actual_player, actual_take, dir) },
+                _ => { vec![] }
+            };
             println!("DEBUT°°°DEBUG_CONNECT: len({})", ret_debug.len());
             ret_debug.iter().for_each(|((x,y), typeOfThreat, Opp)| {  threat_board[*x][*y].push((*typeOfThreat, Opp.clone())) } );
             // ret_debug.iter().for_each(|&x| print!("{}", x)); 
@@ -484,7 +488,7 @@ mod tests {
         let mut black_pos = vec![(9,8),(9,7), (9,6), (9,5)];
         let white_pos = vec![];
         let mut white_take = 0_isize;
-        let mut black_take = 5_isize;
+        let mut black_take = 0_isize;
         let expected_result: Vec<Vec<Vec<(TypeOfThreat, Vec<(usize,usize)>)>>> = vec![];
         // black_pos.push((9,8));
         // black_pos.push((9,7));
@@ -500,5 +504,27 @@ mod tests {
             expected_result
         ))
     }
+    #[test]
+    fn threat_catchis() {
+        let mut black_pos = vec![(9,8),(9,7), (9,6), (9,5), (8,8)];
+        let white_pos = vec![(7,8)];
+        let mut white_take = 0_isize;
+        let mut black_take = 0_isize;
+        let expected_result: Vec<Vec<Vec<(TypeOfThreat, Vec<(usize,usize)>)>>> = vec![];
+        // black_pos.push((9,8));
+        // black_pos.push((9,7));
+        // black_pos.push((9,6));
+        // black_pos.push((9,5));
+        assert!(test_threat(
+            white_pos,
+            black_pos,
+            &mut white_take,
+            &mut black_take,
+            (9, 7),
+            Some(false),
+            expected_result
+        ))
+    }
+    
 
 }
