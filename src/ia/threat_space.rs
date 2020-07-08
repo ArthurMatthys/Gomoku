@@ -58,7 +58,8 @@ macro_rules! explore_one {
         $dir: expr,
         $orientation: expr
     ) => {
-        ($new_line + (DIRECTIONS[$dir].0 * $orientation), $new_col + (DIRECTIONS[$dir].1 * $orientation))  
+        $new_line += (DIRECTIONS[$dir].0 * $orientation);
+        $new_col += (DIRECTIONS[$dir].1 * $orientation);
     };
 }
 
@@ -121,14 +122,17 @@ fn capture_coordinates(
         if dir == new_dir {
             continue;
         } else {
+            println!("je check autre dirr");
             let (mut new_line, mut new_col):(isize, isize) = (x as isize, y as isize);
-            
+            println!("dir: (x:{},y:{}):[{}]", x, y, score_board[x][y][new_dir].0);
             match score_board[x][y][new_dir] {
                 (2, Some(true), Some(false)) | (2, None, Some(false)) => {
+                    println!("ici");
                     explore_align_light!(board, new_line, new_col, actual_player, new_dir, 1);
                     coordinates.push((new_line as usize, new_col as usize));
                 },
                 (2, Some(false), Some(true)) | (2, Some(false), None) => {
+                    println!("la");
                     explore_align_light!(board, new_line, new_col, actual_player, new_dir, -1);
                     coordinates.push((new_line as usize, new_col as usize));
                 },
@@ -153,19 +157,31 @@ fn explore_and_find_threats(
     new_line: &isize,
     new_col: &isize,
  )  -> () {
+     let (mut ccline, mut cccol) = (*cline, *ccol);
+     println!("LIMITTTEEEEE: {}", limit);
     let mut tmp_positions: Vec<Vec<(usize,usize)>> = vec![];
     for expansion in 0..limit {
+        println!("expansion->({},{})", ccline, cccol);
         tmp_positions.push(
             capture_coordinates(
                 score_board,
                 board,
                 actual_player,
-                *cline as usize,
-                *ccol as usize,
+                ccline as usize,
+                cccol as usize,
                 dir
             )
         );
-        explore_one!(cline, ccol, dir, orientation);
+        println!("multiplication: [{}-{}]/{}", DIRECTIONS[dir].0,DIRECTIONS[dir].1,orientation * expansion as isize);
+        explore_one!(ccline, cccol, dir, orientation);
+     }
+     // DEBUG
+     println!("EXPLORE AND FIND THREATS");
+     for x in 0..tmp_positions.len() {
+         println!("New position");
+        for y in 0..tmp_positions[x].len() {
+            println!("({},{})", tmp_positions[x][y].0, tmp_positions[x][y].1);
+        }
      }
      all_threats.push(
         (
@@ -198,8 +214,9 @@ fn manage_so(
     all_threats:&mut Vec<((usize,usize), TypeOfThreat, Vec<(usize,usize)>)>,
 ) -> () {
     explore_align!(board, record, new_line, new_col, actual_player, dir, way);
-    let (nline, ncol) = explore_one!(new_line, new_col, dir, way);
-    let (mut cline, mut ccol) = (new_line, new_col);
+    let (mut nline, mut ncol) = (new_line, new_col);
+    explore_one!(nline, ncol, dir, way);
+    let (cline, ccol) = (new_line, new_col);
     // retrieve defensive moves
     if valid_coord!(nline, ncol) && board[nline as usize][ncol as usize] == actual_player
         && score_board[nline as usize][ncol as usize][dir].0 > 0 {
@@ -340,6 +357,7 @@ pub fn threat_search_space(
                         _ => vec![],
                     };
                     // if not empty inside, ppush
+                    x.iter().for_each(|((x,y), typeOfThreat, Opp)| Opp.iter().for_each(|(x,y)| println!("opp: ({},{})", x, y)));
                     x.iter().for_each(|((x,y), typeOfThreat, Opp)| threat_board[*x][*y].push((*typeOfThreat, Opp.clone()))); // check borrow issue here !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                     // ret.iter().for_each(|&((x,y), typeOfThreat, Opp)| threat_board[x][y].push((typeOfThreat, Opp)));
                 }
@@ -508,6 +526,28 @@ mod tests {
     fn threat_catchis() {
         let mut black_pos = vec![(9,8),(9,7), (9,6), (9,5), (8,8)];
         let white_pos = vec![(7,8)];
+        let mut white_take = 0_isize;
+        let mut black_take = 0_isize;
+        let expected_result: Vec<Vec<Vec<(TypeOfThreat, Vec<(usize,usize)>)>>> = vec![];
+        // black_pos.push((9,8));
+        // black_pos.push((9,7));
+        // black_pos.push((9,6));
+        // black_pos.push((9,5));
+        assert!(test_threat(
+            white_pos,
+            black_pos,
+            &mut white_take,
+            &mut black_take,
+            (9, 7),
+            Some(false),
+            expected_result
+        ))
+    }
+
+    #[test]
+    fn threat_catch_extremity() {
+        let mut black_pos = vec![(9,8),(9,7), (9,6), (9,5), (8,9), (8,4), (8,8)];
+        let white_pos = vec![(7,9), (7,4), (7,8)];
         let mut white_take = 0_isize;
         let mut black_take = 0_isize;
         let expected_result: Vec<Vec<Vec<(TypeOfThreat, Vec<(usize,usize)>)>>> = vec![];
