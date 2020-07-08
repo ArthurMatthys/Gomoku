@@ -117,27 +117,126 @@ fn capture_coordinates(
     dir: usize,
 ) -> Vec<(usize, usize)> {
     let mut coordinates: Vec<(usize, usize)> = Vec::with_capacity(4);
-    
     for new_dir in 0..4 {
         if dir == new_dir {
             continue;
         } else {
             println!("je check autre dirr");
             let (mut new_line, mut new_col):(isize, isize) = (x as isize, y as isize);
-            println!("dir: (x:{},y:{}):[{}]", x, y, score_board[x][y][new_dir].0);
+            println!(
+                "dir: (x:{},y:{}):[{}-{}-{}]/dir:{}",
+                x,
+                y,
+                score_board[x][y][new_dir].0,
+                match score_board[x as usize][y as usize][new_dir].1 {
+                    Some(true) => "true",
+                    Some(false) => "false",
+                    None => "none",
+                },
+                match score_board[x as usize][y as usize][new_dir].2 {
+                    Some(true) => "true",
+                    Some(false) => "false",
+                    None => "none",
+                },
+                new_dir
+            );
             match score_board[x][y][new_dir] {
-                (2, Some(true), Some(false)) | (2, None, Some(false)) => {
+                // (2, Some(true), Some(false)) | (2, None, Some(false)) => {
+                (2, Some(true), Some(false)) => {
                     println!("ici");
                     explore_align_light!(board, new_line, new_col, actual_player, new_dir, 1);
                     coordinates.push((new_line as usize, new_col as usize));
                 },
-                (2, Some(false), Some(true)) | (2, Some(false), None) => {
+                // (2, Some(false), Some(true)) | (2, Some(false), None) => {
+                (2, Some(false), Some(true)) => {
                     println!("la");
                     explore_align_light!(board, new_line, new_col, actual_player, new_dir, -1);
                     coordinates.push((new_line as usize, new_col as usize));
                 },
-                _ => continue,
+                (0, Some(false), Some(false)) => {
+                    println!("YOOOOOOOOOOYHHHHHHH");
+                    let (mut new_line2, mut new_col2):(isize, isize) = (x as isize, y as isize);
+                    let (mut new_line3, mut new_col3):(isize, isize) = (x as isize, y as isize);
+                    explore_one!(new_line2, new_col2, new_dir, -1);
+                    explore_one!(new_line3, new_col3, new_dir, 1);
+                    println!(
+                        "debug_extremity_line2: ({}-{}-{})|dir:{}|(x/y):({}-{})",
+                        score_board[new_line2 as usize][new_col2 as usize][new_dir].0,
+                        match score_board[new_line2 as usize][new_col2 as usize][new_dir].1 {
+                            Some(true) => "true",
+                            Some(false) => "false",
+                            None => "none",
+                        },
+                        match score_board[new_line2 as usize][new_col2 as usize][new_dir].2 {
+                            Some(true) => "true",
+                            Some(false) => "false",
+                            None => "none",
+                        },
+                        new_dir,
+                        new_line2,
+                        new_col2
+                    );
+                    println!(
+                        "debug_extremity_line3: ({}-{}-{})|dir:{}|(x/y):({}-{})",
+                        score_board[new_line3 as usize][new_col3 as usize][new_dir].0,
+                        match score_board[new_line3 as usize][new_col3 as usize][new_dir].1 {
+                            Some(true) => "true",
+                            Some(false) => "false",
+                            None => "none",
+                        },
+                        match score_board[new_line3 as usize][new_col3 as usize][new_dir].2 {
+                            Some(true) => "true",
+                            Some(false) => "false",
+                            None => "none",
+                        },
+                        new_dir,
+                        new_line3,
+                        new_col3
+                    );
+                    match score_board[new_line2 as usize][new_col2 as usize][new_dir] {
+                        (1, Some(true), Some(false)) => {
+                            coordinates.push((new_line3 as usize, new_col3 as usize));
+                        },
+                        _ => (),
+                    }
+                    match score_board[new_line3 as usize][new_col3 as usize][new_dir] {
+                        (1, Some(false), Some(true)) => {
+                            coordinates.push((new_line2 as usize, new_col2 as usize));
+                        },
+                        _ => (),
+                    }
+                },
+
+                // (0, Some(false), Some(true)) => {
+                //     println!("OUIIIIIIKLLLLLLE");
+                //     let (mut new_line2, mut new_col2):(isize, isize) = (x as isize, y as isize);
+                //     let (mut new_line3, mut new_col3):(isize, isize) = (x as isize, y as isize);
+                //     explore_one!(new_line2, new_col2, dir, 1);
+                //     match score_board[new_line2 as usize][new_col2 as usize][new_dir] {
+                //         (1, Some(false), Some(true)) => {
+                //             explore_align_light!(board, new_line, new_col, actual_player, new_dir, -1);
+                //             coordinates.push((new_line as usize, new_col as usize));
+                //         },
+                //         _ => (),
+                //     }
+                // },
+                // (0, Some(true), Some(false)) => {
+                //     println!("JUJUJUJUJUJUJUJUJUJUJU");
+                //     explore_one!(new_line2, new_col2, dir, 1);
+                //     match score_board[new_line2 as usize][new_col2 as usize][new_dir] {
+                //         (1, Some(false), Some(true)) => {
+                //             explore_align_light!(board, new_line, new_col, actual_player, new_dir, -1);
+                //             coordinates.push((new_line as usize, new_col as usize));
+                //         },
+                //         _ => (),
+                //     }
+                // },
+                _ => (),
             }
+            // Check for extremities
+            // let (mut new_line2, mut new_col2):(isize, isize) = (x as isize, y as isize);
+            // explore_one!(new_line2, new_col2, dir, 1);
+            // // match (score_board[x][y][new_dir], )
         }
     }
     coordinates
@@ -357,7 +456,7 @@ pub fn threat_search_space(
                         _ => vec![],
                     };
                     // if not empty inside, ppush
-                    x.iter().for_each(|((x,y), typeOfThreat, Opp)| Opp.iter().for_each(|(x,y)| println!("opp: ({},{})", x, y)));
+                    // x.iter().for_each(|((x,y), typeOfThreat, Opp)| Opp.iter().for_each(|(x,y)| println!("opp: ({},{})", x, y)));
                     x.iter().for_each(|((x,y), typeOfThreat, Opp)| threat_board[*x][*y].push((*typeOfThreat, Opp.clone()))); // check borrow issue here !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                     // ret.iter().for_each(|&((x,y), typeOfThreat, Opp)| threat_board[x][y].push((typeOfThreat, Opp)));
                 }
@@ -542,6 +641,24 @@ mod tests {
     fn threat_catch_extremity() {
         let mut black_pos = vec![(9,8),(9,7), (9,6), (9,5), (8,9), (8,4), (8,8)];
         let white_pos = vec![(7,9), (7,4), (7,8)];
+        let mut white_take = 0_isize;
+        let mut black_take = 0_isize;
+        let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![];
+        assert!(test_threat(
+            white_pos,
+            black_pos,
+            &mut white_take,
+            &mut black_take,
+            (9, 7),
+            Some(false),
+            expected_result
+        ))
+    }
+
+    #[test]
+    fn threat_catch_extremity2() {
+        let mut black_pos = vec![(9,8),(9,7), (9,6), (9,5), (8,9)];
+        let white_pos = vec![(7,9)];
         let mut white_take = 0_isize;
         let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![];
