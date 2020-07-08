@@ -4,6 +4,7 @@ use super::super::checks::double_three::check_double_three_hint;
 use super::super::render::board::SIZE_BOARD;
 // use super::handle_board::*;
 use super::heuristic;
+use super::get_ia;
 
 macro_rules! valid_coord {
     (
@@ -11,6 +12,16 @@ macro_rules! valid_coord {
         $y: expr
     ) => {
         $x >= 0 && $x < SIZE_BOARD as isize && $y >= 0 && $y < SIZE_BOARD as isize
+    };
+}
+
+
+macro_rules! get_opp {
+    ($e:expr) => {
+        match $e {
+            Some(a) => Some(!a),
+            _ => unreachable!(),
+        }
     };
 }
 
@@ -193,18 +204,43 @@ fn capture_coordinates(
                         new_line3,
                         new_col3
                     );
-                    match score_board[new_line2 as usize][new_col2 as usize][new_dir] {
-                        (1, Some(true), Some(false)) => {
-                            coordinates.push((new_line3 as usize, new_col3 as usize));
-                        },
-                        _ => (),
-                    }
-                    match score_board[new_line3 as usize][new_col3 as usize][new_dir] {
-                        (1, Some(false), Some(true)) => {
-                            coordinates.push((new_line2 as usize, new_col2 as usize));
-                        },
-                        _ => (),
-                    }
+                    // match score_board[new_line2 as usize][new_col2 as usize][new_dir] {
+                    //     (1, Some(true), Some(false)) => {
+                    //         coordinates.push((new_line3 as usize, new_col3 as usize));
+                    //     },
+                    //     _ => (),
+                    // }
+                    // match score_board[new_line3 as usize][new_col3 as usize][new_dir] {
+                    //     (1, Some(false), Some(true)) => {
+                    //         coordinates.push((new_line2 as usize, new_col2 as usize));
+                    //     },
+                    //     _ => (),
+                    // }
+                    match (
+                            score_board[new_line2 as usize][new_col2 as usize][new_dir],
+                            score_board[new_line3 as usize][new_col3 as usize][new_dir]
+                        ){
+                            ((1, Some(true), Some(false)), (0, Some(false), Some(false))) => {
+                                coordinates.push((new_line3 as usize, new_col3 as usize));
+                            },
+                            ((0, Some(false), Some(false)), (1, Some(false), Some(true))) => {
+                                coordinates.push((new_line2 as usize, new_col2 as usize));
+                            },
+                            ((1, Some(false), Some(false)), (1, Some(false), Some(false))) => {
+                                let opp = get_opp!(actual_player);
+                                if (opp == board[new_line2 as usize][new_col2 as usize]
+                                    && board[new_line3 as usize][new_col3 as usize] == actual_player) {
+                                        explore_one!(new_line3, new_col3, new_dir, 1);
+                                        coordinates.push((new_line3 as usize, new_col3 as usize));
+                                } else if (board[new_line2 as usize][new_col2 as usize] == actual_player
+                                    && opp == board[new_line3 as usize][new_col3 as usize]
+                                ) {
+                                    explore_one!(new_line2, new_col2, new_dir, -1);
+                                    coordinates.push((new_line2 as usize, new_col2 as usize));
+                                }
+                            },
+                            _ => (),
+                        }
                 },
 
                 // (0, Some(false), Some(true)) => {
@@ -332,7 +368,7 @@ fn manage_so(
                                 actual_player,
                                 cline as usize,
                                 ccol as usize,
-                                dir
+                                dir,
                             )
                         )
                     );
@@ -594,6 +630,25 @@ mod tests {
             tmp_result == expected_result
     }
 
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // _________⊕_________
+    // _________⊕_________
+    // _________⊕_________
+    // _________⊕_________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
     #[test]
     fn threat_goood() {
         let mut black_pos = vec![(9,8),(9,7), (9,6), (9,5)];
@@ -615,6 +670,26 @@ mod tests {
             expected_result
         ))
     }
+
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // _________⊕_________
+    // _________⊕_________
+    // _________⊕_________
+    // _______⊖⊕⊕_________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
     #[test]
     fn threat_catchis() {
         let mut black_pos = vec![(9,8),(9,7), (9,6), (9,5), (8,8)];
@@ -637,13 +712,36 @@ mod tests {
         ))
     }
 
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // _______⊖⊕__________
+    // _________⊕_________
+    // _________⊕_________
+    // _________⊕_________
+    // _______⊖⊕⊕_________
+    // _______⊖⊕__________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
     #[test]
-    fn threat_catch_extremity() {
+    fn threat_catch_extremity1() {
         let mut black_pos = vec![(9,8),(9,7), (9,6), (9,5), (8,9), (8,4), (8,8)];
         let white_pos = vec![(7,9), (7,4), (7,8)];
         let mut white_take = 0_isize;
         let mut black_take = 0_isize;
-        let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![];
+        let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = 
+            vec![
+                ((9,4), TypeOfThreat::FOUR_O, vec![(10,4),(10,6),(10,8)]),
+                ((9,9), TypeOfThreat::FOUR_O, vec![(10,9),(10,8),(10,6)])
+            ];
         assert!(test_threat(
             white_pos,
             black_pos,
@@ -655,13 +753,36 @@ mod tests {
         ))
     }
 
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // _________⊕_________
+    // _________⊕_________
+    // _________⊕_________
+    // _________⊕_________
+    // _______⊖⊕__________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
     #[test]
     fn threat_catch_extremity2() {
         let mut black_pos = vec![(9,8),(9,7), (9,6), (9,5), (8,9)];
         let white_pos = vec![(7,9)];
         let mut white_take = 0_isize;
         let mut black_take = 0_isize;
-        let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![];
+        let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = 
+            vec![
+                ((9,4), TypeOfThreat::FOUR_O, vec![]),
+                ((9,9), TypeOfThreat::FOUR_O, vec![(10,9)])
+            ];
         assert!(test_threat(
             white_pos,
             black_pos,
@@ -672,6 +793,87 @@ mod tests {
             expected_result
         ))
     }
-    
+
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // _________⊕_________
+    // _________⊕_________
+    // _________⊕_________
+    // _________⊕_________
+    // __________⊕⊖_______
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    #[test]
+    fn threat_catch_extremity3() {
+        let mut black_pos = vec![(9,8),(9,7), (9,6), (9,5), (10,9)];
+        let white_pos = vec![(11,9)];
+        let mut white_take = 0_isize;
+        let mut black_take = 0_isize;
+        let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = 
+            vec![
+                ((9,4), TypeOfThreat::FOUR_O, vec![]),
+                ((9,9), TypeOfThreat::FOUR_O, vec![(8,9)])
+            ];
+        assert!(test_threat(
+            white_pos,
+            black_pos,
+            &mut white_take,
+            &mut black_take,
+            (9, 7),
+            Some(false),
+            expected_result
+        ))
+    }
+
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // _________⊕_________
+    // _________⊕_________
+    // _________⊕_________
+    // _________⊕_________
+    // ________⊕_⊖________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    #[test]
+    fn threat_catch_extremity_hard1() {
+        let mut black_pos = vec![(9,8),(9,7), (9,6), (9,5), (8,9)];
+        let white_pos = vec![(10,9)];
+        let mut white_take = 0_isize;
+        let mut black_take = 0_isize;
+        let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = 
+            vec![
+                ((9,4), TypeOfThreat::FOUR_O, vec![]),
+                ((9,9), TypeOfThreat::FOUR_O, vec![(7,9)])
+            ];
+        assert!(test_threat(
+            white_pos,
+            black_pos,
+            &mut white_take,
+            &mut black_take,
+            (9, 7),
+            Some(false),
+            expected_result
+        ))
+    }
 
 }
