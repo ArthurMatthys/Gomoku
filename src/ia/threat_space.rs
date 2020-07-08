@@ -396,7 +396,7 @@ mod tests {
         opp_take: &mut isize,
         pos2check: (usize, usize),
         actual_player: Option<bool>,
-        expected_result: Vec<Vec<Vec<(TypeOfThreat, Vec<(usize,usize)>)>>>
+        expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)>
     ) -> bool {
         let mut test_board = [[None; SIZE_BOARD]; SIZE_BOARD];
         white_pos
@@ -417,11 +417,13 @@ mod tests {
         }
         let mut score_board = heuristic::evaluate_board(&mut test_board);
         let mut record: [[[bool; 4]; SIZE_BOARD]; SIZE_BOARD] = initialize_record(&mut test_board, &mut score_board, actual_player);
-        let mut threat_board: Vec<Vec<Vec<(TypeOfThreat, Vec<(usize,usize)>)>>> = (0..SIZE_BOARD).map(|_|
-                                                                                        (0..SIZE_BOARD).map(|_| 
-                                                                                            Vec::with_capacity(AVRG_MAX_MULTIPLE_THREATS)
-                                                                                        ).collect()
-                                                                                    ).collect();
+        // let mut threat_board: Vec<Vec<Vec<(TypeOfThreat, Vec<(usize,usize)>)>>> = (0..SIZE_BOARD).map(|_|
+                                                                                //         (0..SIZE_BOARD).map(|_| 
+                                                                                //             Vec::with_capacity(AVRG_MAX_MULTIPLE_THREATS)
+                                                                                //         ).collect()
+                                                                                //  ).collect();
+
+        let mut tmp_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![];
         // for i in 0..19 {
         //     for j in 0..19 {
         //         match test_board[j][i] {
@@ -437,16 +439,16 @@ mod tests {
         //     println!();
         // }
         for dir in 0..4 {
-            let ret_debug = match score_board[pos2check.0][pos2check.1][dir].0 {
+            tmp_result = match score_board[pos2check.0][pos2check.1][dir].0 {
                 4 => { connect_4(pos2check, &mut score_board, &mut test_board, &mut record, actual_player, actual_take, dir) },
                 _ => { vec![] }
             };
-            println!("DEBUT°°°DEBUG_CONNECT: len({})", ret_debug.len());
-            ret_debug.iter().for_each(|((x,y), typeOfThreat, Opp)| {  threat_board[*x][*y].push((*typeOfThreat, Opp.clone())) } );
+            println!("DEBUT°°°DEBUG_CONNECT: len({})", tmp_result.len());
+            // tmp_result.iter().for_each(|((x,y), typeOfThreat, Opp)| {  threat_board[*x][*y].push((*typeOfThreat, Opp.clone())) } );
             // ret_debug.iter().for_each(|&x| print!("{}", x)); 
-            println!("DEBUG_CONNECT: len({})", ret_debug.len());
+            println!("DEBUG_CONNECT: len({})", tmp_result.len());
 
-            ret_debug.iter().for_each(|(defensive_move, type_of_threat, opp)| {
+            tmp_result.iter().for_each(|(defensive_move, type_of_threat, opp)| {
                 println!("-----------------");
                 println!("DEFENSIVE_MOVE:");
                 println!("({},{})", defensive_move.0, defensive_move.1);
@@ -490,28 +492,20 @@ mod tests {
             //         });
             //     });
             // });
-
-
-            threat_board == expected_result
-        // }
-        // debug
-        // Retrieve the wanted threat
-
-        // Compare output with given 
-
-
+            tmp_result == expected_result
     }
+
     #[test]
     fn threat_goood() {
         let mut black_pos = vec![(9,8),(9,7), (9,6), (9,5)];
         let white_pos = vec![];
         let mut white_take = 0_isize;
         let mut black_take = 0_isize;
-        let expected_result: Vec<Vec<Vec<(TypeOfThreat, Vec<(usize,usize)>)>>> = vec![];
-        // black_pos.push((9,8));
-        // black_pos.push((9,7));
-        // black_pos.push((9,6));
-        // black_pos.push((9,5));
+        let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = 
+            vec![
+                ((9,4), TypeOfThreat::FOUR_O, vec![]),
+                ((9,9), TypeOfThreat::FOUR_O, vec![])
+                ];
         assert!(test_threat(
             white_pos,
             black_pos,
@@ -528,11 +522,11 @@ mod tests {
         let white_pos = vec![(7,8)];
         let mut white_take = 0_isize;
         let mut black_take = 0_isize;
-        let expected_result: Vec<Vec<Vec<(TypeOfThreat, Vec<(usize,usize)>)>>> = vec![];
-        // black_pos.push((9,8));
-        // black_pos.push((9,7));
-        // black_pos.push((9,6));
-        // black_pos.push((9,5));
+        let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = 
+            vec![
+                ((9,4), TypeOfThreat::FOUR_O, vec![(10,8)]),
+                ((9,9), TypeOfThreat::FOUR_O, vec![(10,8)])
+                ];
         assert!(test_threat(
             white_pos,
             black_pos,
@@ -550,11 +544,7 @@ mod tests {
         let white_pos = vec![(7,9), (7,4), (7,8)];
         let mut white_take = 0_isize;
         let mut black_take = 0_isize;
-        let expected_result: Vec<Vec<Vec<(TypeOfThreat, Vec<(usize,usize)>)>>> = vec![];
-        // black_pos.push((9,8));
-        // black_pos.push((9,7));
-        // black_pos.push((9,6));
-        // black_pos.push((9,5));
+        let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![];
         assert!(test_threat(
             white_pos,
             black_pos,
