@@ -875,5 +875,45 @@ mod tests {
             expected_result
         ))
     }
-
+    
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // _________⊕_________
+    // _________⊕_________
+    // _________⊕_________
+    // _________⊕_________
+    // _______⊖⊕_⊖________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    #[test]
+    fn threat_not_catch_extremity() {
+        let mut black_pos = vec![(9,8),(9,7), (9,6), (9,5), (8,9)];
+        let white_pos = vec![(10,9), (7,9)];
+        let mut white_take = 0_isize;
+        let mut black_take = 0_isize;
+        let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = 
+            vec![
+                ((9,4), TypeOfThreat::FOUR_O, vec![]),
+                ((9,9), TypeOfThreat::FOUR_O, vec![])
+            ];
+        assert!(test_threat(
+            white_pos,
+            black_pos,
+            &mut white_take,
+            &mut black_take,
+            (9, 7),
+            Some(false),
+            expected_result
+        ))
+    }
 }
