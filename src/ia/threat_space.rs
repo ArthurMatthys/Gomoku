@@ -483,14 +483,87 @@ fn connect_2(
             }
         }
         if align_ally > 0 && space == 1 {
-            //TODO handle fusion
-            //            let mut other_edge = None;
-            //            if *way == -1 {
-            //                other_edge = score_board[new_x as usize][new_y as usize][dir].1;
-            //            } else {
-            //                other_edge = score_board[new_x as usize][new_y as usize][dir].2;
-            //            }
-            //            explore_align_light!(board, new_x, new_y, actual_player, dir, way);
+            let mut capture_extra_no_space: Vec<(usize, usize)> = vec![];
+            if align_ally != 4 {
+                capture_extra_no_space = capture_blank(
+                    score_board,
+                    board,
+                    actual_player,
+                    new_x as usize,
+                    new_y as usize,
+                    dir,
+                );
+            }
+            let mut capture_extra_with_space = capture_blank(
+                score_board,
+                board,
+                actual_player,
+                (new_x + *way * dx) as usize,
+                (new_y + *way * dy) as usize,
+                dir,
+            );
+            let mut opp_no_space = vec![];
+            let mut opp_with_space = vec![];
+            let mut push_coord_vec = |steps_no_space: Vec<isize>, steps_with_space: Vec<isize>| {
+                steps_no_space.iter().for_each(|&step| {
+                    opp_no_space.push((
+                        (new_x + *way * dx * step) as usize,
+                        (new_y + *way * dy * step) as usize,
+                    ))
+                });
+                steps_with_space.iter().for_each(|&step| {
+                    opp_with_space.push((
+                        (new_x + *way * dx * step) as usize,
+                        (new_y + *way * dy * step) as usize,
+                    ))
+                });
+            };
+            match align_ally {
+                1 => {
+                    let moves_no_space = vec![-2, -1, 2];
+                    let moves_with_space = vec![-2, -1, 2];
+                    push_coord_vec(moves_no_space, moves_with_space);
+                    capture_extra_no_space
+                        .push(((new_x + *way * dx) as usize, (new_y + *way * dy) as usize));
+                    capture_extra_with_space.push((new_x as usize, new_y as usize));
+                }
+                2 => {
+                    let moves_no_space = vec![-1, 2];
+                    let moves_with_space = vec![-1, 2];
+                    push_coord_vec(moves_no_space, moves_with_space);
+                    capture_extra_no_space
+                        .push(((new_x + *way * dx) as usize, (new_y + *way * dy) as usize));
+                    capture_extra_with_space.push((new_x as usize, new_y as usize));
+                }
+                3 => {
+                    let moves_no_space = vec![2];
+                    let ally_tuple = score_board[(new_x + *way * dx * 2) as usize]
+                        [(new_y * *way * dy * 2) as usize][dir];
+                    let mut moves_with_space = vec![2];
+                    if !(ally_tuple.1 == Some(false) && ally_tuple.2 == Some(false)) {
+                        capture_extra_with_space.push((new_x as usize, new_y as usize));
+                    }
+                    capture_extra_no_space
+                        .push(((new_x + *way * dx) as usize, (new_y + *way * dy) as usize));
+                    push_coord_vec(moves_no_space, moves_with_space);
+                }
+                4 => {
+                    let moves_no_space = vec![2];
+                    let moves_with_space = vec![2, 3, 4, 5];
+                    capture_extra_no_space
+                        .push(((new_x + *way * dx) as usize, (new_y + *way * dy) as usize));
+                    push_coord_vec(moves_no_space, moves_with_space);
+                }
+                _ => return vec![],
+            }
+        //TODO handle fusion
+        //            let mut other_edge = None;
+        //            if *way == -1 {
+        //                other_edge = score_board[new_x as usize][new_y as usize][dir].1;
+        //            } else {
+        //                other_edge = score_board[new_x as usize][new_y as usize][dir].2;
+        //            }
+        //            explore_align_light!(board, new_x, new_y, actual_player, dir, way);
         } else if space >= 2 {
             //TODO handle formating 3o / 4 with empty in the middle
             let align_vec = vec![
@@ -541,9 +614,9 @@ fn connect_2(
             ));
         }
     }
-
     ret
 }
+
 fn connect_3(
     board: &mut [[Option<bool>; SIZE_BOARD]; SIZE_BOARD],
     score_board: &mut [[[(u8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD],
@@ -722,7 +795,7 @@ mod tests {
             }
             println!();
         }
-        let ret = capture_blank(&mut score_tab, &mut test_board, actual_player, x, y);
+        let ret = capture_blank(&mut score_tab, &mut test_board, actual_player, x, y, 0);
         ret.len() > 0
     }
 
@@ -751,6 +824,7 @@ mod tests {
         let black_pos = vec![(x + 1, y), (x - 1, y)];
         let white_pos = vec![];
         assert!(!test_capture_blank(white_pos, black_pos, Some(false), x, y))
+        // Compare output with given
     }
 
     #[test]
@@ -809,5 +883,25 @@ mod tests {
             }
             println!();
         }
+        let res = connect_2(&mut test_board, &mut score_tab, actual_player, (x, y), dir);
+        res.iter().for_each(|((x, y), _, answers)| {
+            println!("danger : {}/{}", x, y);
+            print!("Answers : ");
+            answers
+                .iter()
+                .for_each(|&(ans_x, ans_y)| print!("{}/{}---", ans_x, ans_y));
+            println!();
+        });
+        false
+    }
+
+    #[test]
+    fn connect_2_0() {
+        let x = 8;
+        let y = 8;
+        let black_pos = vec![(x, y), (x + 1, y + 1)];
+        let white_pos = vec![];
+        let dir = 0;
+        assert!(test_connect_2(white_pos, black_pos, Some(false), (x, y), 0))
     }
 }
