@@ -2156,4 +2156,43 @@ mod tests {
                 expected_result
             ))
         }
+
+        // __________________⊕
+        // _________________⊕_
+        // ________________⊕__
+        // _______________⊕___
+        // ___________________
+        // ___________________
+        // ___________________
+        // ___________________
+        // ___________________
+        // ___________________
+        // ___________________
+        // ___________________
+        // ___________________
+        // ___________________
+        // ___________________
+        // ___________________
+        // ___________________
+        // ___________________
+        // ___________________
+        #[test]
+        fn threat_diago_not_take() {
+            let mut black_pos = vec![(18,0),(17,1),(16,2),(15,3)];
+            let white_pos = vec![(14,4)]; 
+            let mut white_take = 0_isize;
+            let mut black_take = 0_isize;
+            let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = 
+                vec![
+                ];
+            assert!(test_threat(
+                white_pos,
+                black_pos,
+                &mut white_take,
+                &mut black_take,
+                (16, 2),
+                Some(false),
+                expected_result
+            ))
+        }
 }
