@@ -449,6 +449,36 @@ fn connect_4(
 // )
 //
 
+macro_rules! get_edges {
+    (
+        $way: expr,
+        $tuple: expr
+    ) => {
+        match $way {
+            -1 => ($tuple.1, $tuple.2),
+            1 => ($tuple.2, $tuple.1),
+            _ => unreachable!(),
+        }
+    };
+}
+
+fn create_align(
+    steps: Vec<isize>,
+    way: isize,
+    (x, y): (isize, isize),
+    (dx, dy): (isize, isize),
+) -> Vec<(usize, usize)> {
+    let mut ret: Vec<(usize, usize)> = vec![];
+    //let mut ret: Vec<(isize, isize)> = Vec::with_capacity($steps.len());
+    steps.iter().for_each(|&step| {
+        ret.push((
+            (x + way * dx * step) as usize,
+            (y + way * dy * step) as usize,
+        ))
+    });
+    return ret;
+}
+
 fn connect_2(
     board: &mut [[Option<bool>; SIZE_BOARD]; SIZE_BOARD],
     score_board: &mut [[[(u8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD],
@@ -458,162 +488,498 @@ fn connect_2(
 ) -> Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> {
     let mut ret = vec![];
     let focused_tuple = score_board[x][y][dir as usize];
-    if focused_tuple.1 != Some(false) || focused_tuple.2 != Some(false) {
-        return ret;
-    }
     let (dx, dy) = DIRECTIONS[dir];
     for way in [-1, 1].iter() {
+        let (actual_edge, opp_edge): (Option<bool>, Option<bool>) = get_edges!(way, focused_tuple);
+        if actual_edge != Some(false) {
+            continue;
+        }
         let mut space = 1;
         let mut align_ally = 0;
         let mut new_x = x as isize;
         let mut new_y = y as isize;
         explore_align_light!(board, new_x, new_y, actual_player, dir, way);
+        let mut cursor_x = new_x;
+        let mut cursor_y = new_y;
         loop {
-            new_x += dx * way;
-            new_y += dy * way;
-            if !valid_coord!(new_x, new_y) || space >= 3 || align_ally != 0 {
+            cursor_x += dx * way;
+            cursor_y += dy * way;
+            if !valid_coord!(cursor_x, cursor_y) || space >= 3 || align_ally != 0 {
                 break;
             }
-            match board[new_x as usize][new_y as usize] {
+            match board[cursor_x as usize][cursor_y as usize] {
                 None => space += 1,
                 a if a == actual_player => {
-                    align_ally = score_board[new_x as usize][new_y as usize][dir].0
+                    align_ally = score_board[cursor_x as usize][cursor_y as usize][dir].0
                 }
                 _ => break,
             }
         }
-        if align_ally > 0 && space == 1 {
-            let mut capture_extra_no_space: Vec<(usize, usize)> = vec![];
-            if align_ally != 4 {
-                capture_extra_no_space = capture_blank(
-                    score_board,
-                    board,
-                    actual_player,
-                    new_x as usize,
-                    new_y as usize,
-                    dir,
-                );
-            }
-            let mut capture_extra_with_space = capture_blank(
-                score_board,
-                board,
-                actual_player,
-                (new_x + *way * dx) as usize,
-                (new_y + *way * dy) as usize,
-                dir,
-            );
-            let mut opp_no_space = vec![];
-            let mut opp_with_space = vec![];
-            let mut push_coord_vec = |steps_no_space: Vec<isize>, steps_with_space: Vec<isize>| {
-                steps_no_space.iter().for_each(|&step| {
-                    opp_no_space.push((
-                        (new_x + *way * dx * step) as usize,
-                        (new_y + *way * dy * step) as usize,
-                    ))
-                });
-                steps_with_space.iter().for_each(|&step| {
-                    opp_with_space.push((
-                        (new_x + *way * dx * step) as usize,
-                        (new_y + *way * dy * step) as usize,
-                    ))
-                });
-            };
-            match align_ally {
-                1 => {
-                    let moves_no_space = vec![-2, -1, 2];
-                    let moves_with_space = vec![-2, -1, 2];
-                    push_coord_vec(moves_no_space, moves_with_space);
-                    capture_extra_no_space
-                        .push(((new_x + *way * dx) as usize, (new_y + *way * dy) as usize));
-                    capture_extra_with_space.push((new_x as usize, new_y as usize));
-                }
-                2 => {
-                    let moves_no_space = vec![-1, 2];
-                    let moves_with_space = vec![-1, 2];
-                    push_coord_vec(moves_no_space, moves_with_space);
-                    capture_extra_no_space
-                        .push(((new_x + *way * dx) as usize, (new_y + *way * dy) as usize));
-                    capture_extra_with_space.push((new_x as usize, new_y as usize));
-                }
-                3 => {
-                    let moves_no_space = vec![2];
-                    let ally_tuple = score_board[(new_x + *way * dx * 2) as usize]
-                        [(new_y * *way * dy * 2) as usize][dir];
-                    let mut moves_with_space = vec![2];
-                    if !(ally_tuple.1 == Some(false) && ally_tuple.2 == Some(false)) {
-                        capture_extra_with_space.push((new_x as usize, new_y as usize));
+        let mut gather_infos: Vec<(
+            (usize, usize),
+            TypeOfThreat,
+            Vec<(usize, usize)>,
+            Vec<(usize, usize)>,
+        )> = Vec::with_capacity(2);
+
+        match opp_edge {
+            Some(false) => match space {
+                1 => match align_ally {
+                    0 => (),
+                    1 => {
+                        // _00_0?
+                        //opened edge, 1 space, 1 more pawn
+                        let (ally_edge, _) = get_edges!(
+                            way,
+                            score_board[(new_x + way * dx) as usize][(new_y + way * dy) as usize]
+                                [dir]
+                        );
+                        let steps: Vec<isize> = vec![-2, -1, 1];
+                        let (opp_steps, threat) = match ally_edge {
+                            Some(false) => (vec![], TypeOfThreat::FOUR_O),
+                            _ => (vec![-3, 1], TypeOfThreat::FOUR_SO),
+                        };
+                        gather_infos.push((
+                            (new_x as usize, new_y as usize),
+                            threat,
+                            create_align(steps, *way, (new_x, new_y), (dx, dy)),
+                            create_align(opp_steps, *way, (new_x, new_y), (dx, dy)),
+                        ));
                     }
-                    capture_extra_no_space
-                        .push(((new_x + *way * dx) as usize, (new_y + *way * dy) as usize));
-                    push_coord_vec(moves_no_space, moves_with_space);
+                    2 => {
+                        // _00_00?
+                        //opened edge, 1 space, 2 more pawn
+                        let steps = vec![-2, -1, 1, 2];
+                        let (opp_steps, threat) = (vec![], TypeOfThreat::FIVE_TAKE);
+                        gather_infos.push((
+                            (new_x as usize, new_y as usize),
+                            threat,
+                            create_align(steps, *way, (new_x, new_y), (dx, dy)),
+                            create_align(opp_steps, *way, (new_x, new_y), (dx, dy)),
+                        ));
+                    }
+                    3 => {
+                        // _00_000?
+                        //opened edge, 1 space, 3 more pawn
+                        let steps = vec![-1, 1, 2];
+                        let (opp_steps, threat) = (vec![], TypeOfThreat::FIVE_TAKE);
+                        gather_infos.push((
+                            (new_x as usize, new_y as usize),
+                            threat,
+                            create_align(steps, *way, (new_x, new_y), (dx, dy)),
+                            create_align(opp_steps, *way, (new_x, new_y), (dx, dy)),
+                        ));
+                    }
+                    4 => {
+                        // _00_0000?
+                        //opened edge, 1 space, 4 more pawn
+                        let steps = vec![1, 2];
+                        let (opp_steps, threat) = (vec![], TypeOfThreat::FIVE_TAKE);
+                        gather_infos.push((
+                            (new_x as usize, new_y as usize),
+                            threat,
+                            create_align(steps, *way, (new_x, new_y), (dx, dy)),
+                            create_align(opp_steps, *way, (new_x, new_y), (dx, dy)),
+                        ));
+                    }
+                    5 => (),
+                    _ => unreachable!(),
+                },
+                2 => match align_ally {
+                    0 => {
+                        // _00__#
+                        //opened edge, 2 space, 0 more pawn
+                        let (mut tmp_x, mut tmp_y) = (x as isize, y as isize);
+                        explore_align_light!(board, tmp_x, tmp_y, actual_player, dir, -way);
+                        tmp_x -= way * dx;
+                        tmp_y -= way * dy;
+                        if !valid_coord!(tmp_x, tmp_y)
+                            || board[tmp_x as usize][tmp_y as usize] != actual_player
+                        {
+                            ();
+                        } else {
+                            let steps_no_space = vec![-2, -1];
+                            let opp_steps_no_space = vec![-3, 1];
+                            gather_infos.push((
+                                (new_x as usize, new_y as usize),
+                                TypeOfThreat::THREE_O,
+                                create_align(steps_no_space, *way, (new_x, new_y), (dx, dy)),
+                                create_align(opp_steps_no_space, *way, (new_x, new_y), (dx, dy)),
+                            ));
+                            let steps_with_space = vec![-2, -1];
+                            let opp_steps_with_space = vec![0];
+                            gather_infos.push((
+                                ((new_x + way * dx) as usize, (new_y + way * dy) as usize),
+                                TypeOfThreat::THREE_O,
+                                create_align(steps_with_space, *way, (new_x, new_y), (dx, dy)),
+                                create_align(opp_steps_with_space, *way, (new_x, new_y), (dx, dy)),
+                            ));
+                        }
+                    }
+                    1 => {
+                        // _00__0?
+                        //opened edge, 2 space, 1 more pawn
+                        let steps_no_space = vec![-2, -1, 2];
+                        let opp_steps_no_space = vec![-3, 1];
+                        gather_infos.push((
+                            (new_x as usize, new_y as usize),
+                            TypeOfThreat::FOUR_SO,
+                            create_align(steps_no_space, *way, (new_x, new_y), (dx, dy)),
+                            create_align(opp_steps_no_space, *way, (new_x, new_y), (dx, dy)),
+                        ));
+                        let steps_with_space = vec![-2, -1, 2];
+                        let opp_steps_with_space = vec![0];
+                        gather_infos.push((
+                            ((new_x + way * dx) as usize, (new_y + way * dy) as usize),
+                            TypeOfThreat::FOUR_SO,
+                            create_align(steps_with_space, *way, (new_x, new_y), (dx, dy)),
+                            create_align(opp_steps_with_space, *way, (new_x, new_y), (dx, dy)),
+                        ));
+                    }
+                    2 => {
+                        // _00__00?
+                        //opened edge, 2 space, 2 more pawn
+                        let steps_no_space = vec![-1, 2];
+                        let opp_steps_no_space = vec![-3, 1];
+                        gather_infos.push((
+                            (new_x as usize, new_y as usize),
+                            TypeOfThreat::FIVE_TAKE,
+                            create_align(steps_no_space, *way, (new_x, new_y), (dx, dy)),
+                            create_align(opp_steps_no_space, *way, (new_x, new_y), (dx, dy)),
+                        ));
+                        let steps_with_space = vec![-1, 2];
+                        let opp_steps_with_space = vec![0];
+                        gather_infos.push((
+                            ((new_x + way * dx) as usize, (new_y + way * dy) as usize),
+                            TypeOfThreat::FIVE_TAKE,
+                            create_align(steps_with_space, *way, (new_x, new_y), (dx, dy)),
+                            create_align(opp_steps_with_space, *way, (new_x, new_y), (dx, dy)),
+                        ));
+                    }
+                    3..=4 => {
+                        // _00__000?
+                        // _00__0000?
+                        //opened edge, 2 space, 3 or 4 more pawn
+                        let steps_no_space = vec![2];
+                        let opp_steps_no_space = vec![-3, 1];
+                        gather_infos.push((
+                            (new_x as usize, new_y as usize),
+                            TypeOfThreat::FIVE_TAKE,
+                            create_align(steps_no_space, *way, (new_x, new_y), (dx, dy)),
+                            create_align(opp_steps_no_space, *way, (new_x, new_y), (dx, dy)),
+                        ));
+                        let steps_with_space = vec![2];
+                        let opp_steps_with_space = vec![0];
+                        gather_infos.push((
+                            ((new_x + way * dx) as usize, (new_y + way * dy) as usize),
+                            TypeOfThreat::FIVE_TAKE,
+                            create_align(steps_with_space, *way, (new_x, new_y), (dx, dy)),
+                            create_align(opp_steps_with_space, *way, (new_x, new_y), (dx, dy)),
+                        ));
+                    }
+                    5 => (),
+                    _ => unreachable!(),
+                },
+                3 => {
+                    // _00___?
+                    //opened edge, 3 space, 2 in a row alone
+                    let steps_no_space = vec![-2, -1];
+                    let opp_steps_no_space = vec![-3, 1];
+                    gather_infos.push((
+                        (new_x as usize, new_y as usize),
+                        TypeOfThreat::THREE_O,
+                        create_align(steps_no_space, *way, (new_x, new_y), (dx, dy)),
+                        create_align(opp_steps_no_space, *way, (new_x, new_y), (dx, dy)),
+                    ));
+                    let steps_with_space = vec![-2, -1];
+                    let opp_steps_with_space = vec![0];
+                    gather_infos.push((
+                        ((new_x + way * dx) as usize, (new_y + way * dy) as usize),
+                        TypeOfThreat::THREE_O,
+                        create_align(steps_with_space, *way, (new_x, new_y), (dx, dy)),
+                        create_align(opp_steps_with_space, *way, (new_x, new_y), (dx, dy)),
+                    ));
                 }
-                4 => {
-                    let moves_no_space = vec![2];
-                    let moves_with_space = vec![2, 3, 4, 5];
-                    capture_extra_no_space
-                        .push(((new_x + *way * dx) as usize, (new_y + *way * dy) as usize));
-                    push_coord_vec(moves_no_space, moves_with_space);
+                _ => unreachable!(),
+            },
+            _ => match space {
+                1 => match align_ally {
+                    1 => {
+                        // #00_0?
+                        let (ally_edge, _) = get_edges!(
+                            way,
+                            score_board[(new_x + way * dx) as usize][(new_y + way * dy) as usize]
+                                [dir]
+                        );
+                        if ally_edge == Some(false) {
+                            let steps: Vec<isize> = vec![-2, -1, 1];
+                            let opp_steps = vec![-3, 1];
+                            gather_infos.push((
+                                (new_x as usize, new_y as usize),
+                                TypeOfThreat::FOUR_SO,
+                                create_align(steps, *way, (new_x, new_y), (dx, dy)),
+                                create_align(opp_steps, *way, (new_x, new_y), (dx, dy)),
+                            ));
+                        } else {
+                            continue;
+                        }
+                    }
+                    2 => {
+                        // #00_00?
+                        let steps = vec![-2, -1, 1, 2];
+                        let (opp_steps, threat) = (vec![], TypeOfThreat::FIVE_TAKE);
+                        gather_infos.push((
+                            (new_x as usize, new_y as usize),
+                            threat,
+                            create_align(steps, *way, (new_x, new_y), (dx, dy)),
+                            create_align(opp_steps, *way, (new_x, new_y), (dx, dy)),
+                        ));
+                    }
+                    3 => {
+                        // #00_000?
+                        let steps = vec![-1, 1, 2];
+                        let (opp_steps, threat) = (vec![], TypeOfThreat::FIVE_TAKE);
+                        gather_infos.push((
+                            (new_x as usize, new_y as usize),
+                            threat,
+                            create_align(steps, *way, (new_x, new_y), (dx, dy)),
+                            create_align(opp_steps, *way, (new_x, new_y), (dx, dy)),
+                        ));
+                    }
+                    4 => {
+                        // #00_0000?
+                        let steps = vec![1, 1];
+                        let (opp_steps, threat) = (vec![], TypeOfThreat::FIVE_TAKE);
+                        gather_infos.push((
+                            (new_x as usize, new_y as usize),
+                            threat,
+                            create_align(steps, *way, (new_x, new_y), (dx, dy)),
+                            create_align(opp_steps, *way, (new_x, new_y), (dx, dy)),
+                        ));
+                    }
+                    0 => (),
+                    5 => (),
+                    _ => unreachable!(),
+                },
+                2 => match align_ally {
+                    0 => {
+                        // #00__#
+                        continue;
+                    }
+                    1 => {
+                        // #00__0?
+                        let steps_no_space = vec![-2, -1, 2];
+                        let opp_steps_no_space = vec![1];
+                        gather_infos.push((
+                            (new_x as usize, new_y as usize),
+                            TypeOfThreat::FOUR_SO,
+                            create_align(steps_no_space, *way, (new_x, new_y), (dx, dy)),
+                            create_align(opp_steps_no_space, *way, (new_x, new_y), (dx, dy)),
+                        ));
+                        let steps_with_space = vec![-2, -1, 2];
+                        let opp_steps_with_space = vec![0];
+                        gather_infos.push((
+                            ((new_x + way * dx) as usize, (new_y + way * dy) as usize),
+                            TypeOfThreat::FOUR_SO,
+                            create_align(steps_with_space, *way, (new_x, new_y), (dx, dy)),
+                            create_align(opp_steps_with_space, *way, (new_x, new_y), (dx, dy)),
+                        ));
+                    }
+                    2 => {
+                        // #00__00?
+                        let steps_no_space = vec![-1, 2];
+                        let opp_steps_no_space = vec![1];
+                        gather_infos.push((
+                            (new_x as usize, new_y as usize),
+                            TypeOfThreat::FIVE_TAKE,
+                            create_align(steps_no_space, *way, (new_x, new_y), (dx, dy)),
+                            create_align(opp_steps_no_space, *way, (new_x, new_y), (dx, dy)),
+                        ));
+                        let steps_with_space = vec![-1, 2];
+                        let opp_steps_with_space = vec![0];
+                        gather_infos.push((
+                            ((new_x + way * dx) as usize, (new_y + way * dy) as usize),
+                            TypeOfThreat::FIVE_TAKE,
+                            create_align(steps_with_space, *way, (new_x, new_y), (dx, dy)),
+                            create_align(opp_steps_with_space, *way, (new_x, new_y), (dx, dy)),
+                        ));
+                    }
+                    3..=4 => {
+                        // #00__000?
+                        // #00__0000?
+                        let steps_no_space = vec![2];
+                        let opp_steps_no_space = vec![1];
+                        gather_infos.push((
+                            (new_x as usize, new_y as usize),
+                            TypeOfThreat::FIVE_TAKE,
+                            create_align(steps_no_space, *way, (new_x, new_y), (dx, dy)),
+                            create_align(opp_steps_no_space, *way, (new_x, new_y), (dx, dy)),
+                        ));
+                        let steps_with_space = vec![2];
+                        let opp_steps_with_space = vec![0];
+                        gather_infos.push((
+                            ((new_x + way * dx) as usize, (new_y + way * dy) as usize),
+                            TypeOfThreat::FIVE_TAKE,
+                            create_align(steps_with_space, *way, (new_x, new_y), (dx, dy)),
+                            create_align(opp_steps_with_space, *way, (new_x, new_y), (dx, dy)),
+                        ));
+                    }
+                    5 => (),
+                    _ => unreachable!(),
+                },
+                3 => {
+                    // #00___?
+                    continue;
                 }
-                _ => return vec![],
-            }
-        //TODO handle fusion
-        //            let mut other_edge = None;
-        //            if *way == -1 {
-        //                other_edge = score_board[new_x as usize][new_y as usize][dir].1;
-        //            } else {
-        //                other_edge = score_board[new_x as usize][new_y as usize][dir].2;
-        //            }
-        //            explore_align_light!(board, new_x, new_y, actual_player, dir, way);
-        } else if space >= 2 {
-            //TODO handle formating 3o / 4 with empty in the middle
-            let align_vec = vec![
-                ((new_x - way * dx) as usize, (new_y - way * dy) as usize),
-                (
-                    (new_x - 2 * way * dx) as usize,
-                    (new_y - 2 * way * dy) as usize,
-                ),
-            ];
-            let capture_base =
-                capture_coordinates_vec(score_board, board, actual_player, align_vec, dir);
-            let mut capture_extra_no_space = capture_blank(
-                score_board,
-                board,
-                actual_player,
-                new_x as usize,
-                new_y as usize,
-                dir,
-            );
-            let mut capture_extra_with_space = capture_blank(
-                score_board,
-                board,
-                actual_player,
-                (new_x + *way * dx) as usize,
-                (new_y + *way * dy) as usize,
-                dir,
-            );
-            capture_base.iter().for_each(|&(x, y)| {
-                capture_extra_no_space.push((x, y));
-                capture_extra_with_space.push((x, y));
-            });
-            capture_extra_with_space.push((new_x as usize, new_y as usize));
-            capture_extra_no_space
-                .push(((new_x + *way * dx) as usize, (new_y + *way * dy) as usize));
-            capture_extra_no_space.push((
-                (new_x - 3 * *way * dx) as usize,
-                (new_y - 3 * *way * dy) as usize,
-            ));
-            ret.push((
-                (new_x as usize, new_y as usize),
-                TypeOfThreat::THREE_O,
-                capture_extra_no_space,
-            ));
-            ret.push((
-                ((new_x + *way * dx) as usize, (new_y + *way * dy) as usize),
-                TypeOfThreat::THREE_O,
-                capture_extra_with_space,
-            ));
-        }
+                _ => unreachable!(),
+            },
+        };
     }
+    //        ---_----
+    //        if align_ally > 0 && space == 1 {
+    //            let mut capture_extra_no_space: Vec<(usize, usize)> = vec![];
+    //            if align_ally != 4 {
+    //                capture_extra_no_space = capture_blank(
+    //                    score_board,
+    //                    board,
+    //                    actual_player,
+    //                    new_x as usize,
+    //                    new_y as usize,
+    //                    dir,
+    //                );
+    //            }
+    //            let mut capture_extra_with_space = capture_blank(
+    //                score_board,
+    //                board,
+    //                actual_player,
+    //                (new_x + *way * dx) as usize,
+    //                (new_y + *way * dy) as usize,
+    //                dir,
+    //            );
+    //            let mut opp_no_space = vec![];
+    //            let mut opp_with_space = vec![];
+    //            let mut push_coord_vec = |steps_no_space: Vec<isize>, steps_with_space: Vec<isize>| {
+    //                steps_no_space.iter().for_each(|&step| {
+    //                    opp_no_space.push((
+    //                        (new_x + *way * dx * step) as usize,
+    //                        (new_y + *way * dy * step) as usize,
+    //                    ))
+    //                });
+    //                steps_with_space.iter().for_each(|&step| {
+    //                    opp_with_space.push((
+    //                        (new_x + *way * dx * step) as usize,
+    //                        (new_y + *way * dy * step) as usize,
+    //                    ))
+    //                });
+    //            };
+    //            match align_ally {
+    //                1 => {
+    //                    let moves_no_space = vec![-2, -1, 2];
+    //                    let moves_with_space = vec![-2, -1, 2];
+    //                    push_coord_vec(moves_no_space, moves_with_space);
+    //                    capture_extra_no_space
+    //                        .push(((new_x + *way * dx) as usize, (new_y + *way * dy) as usize));
+    //                    capture_extra_with_space.push((new_x as usize, new_y as usize));
+    //                }
+    //                2 => {
+    //                    let moves_no_space = vec![-1, 2];
+    //                    let moves_with_space = vec![-1, 2];
+    //                    push_coord_vec(moves_no_space, moves_with_space);
+    //                    capture_extra_no_space
+    //                        .push(((new_x + *way * dx) as usize, (new_y + *way * dy) as usize));
+    //                    capture_extra_with_space.push((new_x as usize, new_y as usize));
+    //                }
+    //                3 => {
+    //                    let moves_no_space = vec![2];
+    //                    let ally_tuple = score_board[(new_x + *way * dx * 2) as usize]
+    //                        [(new_y * *way * dy * 2) as usize][dir];
+    //                    let mut moves_with_space = vec![2];
+    //                    if !(ally_tuple.1 == Some(false) && ally_tuple.2 == Some(false)) {
+    //                        capture_extra_with_space.push((new_x as usize, new_y as usize));
+    //                    }
+    //                    capture_extra_no_space
+    //                        .push(((new_x + *way * dx) as usize, (new_y + *way * dy) as usize));
+    //                    push_coord_vec(moves_no_space, moves_with_space);
+    //                }
+    //                4 => {
+    //                    let moves_no_space = vec![2];
+    //                    let moves_with_space = vec![2, 3, 4, 5];
+    //                    capture_extra_no_space
+    //                        .push(((new_x + *way * dx) as usize, (new_y + *way * dy) as usize));
+    //                    push_coord_vec(moves_no_space, moves_with_space);
+    //                }
+    //                _ => return vec![],
+    //            }
+    //            let capture_with_space =
+    //                capture_coordinates_vec(score_board, board, actual_player, opp_with_space, dir);
+    //            let capture_no_space =
+    //                capture_coordinates_vec(score_board, board, actual_player, opp_no_space, dir);
+    //            capture_with_space
+    //                .iter()
+    //                .for_each(|&x| capture_extra_with_space.push(x));
+    //            capture_no_space
+    //                .iter()
+    //                .for_each(|&x| capture_extra_no_space.push(x));
+    //        //TODO handle fusion
+    //        //            let mut other_edge = None;
+    //        //            if *way == -1 {
+    //        //                other_edge = score_board[new_x as usize][new_y as usize][dir].1;
+    //        //            } else {
+    //        //                other_edge = score_board[new_x as usize][new_y as usize][dir].2;
+    //        //            }
+    //        //            explore_align_light!(board, new_x, new_y, actual_player, dir, way);
+    //        } else if space >= 2 {
+    //            //TODO handle formating 3o / 4 with empty in the middle
+    //            let align_vec = vec![
+    //                ((new_x - way * dx) as usize, (new_y - way * dy) as usize),
+    //                (
+    //                    (new_x - 2 * way * dx) as usize,
+    //                    (new_y - 2 * way * dy) as usize,
+    //                ),
+    //            ];
+    //            let capture_base =
+    //                capture_coordinates_vec(score_board, board, actual_player, align_vec, dir);
+    //            let mut capture_extra_no_space = capture_blank(
+    //                score_board,
+    //                board,
+    //                actual_player,
+    //                new_x as usize,
+    //                new_y as usize,
+    //                dir,
+    //            );
+    //            let mut capture_extra_with_space = capture_blank(
+    //                score_board,
+    //                board,
+    //                actual_player,
+    //                (new_x + *way * dx) as usize,
+    //                (new_y + *way * dy) as usize,
+    //                dir,
+    //            );
+    //            capture_base.iter().for_each(|&(x, y)| {
+    //                capture_extra_no_space.push((x, y));
+    //                capture_extra_with_space.push((x, y));
+    //            });
+    //
+    //            capture_extra_with_space.push((new_x as usize, new_y as usize));
+    //            capture_extra_no_space
+    //                .push(((new_x + *way * dx) as usize, (new_y + *way * dy) as usize));
+    //            capture_extra_no_space.push((
+    //                (new_x - 3 * *way * dx) as usize,
+    //                (new_y - 3 * *way * dy) as usize,
+    //            ));
+    //            ret.push((
+    //                (new_x as usize, new_y as usize),
+    //                TypeOfThreat::THREE_O,
+    //                capture_extra_no_space,
+    //            ));
+    //            ret.push((
+    //                ((new_x + *way * dx) as usize, (new_y + *way * dy) as usize),
+    //                TypeOfThreat::THREE_O,
+    //                capture_extra_with_space,
+    //            ));
+    //        }
+    //TODO transfo gather_info into ret. gather_info : (pos, threat, alignement threat, possible
+    //answer (without takes of alignement)
     ret
 }
 
