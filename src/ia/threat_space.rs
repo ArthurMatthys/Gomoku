@@ -488,7 +488,7 @@ fn connect_2(
     (x, y): (usize, usize),
     dir: usize,
 ) -> Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> {
-    let mut ret = vec![];
+    let mut ret: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = Vec::with_capacity(2);
     let focused_tuple = score_board[x][y][dir as usize];
     let (dx, dy) = DIRECTIONS[dir];
     for way in [-1, 1].iter() {
@@ -540,7 +540,7 @@ fn connect_2(
                         let steps: Vec<isize> = vec![-2, -1, 1];
                         let (opp_steps, threat) = match ally_edge {
                             Some(false) => (vec![], TypeOfThreat::FOUR_O),
-                            _ => (vec![-3, 1], TypeOfThreat::FOUR_SO),
+                            _ => (vec![-3, 2], TypeOfThreat::FOUR_SO),
                         };
                         gather_infos.push((
                             (new_x as usize, new_y as usize),
@@ -837,7 +837,33 @@ fn connect_2(
                 _ => unreachable!(),
             },
         };
+        gather_infos
+            .iter()
+            .for_each(|(pos, threat, alignement, opp_pos)| {
+                let mut answers: Vec<(usize, usize)> =
+                    capture_blank(score_board, board, actual_player, pos.0, pos.1, dir);
+                alignement.iter().for_each(|&(align_x, align_y)| {
+                    let captures = capture_coordinates(
+                        score_board,
+                        board,
+                        actual_player,
+                        align_x,
+                        align_y,
+                        dir,
+                    );
+                    captures.iter().for_each(|&tuple| answers.push(tuple));
+                });
+                opp_pos.iter().for_each(|&coord| answers.push(coord));
+                ret.push((*pos, *threat, answers));
+            });
     }
+    //let mut ret: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = Vec::with_capacity(2);
+    //let mut gather_infos: Vec<(
+    //    (usize, usize),
+    //    TypeOfThreat,
+    //    Vec<(usize, usize)>,
+    //    Vec<(usize, usize)>,
+
     //        ---_----
     //        if align_ally > 0 && space == 1 {
     //            let mut capture_extra_no_space: Vec<(usize, usize)> = vec![];
@@ -1038,9 +1064,9 @@ pub fn threat_search_space(
                                 dir,
                             ) {
                                 None => (),
-                                Some(x) => x.iter().for_each(|((x, y), typeOfThreat, Opp)| {
-                                    threat_board[*x][*y].push((*typeOfThreat, vec![]));
-                                    Opp.iter().for_each(|&opp| {
+                                Some(x) => x.iter().for_each(|((x, y), typeofthreat, opp)| {
+                                    threat_board[*x][*y].push((*typeofthreat, vec![]));
+                                    opp.iter().for_each(|&opp| {
                                         let index = threat_board[*x][*y].len();
                                         threat_board[*x][*y][index].1.push(opp);
                                     });
