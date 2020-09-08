@@ -423,7 +423,7 @@ fn connect_4(
     board: &mut [[Option<bool>; SIZE_BOARD]; SIZE_BOARD],
     record: &mut [[[bool; 4]; SIZE_BOARD]; SIZE_BOARD],
     actual_player: Option<bool>,
-    actual_take: &mut isize,
+    // actual_take: &mut isize,
     dir: usize
 ) -> Vec<((usize,usize), TypeOfThreat, Vec<(usize,usize)>)> {
     let mut new_line: isize = line as isize;
@@ -519,7 +519,7 @@ pub fn threat_search_space(
                     let x = match score_board[line][col][dir].0 {
                         5 => vec![], //Instant win ?
                         // if record[x][y][dir]
-                        4 => { connect_4((line, col), score_board, board, &mut record, actual_player, actual_take, dir) },
+                        4 => { connect_4((line, col), score_board, board, &mut record, actual_player, dir) },
                         3 => vec![],
                         2 => vec![],
                         _ => vec![],
@@ -531,6 +531,10 @@ pub fn threat_search_space(
                 }
                 ()
             }
+            // else if board[line][col] == opposite_player {
+                // 1. Check if opposant == 2 (on peut manger et gagner)
+                // 2. Check if opposant == 4 (regarder si on peut perdre, avec 4 prises)
+            // } 
         }
     }
 
@@ -608,7 +612,7 @@ mod tests {
         // }
         for dir in 0..4 {
             tmp_result = match score_board[pos2check.0][pos2check.1][dir].0 {
-                4 => { connect_4(pos2check, &mut score_board, &mut test_board, &mut record, actual_player, actual_take, dir) },
+                4 => { connect_4(pos2check, &mut score_board, &mut test_board, &mut record, actual_player, dir) },
                 _ => { vec![] }
             };
             println!("DEBUT°°°DEBUG_CONNECT: len({})", tmp_result.len());
