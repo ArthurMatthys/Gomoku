@@ -1267,6 +1267,7 @@ mod tests {
                 // For each result, print the details of the threat + possible response
                 println!("Details:");
                 for i in 0..19 {
+                    print!("\\ ");
                     for j in 0..19 {
                         // Print specific attack move
                         if (defensive_move.0, defensive_move.1) == (j as usize,i as usize) {
@@ -1284,38 +1285,38 @@ mod tests {
                     }
                     println!();
                 }
-
+                // ((9,4), TypeOfThreat::FOUR_O, vec![(10,8)]),
                 println!("DEFENSIVE_MOVE-TMP-RESULT:");
-                println!("({},{})", defensive_move.0, defensive_move.1);
-                println!("typeOfThreat:");
-                match type_of_threat {
-                    TypeOfThreat::FIVE => println!("FIVE"),
-                    TypeOfThreat::FIVE_TAKE => println!("FIVE_TAKE"),
-                    TypeOfThreat::FOUR_O => println!("FOUR_O"),
-                    TypeOfThreat::FOUR_SO => println!("FOUR_SO"),
-                    TypeOfThreat::TAKE => println!("TAKE"),
-                    TypeOfThreat::THREE_O => println!("THREE_O"),
-                }
-                println!("Responses:");
-                opp.iter().for_each(|(x,y)| println!("({},{})", x, y));
+
+                print!("(({},{}), ", defensive_move.0, defensive_move.1);
+                print!("TypeOfThreat::{}, vec![", match type_of_threat {
+                    TypeOfThreat::FIVE => "FIVE",
+                    TypeOfThreat::FIVE_TAKE => "FIVE_TAKE",
+                    TypeOfThreat::FOUR_O => "FOUR_O",
+                    TypeOfThreat::FOUR_SO => "FOUR_SO",
+                    TypeOfThreat::TAKE => "TAKE",
+                    TypeOfThreat::THREE_O => "THREE_O",
+                });
+                opp.iter().enumerate().for_each(|(i,(x,y))| if i == (opp.len() - 1)  { print!("({},{})", x, y) } else { print!("({},{}),", x, y) });
+                println!("])");
             });
 
-                expected_result.iter().for_each(|(defensive_move, type_of_threat, opp)| {
-                    println!("-----------------");
-                    println!("DEFENSIVE_MOVE_EXPECTED:");
-                    println!("({},{})", defensive_move.0, defensive_move.1);
-                    println!("typeOfThreat:");
-                    match type_of_threat {
-                        TypeOfThreat::FIVE => println!("FIVE"),
-                        TypeOfThreat::FIVE_TAKE => println!("FIVE_TAKE"),
-                        TypeOfThreat::FOUR_O => println!("FOUR_O"),
-                        TypeOfThreat::FOUR_SO => println!("FOUR_SO"),
-                        TypeOfThreat::TAKE => println!("TAKE"),
-                        TypeOfThreat::THREE_O => println!("THREE_O"),
-                    }
-                    println!("Responses:");
-                    opp.iter().for_each(|(x,y)| println!("({},{})", x, y));
-                });
+                // expected_result.iter().for_each(|(defensive_move, type_of_threat, opp)| {
+                //     println!("-----------------");
+                //     println!("DEFENSIVE_MOVE_EXPECTED:");
+                //     println!("({},{})", defensive_move.0, defensive_move.1);
+                //     println!("typeOfThreat:");
+                //     match type_of_threat {
+                //         TypeOfThreat::FIVE => println!("FIVE"),
+                //         TypeOfThreat::FIVE_TAKE => println!("FIVE_TAKE"),
+                //         TypeOfThreat::FOUR_O => println!("FOUR_O"),
+                //         TypeOfThreat::FOUR_SO => println!("FOUR_SO"),
+                //         TypeOfThreat::TAKE => println!("TAKE"),
+                //         TypeOfThreat::THREE_O => println!("THREE_O"),
+                //     }
+                //     println!("Responses:");
+                //     opp.iter().for_each(|(x,y)| println!("({},{})", x, y));
+                // });
                 if tmp_result != vec![] {
                     break ;
                 }
