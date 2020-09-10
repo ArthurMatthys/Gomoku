@@ -491,6 +491,7 @@ fn connect_2(
     let mut ret: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = Vec::with_capacity(2);
     let focused_tuple = score_board[x][y][dir as usize];
     let (dx, dy) = DIRECTIONS[dir];
+
     for way in [-1, 1].iter() {
         let (actual_edge, opp_edge): (Option<bool>, Option<bool>) = get_edges!(way, focused_tuple);
         if actual_edge != Some(false) {
@@ -1050,34 +1051,36 @@ pub fn threat_search_space(
         for col in 0..SIZE_BOARD {
             if board[line][col] == actual_player {
                 for dir in 0..4 {
+                    if record[line][col][dir] {
                     // let ret: Vec<((usize,usize), TypeOfThreat, Vec<(usize,usize)>)> =
-                    match score_board[line][col][dir].0 {
-                        5 => (), //Instant win ?
-                        4 => {
-                            match connect_4(
-                                (line, col),
-                                score_board,
-                                board,
-                                &mut record,
-                                actual_player,
-                                actual_take,
-                                dir,
-                            ) {
-                                None => (),
-                                Some(x) => x.iter().for_each(|((x, y), typeofthreat, opp)| {
-                                    threat_board[*x][*y].push((*typeofthreat, vec![]));
-                                    opp.iter().for_each(|&opp| {
-                                        let index = threat_board[*x][*y].len();
-                                        threat_board[*x][*y][index].1.push(opp);
-                                    });
-                                }), // check borrow issue here !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                        match score_board[line][col][dir].0 {
+                            5 => (), //Instant win ?
+                            4 => {
+                                match connect_4(
+                                    (line, col),
+                                    score_board,
+                                    board,
+                                    &mut record,
+                                    actual_player,
+                                    actual_take,
+                                    dir,
+                                ) {
+                                    None => (),
+                                    Some(x) => x.iter().for_each(|((x, y), typeofthreat, opp)| {
+                                        threat_board[*x][*y].push((*typeofthreat, vec![]));
+                                        opp.iter().for_each(|&opp| {
+                                            let index = threat_board[*x][*y].len();
+                                            threat_board[*x][*y][index].1.push(opp);
+                                        });
+                                    }), // check borrow issue here !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                                }
                             }
-                        }
-                        3 => (),
-                        2 => (),
-                        _ => unreachable!(),
-                    };
-                    // ret.iter().for_each(|&((x,y), typeOfThreat, Opp)| threat_board[x][y].push((typeOfThreat, Opp)));
+                            3 => (),
+                            2 => (),
+                            _ => unreachable!(),
+                        };
+                        // ret.iter().for_each(|&((x,y), typeOfThreat, Opp)| threat_board[x][y].push((typeOfThreat, Opp)));
+                    }
                 }
                 ()
             }
@@ -1208,6 +1211,8 @@ mod tests {
         black_pos
             .iter()
             .for_each(|&(x, y)| test_board[x][y] = Some(false));
+        // Print initial configuration
+        println!("Initial configuration:\n");
         for i in 0..19 {
             for j in 0..19 {
                 match test_board[j][i] {
@@ -1248,7 +1253,9 @@ mod tests {
                 2 => { println!("OUPS_I_DID_IT_AGAIN") ; connect_2(&mut test_board, &mut score_board, &mut record, actual_player, pos2check, dir) }
                 _ => { vec![] }
             };
-
+            if tmp_result.len() == 0 {
+                continue ;
+            }
             // tmp_result = connect_2(&mut test_board, &mut score_board, &mut record, actual_player, pos2check, 3);
             println!("DEBUT°°°DEBUG_CONNECT: len({})", tmp_result.len());
             // tmp_result.iter().for_each(|((x,y), typeOfThreat, Opp)| {  threat_board[*x][*y].push((*typeOfThreat, Opp.clone())) } );
@@ -1257,6 +1264,27 @@ mod tests {
 
             tmp_result.iter().for_each(|(defensive_move, type_of_threat, opp)| {
                 println!("-----------------");
+                // For each result, print the details of the threat + possible response
+                println!("Details:");
+                for i in 0..19 {
+                    for j in 0..19 {
+                        // Print specific attack move
+                        if (defensive_move.0, defensive_move.1) == (j as usize,i as usize) {
+                            print!("⊛")
+                        } else if opp.contains(&(j,i)) {
+                            print!("⊙")
+                        }
+                        else {
+                            match test_board[j][i] {
+                                Some(true) => print!("⊖"),
+                                Some(false) => print!("⊕"),
+                                None => print!("_"),
+                            }
+                        }
+                    }
+                    println!();
+                }
+
                 println!("DEFENSIVE_MOVE-TMP-RESULT:");
                 println!("({},{})", defensive_move.0, defensive_move.1);
                 println!("typeOfThreat:");
@@ -1341,15 +1369,59 @@ mod tests {
     // ___________________
     // ___________________
     #[test]
-    fn threat_goood() {
+    fn threat_connect_2_normal() {
         let mut black_pos = vec![(9,8),(9,7)];
         let white_pos = vec![];
         let mut white_take = 0_isize;
         let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = 
             vec![
-                ((9,6), TypeOfThreat::THREE_O, vec![]),
-                ((9,9), TypeOfThreat::THREE_O, vec![])
+                ((9,6), TypeOfThreat::THREE_O, vec![(9,9), (9,5)]),
+                ((9,5), TypeOfThreat::THREE_O, vec![(9,6)]),
+                ((9,9), TypeOfThreat::THREE_O, vec![(9,6), (9,10)]),
+                ((9,10), TypeOfThreat::THREE_O, vec![(9,9)]),
+                ];
+        assert!(test_threat(
+            white_pos,
+            black_pos,
+            &mut white_take,
+            &mut black_take,
+            (9, 7),
+            Some(false),
+            expected_result
+        ))
+    }
+
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // _________⊕_________
+    // _______⊖⊕⊕_________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    #[test]
+    fn threat_connect2_catchis() {
+        let mut black_pos = vec![(9,8),(9,7),(8,8)];
+        let white_pos = vec![(7,8)];
+        let mut white_take = 0_isize;
+        let mut black_take = 0_isize;
+        let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = 
+            vec![
+                ((7,9), TypeOfThreat::THREE_O, vec![(10,8),(10,6),(6,10)]),
+                ((9,6), TypeOfThreat::FOUR_O, vec![(10,8)]),
+                ((9,9), TypeOfThreat::FOUR_O, vec![(10,8)])
                 ];
         assert!(test_threat(
             white_pos,
