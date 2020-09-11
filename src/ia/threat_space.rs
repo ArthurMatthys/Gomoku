@@ -430,31 +430,31 @@ fn connect_4(
     let mut new_col: isize = col as isize;
     let mut all_threats:Vec<((usize,usize), TypeOfThreat, Vec<(usize,usize)>)> = vec![];
 
-    if record[line][col][dir] {
-        match (score_board[line][col][dir].1, score_board[line][col][dir].2) {
-            // score_board: &mut [[[(u8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD],
-            // board: &mut [[Option<bool>; SIZE_BOARD]; SIZE_BOARD],
-            // record: &mut [[[bool; 4]; SIZE_BOARD]; SIZE_BOARD],
-            // actual_player: Option<bool>,
-            // dir: usize,
-            // new_line: isize,
-            // new_col: isize,
-            // way: isize,
-            // opp_way: isize,
-            // threat: TypeOfThreat,
-            // all_threats: &mut Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)>,
-            (Some(true),Some(false)) | (None,Some(false)) => { println!("oulala"); manage_so(score_board, board, record, actual_player, dir, new_line, new_col, 1, -1, TypeOfThreat::FOUR_SO, &mut all_threats); all_threats },
-            (Some(false),Some(true)) | (Some(false),None) => { println!("ouille ouille ouille"); manage_so(score_board, board, record, actual_player, dir, new_line, new_col, -1, 1, TypeOfThreat::FOUR_SO, &mut all_threats); all_threats },
-            (Some(false),Some(false)) => {
-                let new_line2: isize = line as isize;
-                let new_col2: isize = col as isize;
-                manage_so(score_board, board, record, actual_player, dir, new_line, new_col, -1, 1, TypeOfThreat::FOUR_O, &mut all_threats);
-                manage_so(score_board, board, record, actual_player, dir, new_line2, new_col2, 1, -1, TypeOfThreat::FOUR_O, &mut all_threats);
-                all_threats
-             },
-            _ => { all_threats },
-        }
-    } else { all_threats }
+    match (score_board[line][col][dir].1, score_board[line][col][dir].2) {
+        // score_board: &mut [[[(u8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD],
+        // board: &mut [[Option<bool>; SIZE_BOARD]; SIZE_BOARD],
+        // record: &mut [[[bool; 4]; SIZE_BOARD]; SIZE_BOARD],
+        // actual_player: Option<bool>,
+        // dir: usize,
+        // new_line: isize,
+        // new_col: isize,
+        // way: isize,
+        // opp_way: isize,
+        // threat: TypeOfThreat,
+        // all_threats: &mut Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)>,
+        // (Some(true),Some(false)) | (None,Some(false)) => { println!("oulala"); manage_so(score_board, board, record, actual_player, dir, new_line, new_col, 1, -1, TypeOfThreat::FOUR_SO, &mut all_threats); all_threats },
+        (Some(true),Some(false)) | (None,Some(false)) => { manage_so(score_board, board, record, actual_player, dir, new_line, new_col, 1, -1, TypeOfThreat::FOUR_SO, &mut all_threats); all_threats },
+        // (Some(false),Some(true)) | (Some(false),None) => { println!("ouille ouille ouille"); manage_so(score_board, board, record, actual_player, dir, new_line, new_col, -1, 1, TypeOfThreat::FOUR_SO, &mut all_threats); all_threats },
+        (Some(false),Some(true)) | (Some(false),None) => { manage_so(score_board, board, record, actual_player, dir, new_line, new_col, -1, 1, TypeOfThreat::FOUR_SO, &mut all_threats); all_threats },
+        (Some(false),Some(false)) => {
+            let new_line2: isize = line as isize;
+            let new_col2: isize = col as isize;
+            manage_so(score_board, board, record, actual_player, dir, new_line, new_col, -1, 1, TypeOfThreat::FOUR_O, &mut all_threats);
+            manage_so(score_board, board, record, actual_player, dir, new_line2, new_col2, 1, -1, TypeOfThreat::FOUR_O, &mut all_threats);
+            all_threats
+            },
+        _ => { all_threats },
+    }
 }
 
 // fn connect_3(
