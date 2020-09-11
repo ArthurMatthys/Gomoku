@@ -541,7 +541,7 @@ fn connect_2(
                         let steps: Vec<isize> = vec![-2, -1, 1];
                         let (opp_steps, threat) = match ally_edge {
                             Some(false) => (vec![], TypeOfThreat::FOUR_O),
-                            _ => (vec![-3, 2], TypeOfThreat::FOUR_SO),
+                            _ => (vec![-3], TypeOfThreat::FOUR_SO),
                         };
                         gather_infos.push((
                             (new_x as usize, new_y as usize),
@@ -752,7 +752,7 @@ fn connect_2(
                     }
                     4 => {
                         // #00_0000?
-                        let steps = vec![1, 1];
+                        let steps = vec![1, 2];
                         let (opp_steps, threat) = (vec![], TypeOfThreat::FIVE_TAKE);
                         gather_infos.push((
                             (new_x as usize, new_y as usize),
@@ -858,174 +858,365 @@ fn connect_2(
                 ret.push((*pos, *threat, answers));
             });
     }
-    //let mut ret: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = Vec::with_capacity(2);
-    //let mut gather_infos: Vec<(
-    //    (usize, usize),
-    //    TypeOfThreat,
-    //    Vec<(usize, usize)>,
-    //    Vec<(usize, usize)>,
-
-    //        ---_----
-    //        if align_ally > 0 && space == 1 {
-    //            let mut capture_extra_no_space: Vec<(usize, usize)> = vec![];
-    //            if align_ally != 4 {
-    //                capture_extra_no_space = capture_blank(
-    //                    score_board,
-    //                    board,
-    //                    actual_player,
-    //                    new_x as usize,
-    //                    new_y as usize,
-    //                    dir,
-    //                );
-    //            }
-    //            let mut capture_extra_with_space = capture_blank(
-    //                score_board,
-    //                board,
-    //                actual_player,
-    //                (new_x + *way * dx) as usize,
-    //                (new_y + *way * dy) as usize,
-    //                dir,
-    //            );
-    //            let mut opp_no_space = vec![];
-    //            let mut opp_with_space = vec![];
-    //            let mut push_coord_vec = |steps_no_space: Vec<isize>, steps_with_space: Vec<isize>| {
-    //                steps_no_space.iter().for_each(|&step| {
-    //                    opp_no_space.push((
-    //                        (new_x + *way * dx * step) as usize,
-    //                        (new_y + *way * dy * step) as usize,
-    //                    ))
-    //                });
-    //                steps_with_space.iter().for_each(|&step| {
-    //                    opp_with_space.push((
-    //                        (new_x + *way * dx * step) as usize,
-    //                        (new_y + *way * dy * step) as usize,
-    //                    ))
-    //                });
-    //            };
-    //            match align_ally {
-    //                1 => {
-    //                    let moves_no_space = vec![-2, -1, 2];
-    //                    let moves_with_space = vec![-2, -1, 2];
-    //                    push_coord_vec(moves_no_space, moves_with_space);
-    //                    capture_extra_no_space
-    //                        .push(((new_x + *way * dx) as usize, (new_y + *way * dy) as usize));
-    //                    capture_extra_with_space.push((new_x as usize, new_y as usize));
-    //                }
-    //                2 => {
-    //                    let moves_no_space = vec![-1, 2];
-    //                    let moves_with_space = vec![-1, 2];
-    //                    push_coord_vec(moves_no_space, moves_with_space);
-    //                    capture_extra_no_space
-    //                        .push(((new_x + *way * dx) as usize, (new_y + *way * dy) as usize));
-    //                    capture_extra_with_space.push((new_x as usize, new_y as usize));
-    //                }
-    //                3 => {
-    //                    let moves_no_space = vec![2];
-    //                    let ally_tuple = score_board[(new_x + *way * dx * 2) as usize]
-    //                        [(new_y * *way * dy * 2) as usize][dir];
-    //                    let mut moves_with_space = vec![2];
-    //                    if !(ally_tuple.1 == Some(false) && ally_tuple.2 == Some(false)) {
-    //                        capture_extra_with_space.push((new_x as usize, new_y as usize));
-    //                    }
-    //                    capture_extra_no_space
-    //                        .push(((new_x + *way * dx) as usize, (new_y + *way * dy) as usize));
-    //                    push_coord_vec(moves_no_space, moves_with_space);
-    //                }
-    //                4 => {
-    //                    let moves_no_space = vec![2];
-    //                    let moves_with_space = vec![2, 3, 4, 5];
-    //                    capture_extra_no_space
-    //                        .push(((new_x + *way * dx) as usize, (new_y + *way * dy) as usize));
-    //                    push_coord_vec(moves_no_space, moves_with_space);
-    //                }
-    //                _ => return vec![],
-    //            }
-    //            let capture_with_space =
-    //                capture_coordinates_vec(score_board, board, actual_player, opp_with_space, dir);
-    //            let capture_no_space =
-    //                capture_coordinates_vec(score_board, board, actual_player, opp_no_space, dir);
-    //            capture_with_space
-    //                .iter()
-    //                .for_each(|&x| capture_extra_with_space.push(x));
-    //            capture_no_space
-    //                .iter()
-    //                .for_each(|&x| capture_extra_no_space.push(x));
-    //        //TODO handle fusion
-    //        //            let mut other_edge = None;
-    //        //            if *way == -1 {
-    //        //                other_edge = score_board[new_x as usize][new_y as usize][dir].1;
-    //        //            } else {
-    //        //                other_edge = score_board[new_x as usize][new_y as usize][dir].2;
-    //        //            }
-    //        //            explore_align_light!(board, new_x, new_y, actual_player, dir, way);
-    //        } else if space >= 2 {
-    //            //TODO handle formating 3o / 4 with empty in the middle
-    //            let align_vec = vec![
-    //                ((new_x - way * dx) as usize, (new_y - way * dy) as usize),
-    //                (
-    //                    (new_x - 2 * way * dx) as usize,
-    //                    (new_y - 2 * way * dy) as usize,
-    //                ),
-    //            ];
-    //            let capture_base =
-    //                capture_coordinates_vec(score_board, board, actual_player, align_vec, dir);
-    //            let mut capture_extra_no_space = capture_blank(
-    //                score_board,
-    //                board,
-    //                actual_player,
-    //                new_x as usize,
-    //                new_y as usize,
-    //                dir,
-    //            );
-    //            let mut capture_extra_with_space = capture_blank(
-    //                score_board,
-    //                board,
-    //                actual_player,
-    //                (new_x + *way * dx) as usize,
-    //                (new_y + *way * dy) as usize,
-    //                dir,
-    //            );
-    //            capture_base.iter().for_each(|&(x, y)| {
-    //                capture_extra_no_space.push((x, y));
-    //                capture_extra_with_space.push((x, y));
-    //            });
-    //
-    //            capture_extra_with_space.push((new_x as usize, new_y as usize));
-    //            capture_extra_no_space
-    //                .push(((new_x + *way * dx) as usize, (new_y + *way * dy) as usize));
-    //            capture_extra_no_space.push((
-    //                (new_x - 3 * *way * dx) as usize,
-    //                (new_y - 3 * *way * dy) as usize,
-    //            ));
-    //            ret.push((
-    //                (new_x as usize, new_y as usize),
-    //                TypeOfThreat::THREE_O,
-    //                capture_extra_no_space,
-    //            ));
-    //            ret.push((
-    //                ((new_x + *way * dx) as usize, (new_y + *way * dy) as usize),
-    //                TypeOfThreat::THREE_O,
-    //                capture_extra_with_space,
-    //            ));
-    //        }
-    //TODO transfo gather_info into ret. gather_info : (pos, threat, alignement threat, possible
-    //answer (without takes of alignement)
     ret
 }
 
 fn connect_3(
     board: &mut [[Option<bool>; SIZE_BOARD]; SIZE_BOARD],
     score_board: &mut [[[(u8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD],
+    record: &mut [[[bool; 4]; SIZE_BOARD]; SIZE_BOARD],
+    actual_player: Option<bool>,
     (x, y): (usize, usize),
-    dir: isize,
-) -> Option<Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)>> {
-    let mut ret = vec![];
+    dir: usize,
+) -> Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> {
+    let mut ret: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = Vec::with_capacity(2);
     let focused_tuple = score_board[x][y][dir as usize];
-    if focused_tuple.1 != Some(false) || focused_tuple.2 != Some(false) {
-        return None;
-    }
+    let (dx, dy) = DIRECTIONS[dir];
 
-    Some(ret)
+    for way in [-1, 1].iter() {
+        let (actual_edge, opp_edge): (Option<bool>, Option<bool>) = get_edges!(way, focused_tuple);
+        if actual_edge != Some(false) {
+            continue;
+        }
+        let mut space = 1;
+        let mut align_ally = 0;
+        let mut new_x = x as isize;
+        let mut new_y = y as isize;
+        explore_align!(board, record, new_x, new_y, actual_player, dir, way);
+        // explore_align_light!(board, new_x, new_y, actual_player, dir, way);
+        let mut cursor_x = new_x;
+        let mut cursor_y = new_y;
+        loop {
+            cursor_x += dx * way;
+            cursor_y += dy * way;
+            if !valid_coord!(cursor_x, cursor_y) || space >= 2 || align_ally != 0 {
+                break;
+            }
+            match board[cursor_x as usize][cursor_y as usize] {
+                None => space += 1,
+                a if a == actual_player => {
+                    align_ally = score_board[cursor_x as usize][cursor_y as usize][dir].0
+                }
+                _ => break,
+            }
+        }
+        let mut gather_infos: Vec<(
+            (usize, usize),
+            TypeOfThreat,
+            Vec<(usize, usize)>,
+            Vec<(usize, usize)>,
+        )> = Vec::with_capacity(2);
+
+        match opp_edge {
+            Some(false) => match space {
+                1 => match align_ally {
+                    0 => {
+                        // _000_?
+                        let (ally_edge, _) = get_edges!(
+                            way,
+                            score_board[(new_x + way * dx) as usize][(new_y + way * dy) as usize]
+                                [dir]
+                        );
+                        let steps: Vec<isize> = vec![-2, -1];
+                        let (opp_steps, threat) = match ally_edge {
+                            Some(false) => (vec![], TypeOfThreat::FOUR_O),
+                            _ => (vec![-4], TypeOfThreat::FOUR_SO),
+                        };
+                        gather_infos.push((
+                            (new_x as usize, new_y as usize),
+                            threat,
+                            create_align(steps, *way, (new_x, new_y), (dx, dy)),
+                            create_align(opp_steps, *way, (new_x, new_y), (dx, dy)),
+                        ));
+                    }
+                    1 => {
+                        // _000_0?
+                        //opened edge, 1 space, 1 more pawn
+                        let steps = vec![-3, -2, -1, 1];
+                        let (opp_steps, threat) = (vec![], TypeOfThreat::FIVE_TAKE);
+                        gather_infos.push((
+                            (new_x as usize, new_y as usize),
+                            threat,
+                            create_align(steps, *way, (new_x, new_y), (dx, dy)),
+                            create_align(opp_steps, *way, (new_x, new_y), (dx, dy)),
+                        ));
+                    }
+                    2 => {
+                        // _000_00?
+                        //opened edge, 1 space, 2 more pawn
+                        let steps = vec![-2, -1, 1];
+                        let (opp_steps, threat) = (vec![], TypeOfThreat::FIVE_TAKE);
+                        gather_infos.push((
+                            (new_x as usize, new_y as usize),
+                            threat,
+                            create_align(steps, *way, (new_x, new_y), (dx, dy)),
+                            create_align(opp_steps, *way, (new_x, new_y), (dx, dy)),
+                        ));
+                    }
+                    3 => {
+                        // _000_000?
+                        //opened edge, 1 space, 3 more pawn
+                        let steps = vec![-1, 1];
+                        let (opp_steps, threat) = (vec![], TypeOfThreat::FIVE_TAKE);
+                        gather_infos.push((
+                            (new_x as usize, new_y as usize),
+                            threat,
+                            create_align(steps, *way, (new_x, new_y), (dx, dy)),
+                            create_align(opp_steps, *way, (new_x, new_y), (dx, dy)),
+                        ));
+                    }
+                    4 => {
+                        // _000_0000?
+                        //opened edge, 1 space, 4 more pawn
+                        let steps = vec![1];
+                        let (opp_steps, threat) = (vec![], TypeOfThreat::FIVE_TAKE);
+                        gather_infos.push((
+                            (new_x as usize, new_y as usize),
+                            threat,
+                            create_align(steps, *way, (new_x, new_y), (dx, dy)),
+                            create_align(opp_steps, *way, (new_x, new_y), (dx, dy)),
+                        ));
+                    }
+                    5 => (),
+                    _ => unreachable!(),
+                },
+                2 => match align_ally {
+                    0 => {
+                        // _000__#
+                        //opened edge, 2 space, 0 more pawn
+                        let steps = vec![-3, -2, -1];
+                        let (opp_steps, threat) = (vec![], TypeOfThreat::FIVE_TAKE);
+                        gather_infos.push((
+                            (new_x as usize, new_y as usize),
+                            threat,
+                            create_align(steps, *way, (new_x, new_y), (dx, dy)),
+                            create_align(opp_steps, *way, (new_x, new_y), (dx, dy)),
+                        ))
+                    }
+                    1 => {
+                        // _000__0?
+                        //opened edge, 2 space, 1 more pawn
+                        let steps_no_space = vec![-3, -2, -1, 2];
+                        let opp_steps_no_space = vec![-4, 1];
+                        gather_infos.push((
+                            (new_x as usize, new_y as usize),
+                            TypeOfThreat::FOUR_SO,
+                            create_align(steps_no_space, *way, (new_x, new_y), (dx, dy)),
+                            create_align(opp_steps_no_space, *way, (new_x, new_y), (dx, dy)),
+                        ));
+                        let steps_with_space = vec![-3, -2, -1, 2];
+                        let opp_steps_with_space = vec![0];
+                        gather_infos.push((
+                            ((new_x + way * dx) as usize, (new_y + way * dy) as usize),
+                            TypeOfThreat::FOUR_SO,
+                            create_align(steps_with_space, *way, (new_x, new_y), (dx, dy)),
+                            create_align(opp_steps_with_space, *way, (new_x, new_y), (dx, dy)),
+                        ));
+                    }
+                    2 => {
+                        // _000__00?
+                        //opened edge, 2 space, 2 more pawn
+                        let steps_no_space = vec![-1, 2];
+                        let opp_steps_no_space = vec![-4, 1];
+                        gather_infos.push((
+                            (new_x as usize, new_y as usize),
+                            TypeOfThreat::FIVE_TAKE,
+                            create_align(steps_no_space, *way, (new_x, new_y), (dx, dy)),
+                            create_align(opp_steps_no_space, *way, (new_x, new_y), (dx, dy)),
+                        ));
+                        let steps_with_space = vec![-1, 2];
+                        let opp_steps_with_space = vec![0];
+                        gather_infos.push((
+                            ((new_x + way * dx) as usize, (new_y + way * dy) as usize),
+                            TypeOfThreat::FIVE_TAKE,
+                            create_align(steps_with_space, *way, (new_x, new_y), (dx, dy)),
+                            create_align(opp_steps_with_space, *way, (new_x, new_y), (dx, dy)),
+                        ));
+                    }
+                    3 => {
+                        // _000__000?
+                        //opened edge, 2 space, 3 or 4 more pawn
+                        let steps_no_space = vec![];
+                        let opp_steps_no_space = vec![-4, 1];
+                        gather_infos.push((
+                            (new_x as usize, new_y as usize),
+                            TypeOfThreat::FIVE_TAKE,
+                            create_align(steps_no_space, *way, (new_x, new_y), (dx, dy)),
+                            create_align(opp_steps_no_space, *way, (new_x, new_y), (dx, dy)),
+                        ));
+                        let steps_with_space = vec![2];
+                        let opp_steps_with_space = vec![0];
+                        gather_infos.push((
+                            ((new_x + way * dx) as usize, (new_y + way * dy) as usize),
+                            TypeOfThreat::FIVE_TAKE,
+                            create_align(steps_with_space, *way, (new_x, new_y), (dx, dy)),
+                            create_align(opp_steps_with_space, *way, (new_x, new_y), (dx, dy)),
+                        ));
+                    }
+                    4 => {
+                        // _000__0000?
+                        let steps_no_space = vec![];
+                        let opp_steps_no_space = vec![-4, 1];
+                        gather_infos.push((
+                            (new_x as usize, new_y as usize),
+                            TypeOfThreat::FIVE_TAKE,
+                            create_align(steps_no_space, *way, (new_x, new_y), (dx, dy)),
+                            create_align(opp_steps_no_space, *way, (new_x, new_y), (dx, dy)),
+                        ));
+                    }
+                    5 => (),
+                    _ => unreachable!(),
+                },
+                _ => unreachable!(),
+            },
+            _ => match space {
+                1 => match align_ally {
+                    1 => {
+                        // #000_0?
+                        let steps: Vec<isize> = vec![-3, -2, -1, 1];
+                        let opp_steps = vec![];
+                        gather_infos.push((
+                            (new_x as usize, new_y as usize),
+                            TypeOfThreat::FIVE_TAKE,
+                            create_align(steps, *way, (new_x, new_y), (dx, dy)),
+                            create_align(opp_steps, *way, (new_x, new_y), (dx, dy)),
+                        ));
+                    }
+                    2 => {
+                        // #000_00?
+                        let steps = vec![-2, -1, 1];
+                        let (opp_steps, threat) = (vec![], TypeOfThreat::FIVE_TAKE);
+                        gather_infos.push((
+                            (new_x as usize, new_y as usize),
+                            threat,
+                            create_align(steps, *way, (new_x, new_y), (dx, dy)),
+                            create_align(opp_steps, *way, (new_x, new_y), (dx, dy)),
+                        ));
+                    }
+                    3 => {
+                        // #000_000?
+                        let steps = vec![-1, 1];
+                        let (opp_steps, threat) = (vec![], TypeOfThreat::FIVE_TAKE);
+                        gather_infos.push((
+                            (new_x as usize, new_y as usize),
+                            threat,
+                            create_align(steps, *way, (new_x, new_y), (dx, dy)),
+                            create_align(opp_steps, *way, (new_x, new_y), (dx, dy)),
+                        ));
+                    }
+                    4 => {
+                        // #000_0000?
+                        let steps = vec![1];
+                        let (opp_steps, threat) = (vec![], TypeOfThreat::FIVE_TAKE);
+                        gather_infos.push((
+                            (new_x as usize, new_y as usize),
+                            threat,
+                            create_align(steps, *way, (new_x, new_y), (dx, dy)),
+                            create_align(opp_steps, *way, (new_x, new_y), (dx, dy)),
+                        ));
+                    }
+                    0 => (),
+                    // #000_#
+                    5 => (),
+                    _ => unreachable!(),
+                },
+                2 => match align_ally {
+                    0 => {
+                        // #000__#
+                        let steps = vec![-3, -2, -1];
+                        let (opp_steps, threat) = (vec![1], TypeOfThreat::FOUR_SO);
+                        gather_infos.push((
+                            (new_x as usize, new_y as usize),
+                            threat,
+                            create_align(steps, *way, (new_x, new_y), (dx, dy)),
+                            create_align(opp_steps, *way, (new_x, new_y), (dx, dy)),
+                        ));
+                    }
+                    1 => {
+                        // #000__0?
+                        let steps_no_space = vec![-2, -1, 2];
+                        let opp_steps_no_space = vec![1];
+                        gather_infos.push((
+                            (new_x as usize, new_y as usize),
+                            TypeOfThreat::FOUR_SO,
+                            create_align(steps_no_space, *way, (new_x, new_y), (dx, dy)),
+                            create_align(opp_steps_no_space, *way, (new_x, new_y), (dx, dy)),
+                        ));
+                        let steps_with_space = vec![-2, -1, 2];
+                        let opp_steps_with_space = vec![0];
+                        gather_infos.push((
+                            ((new_x + way * dx) as usize, (new_y + way * dy) as usize),
+                            TypeOfThreat::FOUR_SO,
+                            create_align(steps_with_space, *way, (new_x, new_y), (dx, dy)),
+                            create_align(opp_steps_with_space, *way, (new_x, new_y), (dx, dy)),
+                        ));
+                    }
+                    2 => {
+                        // #000__00?
+                        let steps_no_space = vec![-1];
+                        let opp_steps_no_space = vec![1];
+                        gather_infos.push((
+                            (new_x as usize, new_y as usize),
+                            TypeOfThreat::FIVE_TAKE,
+                            create_align(steps_no_space, *way, (new_x, new_y), (dx, dy)),
+                            create_align(opp_steps_no_space, *way, (new_x, new_y), (dx, dy)),
+                        ));
+                        let steps_with_space = vec![-1];
+                        let opp_steps_with_space = vec![0];
+                        gather_infos.push((
+                            ((new_x + way * dx) as usize, (new_y + way * dy) as usize),
+                            TypeOfThreat::FIVE_TAKE,
+                            create_align(steps_with_space, *way, (new_x, new_y), (dx, dy)),
+                            create_align(opp_steps_with_space, *way, (new_x, new_y), (dx, dy)),
+                        ));
+                    }
+                    3..=4 => {
+                        // #000__000?
+                        // #000__0000?
+                        let steps_no_space = vec![];
+                        let opp_steps_no_space = vec![1];
+                        gather_infos.push((
+                            (new_x as usize, new_y as usize),
+                            TypeOfThreat::FIVE_TAKE,
+                            create_align(steps_no_space, *way, (new_x, new_y), (dx, dy)),
+                            create_align(opp_steps_no_space, *way, (new_x, new_y), (dx, dy)),
+                        ));
+                        let steps_with_space = vec![];
+                        let opp_steps_with_space = vec![0];
+                        gather_infos.push((
+                            ((new_x + way * dx) as usize, (new_y + way * dy) as usize),
+                            TypeOfThreat::FIVE_TAKE,
+                            create_align(steps_with_space, *way, (new_x, new_y), (dx, dy)),
+                            create_align(opp_steps_with_space, *way, (new_x, new_y), (dx, dy)),
+                        ));
+                    }
+                    5 => (),
+                    _ => unreachable!(),
+                },
+                _ => unreachable!(),
+            },
+        };
+        gather_infos
+            .iter()
+            .for_each(|(pos, threat, alignement, opp_pos)| {
+                let mut answers: Vec<(usize, usize)> =
+                    capture_blank(score_board, board, actual_player, pos.0, pos.1, dir);
+                alignement.iter().for_each(|&(align_x, align_y)| {
+                    let captures = capture_coordinates(
+                        score_board,
+                        board,
+                        actual_player,
+                        align_x,
+                        align_y,
+                        dir,
+                    );
+                    captures.iter().for_each(|&tuple| answers.push(tuple));
+                });
+                opp_pos.iter().for_each(|&coord| answers.push(coord));
+                ret.push((*pos, *threat, answers));
+            });
+    }
+    ret
 }
 
 pub fn threat_search_space(
@@ -1040,11 +1231,13 @@ pub fn threat_search_space(
 
     // 1.2. Initialize Threat board -> Vec containing with_capacity data (3 avrg max_possible threats per position) | (4 max defensive)
     // Optimized version of : [[Vec<(enum, Vec<(usize,usize)>)>; SIZE_BOARD]; SIZE_BOARD]
-    let mut threat_board: Vec<Vec<Vec<(TypeOfThreat, Vec<(usize,usize)>)>>> = (0..SIZE_BOARD).map(|_|
-                                                                                    (0..SIZE_BOARD).map(|_| 
-                                                                                        Vec::with_capacity(AVRG_MAX_MULTIPLE_THREATS)
-                                                                                    ).collect()
-                                                                                ).collect();
+    let mut threat_board: Vec<Vec<Vec<(TypeOfThreat, Vec<(usize, usize)>)>>> = (0..SIZE_BOARD)
+        .map(|_| {
+            (0..SIZE_BOARD)
+                .map(|_| Vec::with_capacity(AVRG_MAX_MULTIPLE_THREATS))
+                .collect()
+        })
+        .collect();
 
     // 2. Parse board for actual_player's pawns
     for line in 0..SIZE_BOARD {
@@ -1052,7 +1245,7 @@ pub fn threat_search_space(
             if board[line][col] == actual_player {
                 for dir in 0..4 {
                     if record[line][col][dir] {
-                    // let ret: Vec<((usize,usize), TypeOfThreat, Vec<(usize,usize)>)> =
+                        // let ret: Vec<((usize,usize), TypeOfThreat, Vec<(usize,usize)>)> =
                         match score_board[line][col][dir].0 {
                             5 => (), //Instant win ?
                             4 => {
@@ -1111,7 +1304,6 @@ mod tests {
             }
         };
     }
-
 
     fn test_capture_blank(
         white_pos: Vec<(usize, usize)>,
@@ -1202,7 +1394,7 @@ mod tests {
         opp_take: &mut isize,
         pos2check: (usize, usize),
         actual_player: Option<bool>,
-        expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)>
+        expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)>,
     ) -> bool {
         let mut test_board = [[None; SIZE_BOARD]; SIZE_BOARD];
         white_pos
@@ -1225,12 +1417,13 @@ mod tests {
             println!();
         }
         let mut score_board = heuristic::evaluate_board(&mut test_board);
-        let mut record: [[[bool; 4]; SIZE_BOARD]; SIZE_BOARD] = initialize_record(&mut test_board, &mut score_board, actual_player);
+        let mut record: [[[bool; 4]; SIZE_BOARD]; SIZE_BOARD] =
+            initialize_record(&mut test_board, &mut score_board, actual_player);
         // let mut threat_board: Vec<Vec<Vec<(TypeOfThreat, Vec<(usize,usize)>)>>> = (0..SIZE_BOARD).map(|_|
-                                                                                //         (0..SIZE_BOARD).map(|_| 
-                                                                                //             Vec::with_capacity(AVRG_MAX_MULTIPLE_THREATS)
-                                                                                //         ).collect()
-                                                                                //  ).collect();
+        //         (0..SIZE_BOARD).map(|_|
+        //             Vec::with_capacity(AVRG_MAX_MULTIPLE_THREATS)
+        //         ).collect()
+        //  ).collect();
 
         let mut tmp_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![];
         let mut global_results: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![];
@@ -1253,227 +1446,258 @@ mod tests {
                 // 4 => { connect_4(pos2check, &mut score_board, &mut test_board, &mut record, actual_player, actual_take, dir) },
                 // 3 => { connect_4(pos2check, &mut score_board, &mut test_board, &mut record, actual_player, actual_take, dir) },
                 // 2 => { println!("OUPS_I_DID_IT_AGAIN") ; connect_2(&mut test_board, &mut score_board, &mut record, actual_player, pos2check, dir) }
-                2 => { connect_2(&mut test_board, &mut score_board, &mut record, actual_player, pos2check, dir) }
-                _ => { vec![] }
+                2 => connect_2(
+                    &mut test_board,
+                    &mut score_board,
+                    &mut record,
+                    actual_player,
+                    pos2check,
+                    dir,
+                ),
+                _ => vec![],
             };
             if tmp_result.len() == 0 {
-                continue ;
+                continue;
             }
             // tmp_result = connect_2(&mut test_board, &mut score_board, &mut record, actual_player, pos2check, 3);
             // println!("DEBUT°°°DEBUG_CONNECT: len({})", tmp_result.len());
             // tmp_result.iter().for_each(|((x,y), typeOfThreat, Opp)| {  threat_board[*x][*y].push((*typeOfThreat, Opp.clone())) } );
-            // ret_debug.iter().for_each(|&x| print!("{}", x)); 
+            // ret_debug.iter().for_each(|&x| print!("{}", x));
             // println!("DEBUG_CONNECT: len({})", tmp_result.len());
-            tmp_result.iter().for_each(|(defensive_move, type_of_threat, opp)| {
-                global_results.push((*defensive_move, *type_of_threat, (*opp).clone()));
-                // println!("-----------------");
-                // For each result, print the details of the threat + possible response
-                println!("\n// Details: [dir:{}]", dir);
-                for i in 0..19 {
-                    print!("// ");
-                    for j in 0..19 {
-                        // Print specific attack move
-                        if (defensive_move.0, defensive_move.1) == (j as usize,i as usize) {
-                            print!("⊛")
-                        } else if opp.contains(&(j,i)) {
-                            print!("⊙")
-                        }
-                        else {
-                            match test_board[j][i] {
-                                Some(true) => print!("⊖"),
-                                Some(false) => print!("⊕"),
-                                None => print!("_"),
+            tmp_result
+                .iter()
+                .for_each(|(defensive_move, type_of_threat, opp)| {
+                    global_results.push((*defensive_move, *type_of_threat, (*opp).clone()));
+                    // println!("-----------------");
+                    // For each result, print the details of the threat + possible response
+                    println!("\n// Details: [dir:{}]", dir);
+                    for i in 0..19 {
+                        print!("// ");
+                        for j in 0..19 {
+                            // Print specific attack move
+                            if (defensive_move.0, defensive_move.1) == (j as usize, i as usize) {
+                                print!("⊛")
+                            } else if opp.contains(&(j, i)) {
+                                print!("⊙")
+                            } else {
+                                match test_board[j][i] {
+                                    Some(true) => print!("⊖"),
+                                    Some(false) => print!("⊕"),
+                                    None => print!("_"),
+                                }
                             }
                         }
+                        println!();
                     }
-                    println!();
-                }
-                // ((9,4), TypeOfThreat::FOUR_O, vec![(10,8)]),
-                println!("// DEFENSIVE_MOVE:");
+                    // ((9,4), TypeOfThreat::FOUR_O, vec![(10,8)]),
+                    println!("// DEFENSIVE_MOVE:");
 
-                print!("// (({},{}), ", defensive_move.0, defensive_move.1);
-                print!("TypeOfThreat::{}, vec![", match type_of_threat {
-                    TypeOfThreat::FIVE => "FIVE",
-                    TypeOfThreat::FIVE_TAKE => "FIVE_TAKE",
-                    TypeOfThreat::FOUR_O => "FOUR_O",
-                    TypeOfThreat::FOUR_SO => "FOUR_SO",
-                    TypeOfThreat::TAKE => "TAKE",
-                    TypeOfThreat::THREE_O => "THREE_O",
+                    print!("// (({},{}), ", defensive_move.0, defensive_move.1);
+                    print!(
+                        "TypeOfThreat::{}, vec![",
+                        match type_of_threat {
+                            TypeOfThreat::FIVE => "FIVE",
+                            TypeOfThreat::FIVE_TAKE => "FIVE_TAKE",
+                            TypeOfThreat::FOUR_O => "FOUR_O",
+                            TypeOfThreat::FOUR_SO => "FOUR_SO",
+                            TypeOfThreat::TAKE => "TAKE",
+                            TypeOfThreat::THREE_O => "THREE_O",
+                        }
+                    );
+                    opp.iter().enumerate().for_each(|(i, (x, y))| {
+                        if i == (opp.len() - 1) {
+                            print!("({},{})", x, y)
+                        } else {
+                            print!("({},{}),", x, y)
+                        }
+                    });
+                    println!("])");
                 });
-                opp.iter().enumerate().for_each(|(i,(x,y))| if i == (opp.len() - 1)  { print!("({},{})", x, y) } else { print!("({},{}),", x, y) });
-                println!("])");
-            });
-                
         }
-        
+
         // print expected datastruct in test
         println!();
-        global_results.iter().enumerate().for_each(|(j,(defensive_move, type_of_threat, opp))| { 
+        global_results
+            .iter()
+            .enumerate()
+            .for_each(|(j, (defensive_move, type_of_threat, opp))| {
                 print!("(({},{}), ", defensive_move.0, defensive_move.1);
-                print!("TypeOfThreat::{}, vec![", match type_of_threat {
-                TypeOfThreat::FIVE => "FIVE",
-                TypeOfThreat::FIVE_TAKE => "FIVE_TAKE",
-                TypeOfThreat::FOUR_O => "FOUR_O",
-                TypeOfThreat::FOUR_SO => "FOUR_SO",
-                TypeOfThreat::TAKE => "TAKE",
-                TypeOfThreat::THREE_O => "THREE_O",
+                print!(
+                    "TypeOfThreat::{}, vec![",
+                    match type_of_threat {
+                        TypeOfThreat::FIVE => "FIVE",
+                        TypeOfThreat::FIVE_TAKE => "FIVE_TAKE",
+                        TypeOfThreat::FOUR_O => "FOUR_O",
+                        TypeOfThreat::FOUR_SO => "FOUR_SO",
+                        TypeOfThreat::TAKE => "TAKE",
+                        TypeOfThreat::THREE_O => "THREE_O",
+                    }
+                );
+                opp.iter().enumerate().for_each(|(i, (x, y))| {
+                    if i == (opp.len() - 1) {
+                        print!("({},{})", x, y)
+                    } else {
+                        print!("({},{}),", x, y)
+                    }
+                });
+                if j == (global_results.len() - 1) {
+                    println!("])");
+                } else {
+                    println!("]),");
+                }
             });
-            opp.iter().enumerate().for_each(|(i,(x,y))| if i == (opp.len() - 1)  { print!("({},{})", x, y) } else { print!("({},{}),", x, y) });
-            if j == (global_results.len() - 1) { println!("])"); } else { println!("]),"); }
-        });
-            // println!("DEBUG_CONNECT: len({})", threat_board.len());
+        // println!("DEBUG_CONNECT: len({})", threat_board.len());
 
-            // threat_board.iter().enumerate().for_each(|(i_x, x)| {
-            //     println!("i_x: {}", i_x);
-            //     x.iter().enumerate().for_each(|(i_y, y)| {
-            //         println!("i_y: {}", i_y);
-            //         println!("y_len: {}", y.len());
-            //         y.iter().for_each(|(type_of_threat, opp)| {
-            //             println!("-----------------");
-            //             println!("DEFENSIVE_MOVE:");
-            //             println!("({},{})", i_x, i_y);
-            //             println!("typeOfThreat:");
-            //             match type_of_threat {
-            //                 TypeOfThreat::FIVE => println!("FIVE"),
-            //                 TypeOfThreat::FIVE_TAKE => println!("FIVE_TAKE"),
-            //                 TypeOfThreat::FOUR_O => println!("FOUR_O"),
-            //                 TypeOfThreat::FOUR_SO => println!("FOUR_SO"),
-            //                 TypeOfThreat::TAKE => println!("TAKE"),
-            //                 TypeOfThreat::THREE_O => println!("THREE_O"),
-            //             }
-            //             println!("Responses:");
-            //             opp.iter().for_each(|(x,y)| println!("({},{})", x, y));
-            //         });
-            //     });
-            // });
-            global_results == expected_result
+        // threat_board.iter().enumerate().for_each(|(i_x, x)| {
+        //     println!("i_x: {}", i_x);
+        //     x.iter().enumerate().for_each(|(i_y, y)| {
+        //         println!("i_y: {}", i_y);
+        //         println!("y_len: {}", y.len());
+        //         y.iter().for_each(|(type_of_threat, opp)| {
+        //             println!("-----------------");
+        //             println!("DEFENSIVE_MOVE:");
+        //             println!("({},{})", i_x, i_y);
+        //             println!("typeOfThreat:");
+        //             match type_of_threat {
+        //                 TypeOfThreat::FIVE => println!("FIVE"),
+        //                 TypeOfThreat::FIVE_TAKE => println!("FIVE_TAKE"),
+        //                 TypeOfThreat::FOUR_O => println!("FOUR_O"),
+        //                 TypeOfThreat::FOUR_SO => println!("FOUR_SO"),
+        //                 TypeOfThreat::TAKE => println!("TAKE"),
+        //                 TypeOfThreat::THREE_O => println!("THREE_O"),
+        //             }
+        //             println!("Responses:");
+        //             opp.iter().for_each(|(x,y)| println!("({},{})", x, y));
+        //         });
+        //     });
+        // });
+        global_results == expected_result
     }
 
-// Initial configuration:
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// _________⊕_________
-// _________⊕_________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
+    // Initial configuration:
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // _________⊕_________
+    // _________⊕_________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
 
-// Details: [dir:3]
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// _________⊙_________
-// _________⊛_________
-// _________⊕_________
-// _________⊕_________
-// _________⊙_________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// DEFENSIVE_MOVE:
-// ((9,6), TypeOfThreat::THREE_O, vec![(9,9),(9,5)])
+    // Details: [dir:3]
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // _________⊙_________
+    // _________⊛_________
+    // _________⊕_________
+    // _________⊕_________
+    // _________⊙_________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((9,6), TypeOfThreat::THREE_O, vec![(9,9),(9,5)])
 
-// Details: [dir:3]
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// _________⊛_________
-// _________⊙_________
-// _________⊕_________
-// _________⊕_________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// DEFENSIVE_MOVE:
-// ((9,5), TypeOfThreat::THREE_O, vec![(9,6)])
+    // Details: [dir:3]
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // _________⊛_________
+    // _________⊙_________
+    // _________⊕_________
+    // _________⊕_________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((9,5), TypeOfThreat::THREE_O, vec![(9,6)])
 
-// Details: [dir:3]
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// _________⊙_________
-// _________⊕_________
-// _________⊕_________
-// _________⊛_________
-// _________⊙_________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// DEFENSIVE_MOVE:
-// ((9,9), TypeOfThreat::THREE_O, vec![(9,6),(9,10)])
+    // Details: [dir:3]
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // _________⊙_________
+    // _________⊕_________
+    // _________⊕_________
+    // _________⊛_________
+    // _________⊙_________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((9,9), TypeOfThreat::THREE_O, vec![(9,6),(9,10)])
 
-// Details: [dir:3]
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// _________⊕_________
-// _________⊕_________
-// _________⊙_________
-// _________⊛_________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// DEFENSIVE_MOVE:
-// ((9,10), TypeOfThreat::THREE_O, vec![(9,9)])
+    // Details: [dir:3]
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // _________⊕_________
+    // _________⊕_________
+    // _________⊙_________
+    // _________⊛_________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((9,10), TypeOfThreat::THREE_O, vec![(9,9)])
     #[test]
     fn threat_connect_2_normal() {
-        let mut black_pos = vec![(9,8),(9,7)];
+        let mut black_pos = vec![(9, 8), (9, 7)];
         let white_pos = vec![];
         let mut white_take = 0_isize;
         let mut black_take = 0_isize;
-        let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = 
-            vec![
-                ((9,6), TypeOfThreat::THREE_O, vec![(9,9), (9,5)]),
-                ((9,5), TypeOfThreat::THREE_O, vec![(9,6)]),
-                ((9,9), TypeOfThreat::THREE_O, vec![(9,6), (9,10)]),
-                ((9,10), TypeOfThreat::THREE_O, vec![(9,9)]),
-                ];
+        let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
+            ((9, 6), TypeOfThreat::THREE_O, vec![(9, 9), (9, 5)]),
+            ((9, 5), TypeOfThreat::THREE_O, vec![(9, 6)]),
+            ((9, 9), TypeOfThreat::THREE_O, vec![(9, 6), (9, 10)]),
+            ((9, 10), TypeOfThreat::THREE_O, vec![(9, 9)]),
+        ];
         assert!(test_threat(
             white_pos,
             black_pos,
@@ -1485,227 +1709,238 @@ mod tests {
         ))
     }
 
-// Initial configuration:
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// _________⊕_________
-// _______⊖⊕⊕_________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
+    // Initial configuration:
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // _________⊕_________
+    // _______⊖⊕⊕_________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
 
-// Details: [dir:2]
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// __________⊙________
-// _________⊕_________
-// _______⊖⊕⊕⊙________
-// _______⊛___________
-// ______⊙____________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// DEFENSIVE_MOVE:
-// ((7,9), TypeOfThreat::THREE_O, vec![(10,8),(10,6),(6,10)])
+    // Details: [dir:2]
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // __________⊙________
+    // _________⊕_________
+    // _______⊖⊕⊕⊙________
+    // _______⊛___________
+    // ______⊙____________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((7,9), TypeOfThreat::THREE_O, vec![(10,8),(10,6),(6,10)])
 
-// Details: [dir:2]
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// _________⊕_________
-// _______⊖⊕⊕⊙________
-// _______⊙___________
-// ______⊛____________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// DEFENSIVE_MOVE:
-// ((6,10), TypeOfThreat::THREE_O, vec![(10,8),(7,9)])
+    // Details: [dir:2]
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // _________⊕_________
+    // _______⊖⊕⊕⊙________
+    // _______⊙___________
+    // ______⊛____________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((6,10), TypeOfThreat::THREE_O, vec![(10,8),(7,9)])
 
-// Details: [dir:2]
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________⊙_______
-// __________⊛________
-// _________⊕_________
-// _______⊖⊕⊕⊙________
-// _______⊙___________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// DEFENSIVE_MOVE:
-// ((10,6), TypeOfThreat::THREE_O, vec![(10,8),(7,9),(11,5)])
+    // Details: [dir:2]
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________⊙_______
+    // __________⊛________
+    // _________⊕_________
+    // _______⊖⊕⊕⊙________
+    // _______⊙___________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((10,6), TypeOfThreat::THREE_O, vec![(10,8),(7,9),(11,5)])
 
-// Details: [dir:2]
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________⊛_______
-// __________⊙________
-// _________⊕_________
-// _______⊖⊕⊕⊙________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// DEFENSIVE_MOVE:
-// ((11,5), TypeOfThreat::THREE_O, vec![(10,8),(10,6)])
+    // Details: [dir:2]
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________⊛_______
+    // __________⊙________
+    // _________⊕_________
+    // _______⊖⊕⊕⊙________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((11,5), TypeOfThreat::THREE_O, vec![(10,8),(10,6)])
 
-// Details: [dir:3]
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// _________⊙_________
-// _________⊛_________
-// _________⊕_________
-// _______⊖⊕⊕⊙________
-// _________⊙_________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// DEFENSIVE_MOVE:
-// ((9,6), TypeOfThreat::THREE_O, vec![(10,8),(9,9),(9,5)])
+    // Details: [dir:3]
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // _________⊙_________
+    // _________⊛_________
+    // _________⊕_________
+    // _______⊖⊕⊕⊙________
+    // _________⊙_________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((9,6), TypeOfThreat::THREE_O, vec![(10,8),(9,9),(9,5)])
 
-// Details: [dir:3]
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// _________⊛_________
-// _________⊙_________
-// _________⊕_________
-// _______⊖⊕⊕⊙________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// DEFENSIVE_MOVE:
-// ((9,5), TypeOfThreat::THREE_O, vec![(10,8),(9,6)])
+    // Details: [dir:3]
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // _________⊛_________
+    // _________⊙_________
+    // _________⊕_________
+    // _______⊖⊕⊕⊙________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((9,5), TypeOfThreat::THREE_O, vec![(10,8),(9,6)])
 
-// Details: [dir:3]
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// _________⊙_________
-// _________⊕_________
-// _______⊖⊕⊕⊙________
-// _________⊛_________
-// _________⊙_________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// DEFENSIVE_MOVE:
-// ((9,9), TypeOfThreat::THREE_O, vec![(10,8),(9,6),(9,10)])
+    // Details: [dir:3]
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // _________⊙_________
+    // _________⊕_________
+    // _______⊖⊕⊕⊙________
+    // _________⊛_________
+    // _________⊙_________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((9,9), TypeOfThreat::THREE_O, vec![(10,8),(9,6),(9,10)])
 
-// Details: [dir:3]
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// _________⊕_________
-// _______⊖⊕⊕⊙________
-// _________⊙_________
-// _________⊛_________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// ___________________
-// DEFENSIVE_MOVE:
-// ((9,10), TypeOfThreat::THREE_O, vec![(10,8),(9,9)])
+    // Details: [dir:3]
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // _________⊕_________
+    // _______⊖⊕⊕⊙________
+    // _________⊙_________
+    // _________⊛_________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((9,10), TypeOfThreat::THREE_O, vec![(10,8),(9,9)])
     #[test]
     fn threat_connect2_catchis() {
-        let mut black_pos = vec![(9,8),(9,7),(8,8)];
-        let white_pos = vec![(7,8)];
+        let mut black_pos = vec![(9, 8), (9, 7), (8, 8)];
+        let white_pos = vec![(7, 8)];
         let mut white_take = 0_isize;
         let mut black_take = 0_isize;
-        let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = 
-            vec![
-                ((7,9), TypeOfThreat::THREE_O, vec![(10,8),(10,6),(6,10)]),
-                ((6,10), TypeOfThreat::THREE_O, vec![(10,8),(7,9)]),
-                ((10,6), TypeOfThreat::THREE_O, vec![(10,8),(7,9),(11,5)]),
-                ((11,5), TypeOfThreat::THREE_O, vec![(10,8),(10,6)]),
-                ((9,6), TypeOfThreat::THREE_O, vec![(10,8),(9,9),(9,5)]),
-                ((9,5), TypeOfThreat::THREE_O, vec![(10,8),(9,6)]),
-                ((9,9), TypeOfThreat::THREE_O, vec![(10,8),(9,6),(9,10)]),
-                ((9,10), TypeOfThreat::THREE_O, vec![(10,8),(9,9)])
-            ];
+        let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
+            (
+                (7, 9),
+                TypeOfThreat::THREE_O,
+                vec![(10, 8), (10, 6), (6, 10)],
+            ),
+            ((6, 10), TypeOfThreat::THREE_O, vec![(10, 8), (7, 9)]),
+            (
+                (10, 6),
+                TypeOfThreat::THREE_O,
+                vec![(10, 8), (7, 9), (11, 5)],
+            ),
+            ((11, 5), TypeOfThreat::THREE_O, vec![(10, 8), (10, 6)]),
+            ((9, 6), TypeOfThreat::THREE_O, vec![(10, 8), (9, 9), (9, 5)]),
+            ((9, 5), TypeOfThreat::THREE_O, vec![(10, 8), (9, 6)]),
+            (
+                (9, 9),
+                TypeOfThreat::THREE_O,
+                vec![(10, 8), (9, 6), (9, 10)],
+            ),
+            ((9, 10), TypeOfThreat::THREE_O, vec![(10, 8), (9, 9)]),
+        ];
         assert!(test_threat(
             white_pos,
             black_pos,
