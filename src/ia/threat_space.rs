@@ -984,14 +984,22 @@ fn connect_3(
                     0 => {
                         // _000__#
                         //opened edge, 2 space, 0 more pawn
-                        let steps = vec![-3, -2, -1];
-                        let (opp_steps, threat) = (vec![], TypeOfThreat::FIVE_TAKE);
+                        let steps_no_space = vec![-3, -2, -1];
+                        let opp_steps_no_space = vec![];
                         gather_infos.push((
                             (new_x as usize, new_y as usize),
-                            threat,
-                            create_align(steps, *way, (new_x, new_y), (dx, dy)),
-                            create_align(opp_steps, *way, (new_x, new_y), (dx, dy)),
-                        ))
+                            TypeOfThreat::THREE_O,
+                            create_align(steps_no_space, *way, (new_x, new_y), (dx, dy)),
+                            create_align(opp_steps_no_space, *way, (new_x, new_y), (dx, dy)),
+                        ));
+                        let steps_with_space = vec![-3, -2, -1];
+                        let opp_steps_with_space = vec![0];
+                        gather_infos.push((
+                            ((new_x + way * dx) as usize, (new_y + way * dy) as usize),
+                            TypeOfThreat::THREE_O,
+                            create_align(steps_with_space, *way, (new_x, new_y), (dx, dy)),
+                            create_align(opp_steps_with_space, *way, (new_x, new_y), (dx, dy)),
+                        ));
                     }
                     1 => {
                         // _000__0?
