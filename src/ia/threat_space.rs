@@ -126,46 +126,37 @@ fn capture_blank(
             continue;
         }
         let (dx, dy) = DIRECTIONS[dir];
-        let mut complete = 0;
-        let mut empty = 0;
+        let mut align = [0, 0, 0, 0];
+        let mut index = 0usize;
         for way in [-1, 1].iter() {
-            let new_x = x as isize + way * dx;
-            let new_y = y as isize + way * dy;
-            if !valid_coord!(new_x, new_y) {
-                break;
-            }
-            match board[new_x as usize][new_y as usize] {
-                None => {
-                    complete += 1;
-                    empty = *way;
+            for step in [1, 2].iter() {
+                let new_x = x as isize + way * dx * *step as isize;
+                let new_y = y as isize + way * dy * *step as isize;
+                if !valid_coord!(new_x, new_y) {
+                    break;
                 }
-                a if a == actual_player => {
-                    let (align, edge_l, edge_r) = score_board[new_x as usize][new_y as usize][dir];
-                    if align == 1 {
-                        match *way {
-                            -1 => {
-                                if edge_l == Some(true) {
-                                    complete += 2;
-                                }
-                            }
-                            1 => {
-                                if edge_r == Some(true) {
-                                    complete += 2;
-                                }
-                            }
-                            _ => unreachable!(),
-                        }
+                match board[new_x as usize][new_y as usize] {
+                    None => {
+                        align[index * 2 + step - 1] = 1;
+                        break;
+                    }
+                    a if a == actual_player => align[index * 2 + step - 1] = 2,
+                    _ => {
+                        align[index * 2 + step - 1] = 3;
+                        break;
                     }
                 }
-                _ => (),
+                index += 1;
             }
         }
-        if complete == 3 {
-            match empty {
-                -1 => ret.push((x - dx as usize, y - dy as usize)),
-                1 => ret.push((x + dx as usize, y + dy as usize)),
-                _ => unreachable!(),
-            }
+        if align[0] == 2 && align[1] == 3 && align[2] == 1 {
+            ret.push((x + dx as usize, y + dy as usize));
+        } else if align[0] == 3 && align[2] == 2 && align[3] == 1 {
+            ret.push((x - 2 * dx as usize, y - 2 * dy as usize));
+        } else if align[0] == 1 && align[2] == 2 && align[3] == 3 {
+            ret.push((x - dx as usize, y - dy as usize));
+        } else if align[0] == 2 && align[1] == 1 && align[2] == 3 {
+            ret.push((x + 2 * dx as usize, y + 2 * dy as usize));
         }
     }
     ret
