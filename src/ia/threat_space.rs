@@ -83,9 +83,12 @@ enum TypeOfThreat {
     THREE_O,
     FOUR_O,
     FOUR_SO,
-    FIVE_TAKE,
-    FIVE,
     TAKE,
+    FIVE_TAKE,
+    FOUR_TAKE,
+    THREE_TAKE,
+    TWO_TAKE,
+    ONE_TAKE,
 }
 
 // Aim of function :
@@ -154,9 +157,12 @@ fn capture_blank(
         } else if align[0] == 3 && align[2] == 2 && align[3] == 1 {
             ret.push((x + 2 * dx as usize, y + 2 * dy as usize));
         } else if align[0] == 1 && align[2] == 2 && align[3] == 3 {
-            ret.push((x - dx as usize, y - dy as usize));
+            ret.push(((x as isize - dx) as usize, (y as isize - dy) as usize));
         } else if align[0] == 2 && align[1] == 1 && align[2] == 3 {
-            ret.push((x - 2 * dx as usize, y - 2 * dy as usize));
+            ret.push((
+                (x as isize - 2 * dx) as usize,
+                (y as isize - 2 * dy) as usize,
+            ));
         }
     }
     ret
@@ -579,7 +585,7 @@ fn connect_2(
                         // _00_000?
                         //opened edge, 1 space, 3 more pawn
                         let steps = vec![-1, 1, 2];
-                        let (opp_steps, threat) = (vec![], TypeOfThreat::FIVE_TAKE);
+                        let (opp_steps, threat) = (vec![], TypeOfThreat::FOUR_TAKE);
                         gather_infos.push((
                             (new_x as usize, new_y as usize),
                             threat,
@@ -591,7 +597,7 @@ fn connect_2(
                         // _00_0000?
                         //opened edge, 1 space, 4 more pawn
                         let steps = vec![1, 2];
-                        let (opp_steps, threat) = (vec![], TypeOfThreat::FIVE_TAKE);
+                        let (opp_steps, threat) = (vec![], TypeOfThreat::THREE_TAKE);
                         gather_infos.push((
                             (new_x as usize, new_y as usize),
                             threat,
@@ -616,21 +622,13 @@ fn connect_2(
                         // {
                         //     ();
                         // } else {
-                        let steps_no_space = vec![-2, -1];
-                        let opp_steps_no_space = vec![-3, 1];
+                        let steps = vec![-2, -1];
+                        let opp_steps = vec![-3, 1];
                         gather_infos.push((
                             (new_x as usize, new_y as usize),
                             TypeOfThreat::THREE_O,
-                            create_align(steps_no_space, *way, (new_x, new_y), (dx, dy)),
-                            create_align(opp_steps_no_space, *way, (new_x, new_y), (dx, dy)),
-                        ));
-                        let steps_with_space = vec![-2, -1];
-                        let opp_steps_with_space = vec![0, -3];
-                        gather_infos.push((
-                            ((new_x + way * dx) as usize, (new_y + way * dy) as usize),
-                            TypeOfThreat::THREE_O,
-                            create_align(steps_with_space, *way, (new_x, new_y), (dx, dy)),
-                            create_align(opp_steps_with_space, *way, (new_x, new_y), (dx, dy)),
+                            create_align(steps, *way, (new_x, new_y), (dx, dy)),
+                            create_align(opp_steps, *way, (new_x, new_y), (dx, dy)),
                         ));
                         // }
                     }
@@ -661,7 +659,7 @@ fn connect_2(
                         let opp_steps_no_space = vec![-3, 1];
                         gather_infos.push((
                             (new_x as usize, new_y as usize),
-                            TypeOfThreat::FIVE_TAKE,
+                            TypeOfThreat::FOUR_SO,
                             create_align(steps_no_space, *way, (new_x, new_y), (dx, dy)),
                             create_align(opp_steps_no_space, *way, (new_x, new_y), (dx, dy)),
                         ));
@@ -669,20 +667,39 @@ fn connect_2(
                         let opp_steps_with_space = vec![0];
                         gather_infos.push((
                             ((new_x + way * dx) as usize, (new_y + way * dy) as usize),
-                            TypeOfThreat::FIVE_TAKE,
+                            TypeOfThreat::FOUR_SO,
                             create_align(steps_with_space, *way, (new_x, new_y), (dx, dy)),
                             create_align(opp_steps_with_space, *way, (new_x, new_y), (dx, dy)),
                         ));
                     }
-                    3..=4 => {
+                    3 => {
                         // _00__000?
-                        // _00__0000?
-                        //opened edge, 2 space, 3 or 4 more pawn
+                        //opened edge, 2 space, 3 more pawn
                         let steps_no_space = vec![2];
                         let opp_steps_no_space = vec![-3, 1];
                         gather_infos.push((
                             (new_x as usize, new_y as usize),
-                            TypeOfThreat::FIVE_TAKE,
+                            TypeOfThreat::FOUR_SO,
+                            create_align(steps_no_space, *way, (new_x, new_y), (dx, dy)),
+                            create_align(opp_steps_no_space, *way, (new_x, new_y), (dx, dy)),
+                        ));
+                        let steps_with_space = vec![2];
+                        let opp_steps_with_space = vec![0];
+                        gather_infos.push((
+                            ((new_x + way * dx) as usize, (new_y + way * dy) as usize),
+                            TypeOfThreat::FOUR_SO,
+                            create_align(steps_with_space, *way, (new_x, new_y), (dx, dy)),
+                            create_align(opp_steps_with_space, *way, (new_x, new_y), (dx, dy)),
+                        ));
+                    }
+                    4 => {
+                        // _00__0000?
+                        //opened edge, 2 space, 4 more pawn
+                        let steps_no_space = vec![2];
+                        let opp_steps_no_space = vec![-3, 1];
+                        gather_infos.push((
+                            (new_x as usize, new_y as usize),
+                            TypeOfThreat::FOUR_SO,
                             create_align(steps_no_space, *way, (new_x, new_y), (dx, dy)),
                             create_align(opp_steps_no_space, *way, (new_x, new_y), (dx, dy)),
                         ));
@@ -760,7 +777,7 @@ fn connect_2(
                     3 => {
                         // #00_000?
                         let steps = vec![-1, 1, 2];
-                        let (opp_steps, threat) = (vec![], TypeOfThreat::FIVE_TAKE);
+                        let (opp_steps, threat) = (vec![], TypeOfThreat::FOUR_TAKE);
                         gather_infos.push((
                             (new_x as usize, new_y as usize),
                             threat,
@@ -771,7 +788,7 @@ fn connect_2(
                     4 => {
                         // #00_0000?
                         let steps = vec![1, 2];
-                        let (opp_steps, threat) = (vec![], TypeOfThreat::FIVE_TAKE);
+                        let (opp_steps, threat) = (vec![], TypeOfThreat::THREE_TAKE);
                         gather_infos.push((
                             (new_x as usize, new_y as usize),
                             threat,
@@ -813,7 +830,7 @@ fn connect_2(
                         let opp_steps_no_space = vec![1];
                         gather_infos.push((
                             (new_x as usize, new_y as usize),
-                            TypeOfThreat::FIVE_TAKE,
+                            TypeOfThreat::FOUR_SO,
                             create_align(steps_no_space, *way, (new_x, new_y), (dx, dy)),
                             create_align(opp_steps_no_space, *way, (new_x, new_y), (dx, dy)),
                         ));
@@ -821,19 +838,37 @@ fn connect_2(
                         let opp_steps_with_space = vec![0];
                         gather_infos.push((
                             ((new_x + way * dx) as usize, (new_y + way * dy) as usize),
-                            TypeOfThreat::FIVE_TAKE,
+                            TypeOfThreat::FOUR_SO,
                             create_align(steps_with_space, *way, (new_x, new_y), (dx, dy)),
                             create_align(opp_steps_with_space, *way, (new_x, new_y), (dx, dy)),
                         ));
                     }
-                    3..=4 => {
+                    3 => {
                         // #00__000?
+                        let steps_no_space = vec![2];
+                        let opp_steps_no_space = vec![1];
+                        gather_infos.push((
+                            (new_x as usize, new_y as usize),
+                            TypeOfThreat::FOUR_SO,
+                            create_align(steps_no_space, *way, (new_x, new_y), (dx, dy)),
+                            create_align(opp_steps_no_space, *way, (new_x, new_y), (dx, dy)),
+                        ));
+                        let steps_with_space = vec![2];
+                        let opp_steps_with_space = vec![0];
+                        gather_infos.push((
+                            ((new_x + way * dx) as usize, (new_y + way * dy) as usize),
+                            TypeOfThreat::FOUR_SO,
+                            create_align(steps_with_space, *way, (new_x, new_y), (dx, dy)),
+                            create_align(opp_steps_with_space, *way, (new_x, new_y), (dx, dy)),
+                        ));
+                    }
+                    4 => {
                         // #00__0000?
                         let steps_no_space = vec![2];
                         let opp_steps_no_space = vec![1];
                         gather_infos.push((
                             (new_x as usize, new_y as usize),
-                            TypeOfThreat::FIVE_TAKE,
+                            TypeOfThreat::FOUR_SO,
                             create_align(steps_no_space, *way, (new_x, new_y), (dx, dy)),
                             create_align(opp_steps_no_space, *way, (new_x, new_y), (dx, dy)),
                         ));
@@ -924,26 +959,15 @@ fn connect_3(
             Vec<(usize, usize)>,
             Vec<(usize, usize)>,
         )> = Vec::with_capacity(2);
+        //println!("space : {}\talign : {}", space, align_ally);
 
         match opp_edge {
             Some(false) => match space {
                 1 => match align_ally {
                     0 => {
                         // _000_?
-                        let mut ally_edge: Option<bool> = None;
-                        if valid_coord!((new_x + way * dx), (new_y + way * dy)) {
-                            let (tmp_edge, _) = get_edges!(
-                                way,
-                                score_board[(new_x + way * dx) as usize]
-                                    [(new_y + way * dy) as usize][dir]
-                            );
-                            ally_edge = tmp_edge;
-                        }
-                        let steps: Vec<isize> = vec![-2, -1];
-                        let (opp_steps, threat) = match ally_edge {
-                            Some(false) => (vec![], TypeOfThreat::FOUR_O),
-                            _ => (vec![-4], TypeOfThreat::FOUR_SO),
-                        };
+                        let steps = vec![-3, -2, -1];
+                        let (opp_steps, threat) = (vec![-4], TypeOfThreat::FOUR_SO);
                         gather_infos.push((
                             (new_x as usize, new_y as usize),
                             threat,
@@ -967,7 +991,7 @@ fn connect_3(
                         // _000_00?
                         //opened edge, 1 space, 2 more pawn
                         let steps = vec![-2, -1, 1];
-                        let (opp_steps, threat) = (vec![], TypeOfThreat::FIVE_TAKE);
+                        let (opp_steps, threat) = (vec![], TypeOfThreat::FOUR_TAKE);
                         gather_infos.push((
                             (new_x as usize, new_y as usize),
                             threat,
@@ -979,7 +1003,7 @@ fn connect_3(
                         // _000_000?
                         //opened edge, 1 space, 3 more pawn
                         let steps = vec![-1, 1];
-                        let (opp_steps, threat) = (vec![], TypeOfThreat::FIVE_TAKE);
+                        let (opp_steps, threat) = (vec![], TypeOfThreat::THREE_TAKE);
                         gather_infos.push((
                             (new_x as usize, new_y as usize),
                             threat,
@@ -991,7 +1015,7 @@ fn connect_3(
                         // _000_0000?
                         //opened edge, 1 space, 4 more pawn
                         let steps = vec![1];
-                        let (opp_steps, threat) = (vec![], TypeOfThreat::FIVE_TAKE);
+                        let (opp_steps, threat) = (vec![], TypeOfThreat::TWO_TAKE);
                         gather_infos.push((
                             (new_x as usize, new_y as usize),
                             threat,
@@ -1002,101 +1026,26 @@ fn connect_3(
                     5 => (),
                     _ => unreachable!(),
                 },
-                2 => match align_ally {
-                    0 => {
-                        // _000__#
-                        //opened edge, 2 space, 0 more pawn
-                        let steps_no_space = vec![-3, -2, -1];
-                        let opp_steps_no_space = vec![];
-                        gather_infos.push((
-                            (new_x as usize, new_y as usize),
-                            TypeOfThreat::FOUR_O,
-                            create_align(steps_no_space, *way, (new_x, new_y), (dx, dy)),
-                            create_align(opp_steps_no_space, *way, (new_x, new_y), (dx, dy)),
-                        ));
-                        let steps_with_space = vec![-3, -2, -1];
-                        let opp_steps_with_space = vec![0];
-                        gather_infos.push((
-                            ((new_x + way * dx) as usize, (new_y + way * dy) as usize),
-                            TypeOfThreat::FOUR_SO,
-                            create_align(steps_with_space, *way, (new_x, new_y), (dx, dy)),
-                            create_align(opp_steps_with_space, *way, (new_x, new_y), (dx, dy)),
-                        ));
-                    }
-                    1 => {
-                        // _000__0?
-                        //opened edge, 2 space, 1 more pawn
-                        let steps_no_space = vec![-3, -2, -1, 2];
-                        let opp_steps_no_space = vec![-4, 1];
-                        gather_infos.push((
-                            (new_x as usize, new_y as usize),
-                            TypeOfThreat::FOUR_O,
-                            create_align(steps_no_space, *way, (new_x, new_y), (dx, dy)),
-                            create_align(opp_steps_no_space, *way, (new_x, new_y), (dx, dy)),
-                        ));
-                        let steps_with_space = vec![-3, -2, -1, 2];
-                        let opp_steps_with_space = vec![0];
-                        gather_infos.push((
-                            ((new_x + way * dx) as usize, (new_y + way * dy) as usize),
-                            TypeOfThreat::FOUR_SO,
-                            create_align(steps_with_space, *way, (new_x, new_y), (dx, dy)),
-                            create_align(opp_steps_with_space, *way, (new_x, new_y), (dx, dy)),
-                        ));
-                    }
-                    2 => {
-                        // _000__00?
-                        //opened edge, 2 space, 2 more pawn
-                        let steps_no_space = vec![-1, 2];
-                        let opp_steps_no_space = vec![-4, 1];
-                        gather_infos.push((
-                            (new_x as usize, new_y as usize),
-                            TypeOfThreat::FOUR_O,
-                            create_align(steps_no_space, *way, (new_x, new_y), (dx, dy)),
-                            create_align(opp_steps_no_space, *way, (new_x, new_y), (dx, dy)),
-                        ));
-                        let steps_with_space = vec![-1, 2];
-                        let opp_steps_with_space = vec![0];
-                        gather_infos.push((
-                            ((new_x + way * dx) as usize, (new_y + way * dy) as usize),
-                            TypeOfThreat::FOUR_SO,
-                            create_align(steps_with_space, *way, (new_x, new_y), (dx, dy)),
-                            create_align(opp_steps_with_space, *way, (new_x, new_y), (dx, dy)),
-                        ));
-                    }
-                    3 => {
-                        // _000__000?
-                        //opened edge, 2 space, 3 or 4 more pawn
-                        let steps_no_space = vec![];
-                        let opp_steps_no_space = vec![-4, 1];
-                        gather_infos.push((
-                            (new_x as usize, new_y as usize),
-                            TypeOfThreat::FOUR_O,
-                            create_align(steps_no_space, *way, (new_x, new_y), (dx, dy)),
-                            create_align(opp_steps_no_space, *way, (new_x, new_y), (dx, dy)),
-                        ));
-                        let steps_with_space = vec![2];
-                        let opp_steps_with_space = vec![0];
-                        gather_infos.push((
-                            ((new_x + way * dx) as usize, (new_y + way * dy) as usize),
-                            TypeOfThreat::FOUR_SO,
-                            create_align(steps_with_space, *way, (new_x, new_y), (dx, dy)),
-                            create_align(opp_steps_with_space, *way, (new_x, new_y), (dx, dy)),
-                        ));
-                    }
-                    4 => {
-                        // _000__0000?
-                        let steps_no_space = vec![];
-                        let opp_steps_no_space = vec![-4, 1];
-                        gather_infos.push((
-                            (new_x as usize, new_y as usize),
-                            TypeOfThreat::FOUR_O,
-                            create_align(steps_no_space, *way, (new_x, new_y), (dx, dy)),
-                            create_align(opp_steps_no_space, *way, (new_x, new_y), (dx, dy)),
-                        ));
-                    }
-                    5 => (),
-                    _ => unreachable!(),
-                },
+                2 => {
+                    // _000__#
+                    //opened edge, 2 space, 0 more pawn
+                    let steps_no_space = vec![-3, -2, -1];
+                    let opp_steps_no_space = vec![];
+                    gather_infos.push((
+                        (new_x as usize, new_y as usize),
+                        TypeOfThreat::FOUR_O,
+                        create_align(steps_no_space, *way, (new_x, new_y), (dx, dy)),
+                        create_align(opp_steps_no_space, *way, (new_x, new_y), (dx, dy)),
+                    ));
+                    let steps_with_space = vec![-3, -2, -1];
+                    let opp_steps_with_space = vec![0];
+                    gather_infos.push((
+                        ((new_x + way * dx) as usize, (new_y + way * dy) as usize),
+                        TypeOfThreat::FOUR_SO,
+                        create_align(steps_with_space, *way, (new_x, new_y), (dx, dy)),
+                        create_align(opp_steps_with_space, *way, (new_x, new_y), (dx, dy)),
+                    ));
+                }
                 _ => unreachable!(),
             },
             _ => match space {
@@ -1115,7 +1064,7 @@ fn connect_3(
                     2 => {
                         // #000_00?
                         let steps = vec![-2, -1, 1];
-                        let (opp_steps, threat) = (vec![], TypeOfThreat::FIVE_TAKE);
+                        let (opp_steps, threat) = (vec![], TypeOfThreat::FOUR_TAKE);
                         gather_infos.push((
                             (new_x as usize, new_y as usize),
                             threat,
@@ -1126,7 +1075,7 @@ fn connect_3(
                     3 => {
                         // #000_000?
                         let steps = vec![-1, 1];
-                        let (opp_steps, threat) = (vec![], TypeOfThreat::FIVE_TAKE);
+                        let (opp_steps, threat) = (vec![], TypeOfThreat::THREE_TAKE);
                         gather_infos.push((
                             (new_x as usize, new_y as usize),
                             threat,
@@ -1137,7 +1086,7 @@ fn connect_3(
                     4 => {
                         // #000_0000?
                         let steps = vec![1];
-                        let (opp_steps, threat) = (vec![], TypeOfThreat::FIVE_TAKE);
+                        let (opp_steps, threat) = (vec![], TypeOfThreat::TWO_TAKE);
                         gather_infos.push((
                             (new_x as usize, new_y as usize),
                             threat,
@@ -1150,79 +1099,25 @@ fn connect_3(
                     5 => (),
                     _ => unreachable!(),
                 },
-                2 => match align_ally {
-                    0 => {
-                        // #000__#
-                        let steps = vec![-3, -2, -1];
-                        let (opp_steps, threat) = (vec![1], TypeOfThreat::FOUR_SO);
-                        gather_infos.push((
-                            (new_x as usize, new_y as usize),
-                            threat,
-                            create_align(steps, *way, (new_x, new_y), (dx, dy)),
-                            create_align(opp_steps, *way, (new_x, new_y), (dx, dy)),
-                        ));
-                    }
-                    1 => {
-                        // #000__0?
-                        let steps_no_space = vec![-2, -1, 2];
-                        let opp_steps_no_space = vec![1];
-                        gather_infos.push((
-                            (new_x as usize, new_y as usize),
-                            TypeOfThreat::FOUR_SO,
-                            create_align(steps_no_space, *way, (new_x, new_y), (dx, dy)),
-                            create_align(opp_steps_no_space, *way, (new_x, new_y), (dx, dy)),
-                        ));
-                        let steps_with_space = vec![-2, -1, 2];
-                        let opp_steps_with_space = vec![0];
-                        gather_infos.push((
-                            ((new_x + way * dx) as usize, (new_y + way * dy) as usize),
-                            TypeOfThreat::FOUR_SO,
-                            create_align(steps_with_space, *way, (new_x, new_y), (dx, dy)),
-                            create_align(opp_steps_with_space, *way, (new_x, new_y), (dx, dy)),
-                        ));
-                    }
-                    2 => {
-                        // #000__00?
-                        let steps_no_space = vec![-1];
-                        let opp_steps_no_space = vec![1];
-                        gather_infos.push((
-                            (new_x as usize, new_y as usize),
-                            TypeOfThreat::FOUR_SO,
-                            create_align(steps_no_space, *way, (new_x, new_y), (dx, dy)),
-                            create_align(opp_steps_no_space, *way, (new_x, new_y), (dx, dy)),
-                        ));
-                        let steps_with_space = vec![-1];
-                        let opp_steps_with_space = vec![0];
-                        gather_infos.push((
-                            ((new_x + way * dx) as usize, (new_y + way * dy) as usize),
-                            TypeOfThreat::FOUR_SO,
-                            create_align(steps_with_space, *way, (new_x, new_y), (dx, dy)),
-                            create_align(opp_steps_with_space, *way, (new_x, new_y), (dx, dy)),
-                        ));
-                    }
-                    3..=4 => {
-                        // #000__000?
-                        // #000__0000?
-                        let steps_no_space = vec![];
-                        let opp_steps_no_space = vec![1];
-                        gather_infos.push((
-                            (new_x as usize, new_y as usize),
-                            TypeOfThreat::FOUR_SO,
-                            create_align(steps_no_space, *way, (new_x, new_y), (dx, dy)),
-                            create_align(opp_steps_no_space, *way, (new_x, new_y), (dx, dy)),
-                        ));
-                        let steps_with_space = vec![];
-                        let opp_steps_with_space = vec![0];
-                        gather_infos.push((
-                            ((new_x + way * dx) as usize, (new_y + way * dy) as usize),
-                            TypeOfThreat::FIVE_TAKE,
-                            create_align(steps_with_space, *way, (new_x, new_y), (dx, dy)),
-                            create_align(opp_steps_with_space, *way, (new_x, new_y), (dx, dy)),
-                        ));
-                    }
-                    5 => (),
-                    _ => unreachable!(),
-                },
+                2 => {
+                    // #000__?
+                    let steps_no_space = vec![-3, -2, -1];
+                    let opp_steps_no_space = vec![];
+                    gather_infos.push((
+                        (new_x as usize, new_y as usize),
+                        TypeOfThreat::FOUR_SO,
+                        create_align(steps_no_space, *way, (new_x, new_y), (dx, dy)),
+                        create_align(opp_steps_no_space, *way, (new_x, new_y), (dx, dy)),
+                    ));
+                    let steps_with_space = vec![-3, -2, -1];
+                    let opp_steps_with_space = vec![0];
+                    gather_infos.push((
+                        ((new_x + way * dx) as usize, (new_y + way * dy) as usize),
+                        TypeOfThreat::FOUR_SO,
+                        create_align(steps_with_space, *way, (new_x, new_y), (dx, dy)),
+                        create_align(opp_steps_with_space, *way, (new_x, new_y), (dx, dy)),
+                    ));
+                }
                 _ => unreachable!(),
             },
         };
@@ -1526,8 +1421,11 @@ mod tests {
                     print!(
                         "TypeOfThreat::{}, vec![",
                         match type_of_threat {
-                            TypeOfThreat::FIVE => "FIVE",
                             TypeOfThreat::FIVE_TAKE => "FIVE_TAKE",
+                            TypeOfThreat::FOUR_TAKE => "FOUR_TAKE",
+                            TypeOfThreat::THREE_TAKE => "THREE_TAKE",
+                            TypeOfThreat::TWO_TAKE => "TWO_TAKE",
+                            TypeOfThreat::ONE_TAKE => "ONE_TAKE",
                             TypeOfThreat::FOUR_O => "FOUR_O",
                             TypeOfThreat::FOUR_SO => "FOUR_SO",
                             TypeOfThreat::TAKE => "TAKE",
@@ -1555,8 +1453,11 @@ mod tests {
                 print!(
                     "TypeOfThreat::{}, vec![",
                     match type_of_threat {
-                        TypeOfThreat::FIVE => "FIVE",
                         TypeOfThreat::FIVE_TAKE => "FIVE_TAKE",
+                        TypeOfThreat::FOUR_TAKE => "FOUR_TAKE",
+                        TypeOfThreat::THREE_TAKE => "THREE_TAKE",
+                        TypeOfThreat::TWO_TAKE => "TWO_TAKE",
+                        TypeOfThreat::ONE_TAKE => "ONE_TAKE",
                         TypeOfThreat::FOUR_O => "FOUR_O",
                         TypeOfThreat::FOUR_SO => "FOUR_SO",
                         TypeOfThreat::TAKE => "TAKE",
@@ -1718,7 +1619,7 @@ mod tests {
     // ((9,10), TypeOfThreat::THREE_O, vec![(9,9)])
     #[test]
     fn threat_connect_2_normal_0() {
-        let mut black_pos = vec![(9, 8), (9, 7)];
+        let black_pos = vec![(9, 8), (9, 7)];
         let white_pos = vec![];
         let mut white_take = 0_isize;
         let mut black_take = 0_isize;
@@ -1811,7 +1712,7 @@ mod tests {
     // ((9,5), TypeOfThreat::THREE_O, vec![(9,6),(9,9),(9,4)])
     #[test]
     fn threat_connect_2_normal_blocked() {
-        let mut black_pos = vec![(9, 8), (9, 7)];
+        let black_pos = vec![(9, 8), (9, 7)];
         let white_pos = vec![(9, 10)];
         let mut white_take = 0_isize;
         let mut black_take = 0_isize;
@@ -2036,7 +1937,7 @@ mod tests {
     // ((9,10), TypeOfThreat::THREE_O, vec![(10,8),(9,9)])
     #[test]
     fn threat_connect2_catchis() {
-        let mut black_pos = vec![(9, 8), (9, 7), (8, 8)];
+        let black_pos = vec![(9, 8), (9, 7), (8, 8)];
         let white_pos = vec![(7, 8)];
         let mut white_take = 0_isize;
         let mut black_take = 0_isize;
@@ -2295,7 +2196,7 @@ mod tests {
     // ((9,10), TypeOfThreat::THREE_O, vec![(10,11),(10,6),(10,8),(9,9)])
     #[test]
     fn threat_connect2_extremity1() {
-        let mut black_pos = vec![(9, 8), (9, 7), (8, 9), (8, 6), (8, 8)];
+        let black_pos = vec![(9, 8), (9, 7), (8, 9), (8, 6), (8, 8)];
         let white_pos = vec![(7, 9), (7, 6), (7, 8)];
         let mut white_take = 0_isize;
         let mut black_take = 0_isize;
@@ -2466,7 +2367,7 @@ mod tests {
     // ((9,10), TypeOfThreat::THREE_O, vec![(9,9)])
     #[test]
     fn threat_connect2_extremity2() {
-        let mut black_pos = vec![(9, 8), (9, 7), (8, 9)];
+        let black_pos = vec![(9, 8), (9, 7), (8, 9)];
         let white_pos = vec![(7, 9)];
         let mut white_take = 0_isize;
         let mut black_take = 0_isize;
@@ -2609,7 +2510,7 @@ mod tests {
     // ((9,10), TypeOfThreat::THREE_O, vec![(9,9),(9,6),(9,11)])
     #[test]
     fn threat_connect2_extremity3() {
-        let mut black_pos = vec![(9, 8), (9, 7), (10, 9)];
+        let black_pos = vec![(9, 8), (9, 7), (10, 9)];
         let white_pos = vec![(11, 9)];
         let mut white_take = 0_isize;
         let mut black_take = 0_isize;
@@ -2748,7 +2649,7 @@ mod tests {
     // ((9,10), TypeOfThreat::THREE_O, vec![(9,9),(9,6),(9,11)])
     #[test]
     fn threat_connect_2_catch_extremity_hard1_0() {
-        let mut black_pos = vec![(9, 8), (9, 7), (8, 9)];
+        let black_pos = vec![(9, 8), (9, 7), (8, 9)];
         let white_pos = vec![(10, 9)];
         let mut white_take = 0_isize;
         let mut black_take = 0_isize;
@@ -2887,7 +2788,7 @@ mod tests {
     // ((9,10), TypeOfThreat::THREE_O, vec![(9,9),(9,6),(9,11)])
     #[test]
     fn threat_connect_2_catch_extremity_hard1_reverse() {
-        let mut black_pos = vec![(9, 8), (9, 7), (10, 9)];
+        let black_pos = vec![(9, 8), (9, 7), (10, 9)];
         let white_pos = vec![(8, 9)];
         let mut white_take = 0_isize;
         let mut black_take = 0_isize;
@@ -3030,7 +2931,7 @@ mod tests {
     // ((9,10), TypeOfThreat::THREE_O, vec![(9,9),(9,6),(9,11)])
     #[test]
     fn threat_connect_2_catch_extremity2() {
-        let mut black_pos = vec![(9, 8), (9, 7), (8, 9)];
+        let black_pos = vec![(9, 8), (9, 7), (8, 9)];
         let white_pos = vec![(7, 9)];
         let mut white_take = 0_isize;
         let mut black_take = 0_isize;
@@ -3173,7 +3074,7 @@ mod tests {
     // ((9,10), TypeOfThreat::THREE_O, vec![(9,9),(9,6),(9,11)])
     #[test]
     fn threat_connect_2_not_catch_extremity() {
-        let mut black_pos = vec![(9, 8), (9, 7), (8, 9)];
+        let black_pos = vec![(9, 8), (9, 7), (8, 9)];
         let white_pos = vec![(10, 9), (7, 9)];
         let mut white_take = 0_isize;
         let mut black_take = 0_isize;
@@ -3289,7 +3190,7 @@ mod tests {
     // ((9,9), TypeOfThreat::FIVE_TAKE, vec![])
     #[test]
     fn threat_connect_2_catch_9_in_a_row_first() {
-        let mut black_pos = vec![(9, 8), (9, 7), (9, 10), (9, 11)];
+        let black_pos = vec![(9, 8), (9, 7), (9, 10), (9, 11)];
         let white_pos = vec![(10, 9), (7, 9)];
         let mut white_take = 0_isize;
         let mut black_take = 0_isize;
@@ -3400,7 +3301,7 @@ mod tests {
     // ((9,9), TypeOfThreat::FIVE_TAKE, vec![(7,9)])
     #[test]
     fn threat_connect_2_catch_9_in_a_row_catch_0() {
-        let mut black_pos = vec![(9, 8), (9, 7), (9, 10), (9, 11), (8, 9)];
+        let black_pos = vec![(9, 8), (9, 7), (9, 10), (9, 11), (8, 9)];
         let white_pos = vec![(10, 9)];
         let mut white_take = 0_isize;
         let mut black_take = 0_isize;
@@ -3603,7 +3504,7 @@ mod tests {
     // ((9,9), TypeOfThreat::FIVE_TAKE, vec![(7,8)])
     #[test]
     fn threat_connect_2_catch_9_in_a_row_catch_1() {
-        let mut black_pos = vec![(9, 8), (9, 7), (9, 10), (9, 11), (8, 8)];
+        let black_pos = vec![(9, 8), (9, 7), (9, 10), (9, 11), (8, 8)];
         let white_pos = vec![(10, 8)];
         let mut white_take = 0_isize;
         let mut black_take = 0_isize;
@@ -3738,7 +3639,7 @@ mod tests {
     // ((9,9), TypeOfThreat::FOUR_O, vec![(7,8)])
     #[test]
     fn threat_connect_2_catch_9_in_a_row_catch_2() {
-        let mut black_pos = vec![(9, 8), (9, 7), (9, 10), (8, 8)];
+        let black_pos = vec![(9, 8), (9, 7), (9, 10), (8, 8)];
         let white_pos = vec![(10, 8)];
         let mut white_take = 0_isize;
         let mut black_take = 0_isize;
@@ -3807,7 +3708,7 @@ mod tests {
     // ((9,9), TypeOfThreat::FOUR_SO, vec![(7,8),(9,6),(9,10)])
     #[test]
     fn threat_connect_2_catch_9_in_a_row_catch_3() {
-        let mut black_pos = vec![(9, 8), (9, 7), (9, 10), (8, 8)];
+        let black_pos = vec![(9, 8), (9, 7), (9, 10), (8, 8)];
         let white_pos = vec![(10, 8), (9, 6)];
         let mut white_take = 0_isize;
         let mut black_take = 0_isize;
@@ -3892,7 +3793,7 @@ mod tests {
     // ((9,10), TypeOfThreat::FOUR_SO, vec![(7,8),(9,9)])
     #[test]
     fn threat_connect_2_catch_9_in_a_row_catch_4() {
-        let mut black_pos = vec![(9, 8), (9, 7), (9, 11), (8, 8)];
+        let black_pos = vec![(9, 8), (9, 7), (9, 11), (8, 8)];
         let white_pos = vec![(10, 8), (9, 6)];
         let mut white_take = 0_isize;
         let mut black_take = 0_isize;
@@ -4002,7 +3903,7 @@ mod tests {
     // ((9,13), TypeOfThreat::THREE_O, vec![(9,12),(9,9),(9,14)])
     #[test]
     fn threat_connect_2_catch_9_in_a_row_catch_5() {
-        let mut black_pos = vec![(9, 8), (9, 7), (9, 10), (9, 11), (8, 8)];
+        let black_pos = vec![(9, 8), (9, 7), (9, 10), (9, 11), (8, 8)];
         let white_pos = vec![(10, 8)];
         let mut white_take = 0_isize;
         let mut black_take = 0_isize;
@@ -4163,7 +4064,7 @@ mod tests {
     // ((2,9), TypeOfThreat::FIVE_TAKE, vec![])
     #[test]
     fn threat_connect_2_fake_catch_9_in_a_row_other_position_0() {
-        let mut black_pos = vec![(2, 8), (2, 7), (2, 10), (2, 11), (2, 12), (2, 13), (1, 8)];
+        let black_pos = vec![(2, 8), (2, 7), (2, 10), (2, 11), (2, 12), (2, 13), (1, 8)];
         let white_pos = vec![(3, 8)];
         let mut white_take = 0_isize;
         let mut black_take = 0_isize;
@@ -4180,7 +4081,7 @@ mod tests {
                 TypeOfThreat::THREE_O,
                 vec![(0, 8), (2, 6), (2, 9), (2, 4)],
             ),
-            ((2, 9), TypeOfThreat::FIVE_TAKE, vec![]),
+            ((2, 9), TypeOfThreat::THREE_TAKE, vec![]),
         ];
         assert!(test_threat_2(
             white_pos,
@@ -4196,7 +4097,7 @@ mod tests {
     // Need Arthur's confirmation -> Arthur needs to check the length of the things he connects with
     #[test]
     fn threat_connect_2_fake_catch_9_in_a_row_other_position_1() {
-        let mut black_pos = vec![(2, 8), (2, 7), (2, 10), (2, 11), (2, 12), (2, 13), (1, 8)];
+        let black_pos = vec![(2, 8), (2, 7), (2, 10), (2, 11), (2, 12), (2, 13), (1, 8)];
         let white_pos = vec![(3, 8)];
         let mut white_take = 0_isize;
         let mut black_take = 0_isize;
@@ -4207,7 +4108,7 @@ mod tests {
                 TypeOfThreat::THREE_O,
                 vec![(0, 8), (2, 6), (2, 9), (2, 4)],
             ),
-            ((2, 9), TypeOfThreat::FIVE_TAKE, vec![]),
+            ((2, 9), TypeOfThreat::THREE_TAKE, vec![]),
         ];
         assert!(test_threat_2(
             white_pos,
@@ -4288,7 +4189,7 @@ mod tests {
     // ((4,5), TypeOfThreat::THREE_O, vec![(0,8),(3,6),(0,9),(5,4)])
     #[test]
     fn threat_connect_2_fake_catch_9_in_a_row_other_position_2() {
-        let mut black_pos = vec![(2, 8), (2, 7), (2, 10), (2, 11), (2, 12), (2, 13), (1, 8)];
+        let black_pos = vec![(2, 8), (2, 7), (2, 10), (2, 11), (2, 12), (2, 13), (1, 8)];
         let white_pos = vec![(3, 8)];
         let mut white_take = 0_isize;
         let mut black_take = 0_isize;
@@ -4492,8 +4393,8 @@ mod tests {
     // DEFENSIVE_MOVE:
     // ((2,4), TypeOfThreat::THREE_O, vec![(2,3),(2,0),(2,5)])
     #[test]
-    fn threat_connect_2_fake_catch_close_top_2_S0_0() {
-        let mut black_pos = vec![(2, 2), (2, 1), (1, 0)];
+    fn threat_connect_2_fake_catch_close_top_2_s0_0() {
+        let black_pos = vec![(2, 2), (2, 1), (1, 0)];
         let white_pos = vec![(3, 0)];
         let mut white_take = 0_isize;
         let mut black_take = 0_isize;
@@ -4513,8 +4414,8 @@ mod tests {
     }
 
     #[test]
-    fn threat_connect_2_fake_catch_close_top_2_S0_4() {
-        let mut black_pos = vec![(3, 2), (3, 0), (3, 3)];
+    fn threat_connect_2_fake_catch_close_top_2_s0_4() {
+        let black_pos = vec![(3, 2), (3, 0), (3, 3)];
         let white_pos = vec![(3, 0)];
         let mut white_take = 0_isize;
         let mut black_take = 0_isize;
@@ -4647,14 +4548,13 @@ mod tests {
     // DEFENSIVE_MOVE:
     // ((2,5), TypeOfThreat::THREE_O, vec![(2,4),(2,1),(2,6)])
     #[test]
-    fn threat_connect_2_fake_catch_close_top_2_S0_1() {
-        let mut black_pos = vec![(2, 2), (2, 3), (1, 0)];
+    fn threat_connect_2_fake_catch_close_top_2_s0_1() {
+        let black_pos = vec![(2, 2), (2, 3), (1, 0)];
         let white_pos = vec![(3, 0)];
         let mut white_take = 0_isize;
         let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((2, 1), TypeOfThreat::THREE_O, vec![(2, 4), (2, 0)]),
-            ((2, 0), TypeOfThreat::THREE_O, vec![(0, 0), (2, 1), (2, 4)]),
             ((2, 4), TypeOfThreat::THREE_O, vec![(2, 1), (2, 5)]),
             ((2, 5), TypeOfThreat::THREE_O, vec![(2, 4), (2, 1), (2, 6)]),
         ];
@@ -4782,8 +4682,8 @@ mod tests {
     // DEFENSIVE_MOVE:
     // ((2,6), TypeOfThreat::THREE_O, vec![(2,5),(2,2),(2,7)])
     #[test]
-    fn threat_connect_2_fake_catch_close_top_2_S0_2() {
-        let mut black_pos = vec![(2, 4), (2, 3), (1, 1)];
+    fn threat_connect_2_fake_catch_close_top_2_s0_2() {
+        let black_pos = vec![(2, 4), (2, 3), (1, 1)];
         let white_pos = vec![(3, 1)];
         let mut white_take = 0_isize;
         let mut black_take = 0_isize;
@@ -4875,8 +4775,8 @@ mod tests {
     // DEFENSIVE_MOVE:
     // ((2,4), TypeOfThreat::THREE_O, vec![(2,3),(2,0),(2,5)])
     #[test]
-    fn threat_connect_2_fake_catch_close_top_2_S0_3() {
-        let mut black_pos = vec![(2, 2), (2, 1), (1, 0)];
+    fn threat_connect_2_fake_catch_close_top_2_s0_3() {
+        let black_pos = vec![(2, 2), (2, 1), (1, 0)];
         let white_pos = vec![(3, 0)];
         let mut white_take = 0_isize;
         let mut black_take = 0_isize;
@@ -5004,8 +4904,11 @@ mod tests {
                     print!(
                         "TypeOfThreat::{}, vec![",
                         match type_of_threat {
-                            TypeOfThreat::FIVE => "FIVE",
                             TypeOfThreat::FIVE_TAKE => "FIVE_TAKE",
+                            TypeOfThreat::FOUR_TAKE => "FOUR_TAKE",
+                            TypeOfThreat::THREE_TAKE => "THREE_TAKE",
+                            TypeOfThreat::TWO_TAKE => "TWO_TAKE",
+                            TypeOfThreat::ONE_TAKE => "ONE_TAKE",
                             TypeOfThreat::FOUR_O => "FOUR_O",
                             TypeOfThreat::FOUR_SO => "FOUR_SO",
                             TypeOfThreat::TAKE => "TAKE",
@@ -5033,8 +4936,11 @@ mod tests {
                 print!(
                     "TypeOfThreat::{}, vec![",
                     match type_of_threat {
-                        TypeOfThreat::FIVE => "FIVE",
                         TypeOfThreat::FIVE_TAKE => "FIVE_TAKE",
+                        TypeOfThreat::FOUR_TAKE => "FOUR_TAKE",
+                        TypeOfThreat::THREE_TAKE => "THREE_TAKE",
+                        TypeOfThreat::TWO_TAKE => "TWO_TAKE",
+                        TypeOfThreat::ONE_TAKE => "ONE_TAKE",
                         TypeOfThreat::FOUR_O => "FOUR_O",
                         TypeOfThreat::FOUR_SO => "FOUR_SO",
                         TypeOfThreat::TAKE => "TAKE",
@@ -5082,6 +4988,1611 @@ mod tests {
         global_results == expected_result
     }
 
+    // Initial configuration:
+    // ___________________
+    // ___________________
+    // ___________________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ____⊖______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+
+    // Details: [dir:3]
+    // ___________________
+    // ___________________
+    // ____⊛______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ____⊖______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,2), TypeOfThreat::FOUR_O, vec![])
+
+    // Details: [dir:3]
+    // ___________________
+    // ____⊛______________
+    // ____⊙______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ____⊖______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,1), TypeOfThreat::FOUR_SO, vec![(4,2)])
+
+    // Details: [dir:3]
+    // ___________________
+    // ___________________
+    // ____⊙______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊛______________
+    // ____⊖______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,6), TypeOfThreat::FOUR_SO, vec![(4,2)])
+    // _000_#
+    #[test]
+    fn threat_connect_3_space_1_blocked() {
+        let black_pos = vec![(4, 3), (4, 4), (4, 5)];
+        let white_pos = vec![(4, 7)];
+        let mut white_take = 0_isize;
+        let mut black_take = 0_isize;
+        let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
+            ((4, 2), TypeOfThreat::FOUR_O, vec![]),
+            ((4, 1), TypeOfThreat::FOUR_SO, vec![(4, 2)]),
+            ((4, 6), TypeOfThreat::FOUR_SO, vec![(4, 2)]),
+        ];
+        assert!(test_threat_3(
+            white_pos,
+            black_pos,
+            &mut white_take,
+            &mut black_take,
+            (4, 3),
+            Some(false),
+            expected_result
+        ))
+    }
+
+    // Initial configuration:
+    // ___________________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+
+    // Details: [dir:3]
+    // ____⊛______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊙______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,0), TypeOfThreat::FOUR_SO, vec![(4,4)])
+
+    // Details: [dir:3]
+    // ___________________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊛______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,4), TypeOfThreat::FOUR_O, vec![])
+
+    // Details: [dir:3]
+    // ___________________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊙______________
+    // ____⊛______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,5), TypeOfThreat::FOUR_SO, vec![(4,4)])
+    // _000_|
+    #[test]
+    fn threat_connect_3_space_1_edged() {
+        let black_pos = vec![(4, 1), (4, 2), (4, 3)];
+        let white_pos = vec![];
+        let mut white_take = 0_isize;
+        let mut black_take = 0_isize;
+        let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
+            ((4, 0), TypeOfThreat::FOUR_SO, vec![(4, 4)]),
+            ((4, 4), TypeOfThreat::FOUR_O, vec![]),
+            ((4, 5), TypeOfThreat::FOUR_SO, vec![(4, 4)]),
+        ];
+        assert!(test_threat_3(
+            white_pos,
+            black_pos,
+            &mut white_take,
+            &mut black_take,
+            (4, 3),
+            Some(false),
+            expected_result
+        ))
+    }
+
+    // Initial configuration:
+    // ___________________
+    // ___________________
+    // ___________________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ____⊕______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+
+    // Details: [dir:3]
+    // ___________________
+    // ___________________
+    // ____⊛______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ____⊕______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,2), TypeOfThreat::FOUR_O, vec![])
+
+    // Details: [dir:3]
+    // ___________________
+    // ____⊛______________
+    // ____⊙______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ____⊕______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,1), TypeOfThreat::FOUR_SO, vec![(4,2)])
+
+    // Details: [dir:3]
+    // ___________________
+    // ___________________
+    // ___________________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊛______________
+    // ____⊕______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,6), TypeOfThreat::FIVE_TAKE, vec![])
+    // _000_0_
+    #[test]
+    fn threat_connect_3_space_1_align_1_free() {
+        let black_pos = vec![(4, 3), (4, 4), (4, 5), (4, 7)];
+        let white_pos = vec![];
+        let mut white_take = 0_isize;
+        let mut black_take = 0_isize;
+        let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
+            ((4, 2), TypeOfThreat::FOUR_O, vec![]),
+            ((4, 1), TypeOfThreat::FOUR_SO, vec![(4, 2)]),
+            ((4, 6), TypeOfThreat::FIVE_TAKE, vec![]),
+        ];
+        assert!(test_threat_3(
+            white_pos,
+            black_pos,
+            &mut white_take,
+            &mut black_take,
+            (4, 3),
+            Some(false),
+            expected_result
+        ))
+    }
+
+    // Initial configuration:
+    // ___________________
+    // ___________________
+    // ___________________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ____⊕______________
+    // ____⊖______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+
+    // Details: [dir:3]
+    // ___________________
+    // ___________________
+    // ____⊛______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ____⊕______________
+    // ____⊖______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,2), TypeOfThreat::FOUR_O, vec![])
+
+    // Details: [dir:3]
+    // ___________________
+    // ____⊛______________
+    // ____⊙______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ____⊕______________
+    // ____⊖______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,1), TypeOfThreat::FOUR_SO, vec![(4,2)])
+
+    // Details: [dir:3]
+    // ___________________
+    // ___________________
+    // ___________________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊛______________
+    // ____⊕______________
+    // ____⊖______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,6), TypeOfThreat::FIVE_TAKE, vec![])
+    // _000_0#
+    #[test]
+    fn threat_connect_3_space_1_align_1_blocked() {
+        let black_pos = vec![(4, 3), (4, 4), (4, 5), (4, 7)];
+        let white_pos = vec![(4, 8)];
+        let mut white_take = 0_isize;
+        let mut black_take = 0_isize;
+        let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
+            ((4, 2), TypeOfThreat::FOUR_O, vec![]),
+            ((4, 1), TypeOfThreat::FOUR_SO, vec![(4, 2)]),
+            ((4, 6), TypeOfThreat::FIVE_TAKE, vec![]),
+        ];
+        assert!(test_threat_3(
+            white_pos,
+            black_pos,
+            &mut white_take,
+            &mut black_take,
+            (4, 3),
+            Some(false),
+            expected_result
+        ))
+    }
+
+    // Initial configuration:
+    // ____⊕______________
+    // ___________________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+
+    // Details: [dir:3]
+    // ____⊕______________
+    // ____⊛______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,1), TypeOfThreat::FIVE_TAKE, vec![])
+
+    // Details: [dir:3]
+    // ____⊕______________
+    // ___________________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊛______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,5), TypeOfThreat::FOUR_O, vec![])
+
+    // Details: [dir:3]
+    // ____⊕______________
+    // ___________________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊙______________
+    // ____⊛______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,6), TypeOfThreat::FOUR_SO, vec![(4,5)])
+    // _000_0|
+    #[test]
+    fn threat_connect_3_space_1_align_1_edged() {
+        let black_pos = vec![(4, 0), (4, 2), (4, 3), (4, 4)];
+        let white_pos = vec![];
+        let mut white_take = 0_isize;
+        let mut black_take = 0_isize;
+        let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
+            ((4, 1), TypeOfThreat::FIVE_TAKE, vec![]),
+            ((4, 5), TypeOfThreat::FOUR_O, vec![]),
+            ((4, 6), TypeOfThreat::FOUR_SO, vec![(4, 5)]),
+        ];
+        assert!(test_threat_3(
+            white_pos,
+            black_pos,
+            &mut white_take,
+            &mut black_take,
+            (4, 3),
+            Some(false),
+            expected_result
+        ))
+    }
+
+    // Initial configuration:
+    // ___________________
+    // ___________________
+    // ___________________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+
+    // Details: [dir:3]
+    // ___________________
+    // ___________________
+    // ____⊛______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,2), TypeOfThreat::FOUR_O, vec![])
+
+    // Details: [dir:3]
+    // ___________________
+    // ____⊛______________
+    // ____⊙______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,1), TypeOfThreat::FOUR_SO, vec![(4,2)])
+
+    // Details: [dir:3]
+    // ___________________
+    // ___________________
+    // ___________________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊛______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,6), TypeOfThreat::FOUR_TAKE, vec![])
+    // _000_00_
+    #[test]
+    fn threat_connect_3_space_1_align_2_free() {
+        let black_pos = vec![(4, 3), (4, 4), (4, 5), (4, 7), (4, 8)];
+        let white_pos = vec![];
+        let mut white_take = 0_isize;
+        let mut black_take = 0_isize;
+        let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
+            ((4, 2), TypeOfThreat::FOUR_O, vec![]),
+            ((4, 1), TypeOfThreat::FOUR_SO, vec![(4, 2)]),
+            ((4, 6), TypeOfThreat::FOUR_TAKE, vec![]),
+        ];
+        assert!(test_threat_3(
+            white_pos,
+            black_pos,
+            &mut white_take,
+            &mut black_take,
+            (4, 3),
+            Some(false),
+            expected_result
+        ))
+    }
+
+    // Initial configuration:
+    // ___________________
+    // ___________________
+    // ___________________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊖______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+
+    // Details: [dir:3]
+    // ___________________
+    // ___________________
+    // ____⊛______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊖______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,2), TypeOfThreat::FOUR_O, vec![])
+
+    // Details: [dir:3]
+    // ___________________
+    // ____⊛______________
+    // ____⊙______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊖______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,1), TypeOfThreat::FOUR_SO, vec![(4,2)])
+
+    // Details: [dir:3]
+    // ___________________
+    // ___________________
+    // ___________________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊛______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊖______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,6), TypeOfThreat::FOUR_TAKE, vec![])
+    // _000_00#
+    #[test]
+    fn threat_connect_3_space_1_align_2_blocked_simple() {
+        let black_pos = vec![(4, 3), (4, 4), (4, 5), (4, 7), (4, 8)];
+        let white_pos = vec![(4, 9)];
+        let mut white_take = 0_isize;
+        let mut black_take = 0_isize;
+        let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
+            ((4, 2), TypeOfThreat::FOUR_O, vec![]),
+            ((4, 1), TypeOfThreat::FOUR_SO, vec![(4, 2)]),
+            ((4, 6), TypeOfThreat::FOUR_TAKE, vec![]),
+        ];
+        assert!(test_threat_3(
+            white_pos,
+            black_pos,
+            &mut white_take,
+            &mut black_take,
+            (4, 3),
+            Some(false),
+            expected_result
+        ))
+    }
+
+    // Initial configuration:
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+
+    // Details: [dir:3]
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊛______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,2), TypeOfThreat::FOUR_TAKE, vec![])
+
+    // Details: [dir:3]
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊛______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,6), TypeOfThreat::FOUR_O, vec![])
+
+    // Details: [dir:3]
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊙______________
+    // ____⊛______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,7), TypeOfThreat::FOUR_SO, vec![(4,6)])
+    // _000_00|
+    #[test]
+    fn threat_connect_3_space_1_align_2_edged() {
+        let black_pos = vec![(4, 0), (4, 1), (4, 3), (4, 4), (4, 5)];
+        let white_pos = vec![];
+        let mut white_take = 0_isize;
+        let mut black_take = 0_isize;
+        let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
+            ((4, 2), TypeOfThreat::FOUR_TAKE, vec![]),
+            ((4, 6), TypeOfThreat::FOUR_O, vec![]),
+            ((4, 7), TypeOfThreat::FOUR_SO, vec![(4, 6)]),
+        ];
+        assert!(test_threat_3(
+            white_pos,
+            black_pos,
+            &mut white_take,
+            &mut black_take,
+            (4, 3),
+            Some(false),
+            expected_result
+        ))
+    }
+
+    // Initial configuration:
+    // ___________________
+    // ___________________
+    // ___________________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+
+    // Details: [dir:3]
+    // ___________________
+    // ___________________
+    // ____⊛______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,2), TypeOfThreat::FOUR_O, vec![])
+
+    // Details: [dir:3]
+    // ___________________
+    // ____⊛______________
+    // ____⊙______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,1), TypeOfThreat::FOUR_SO, vec![(4,2)])
+
+    // Details: [dir:3]
+    // ___________________
+    // ___________________
+    // ___________________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊛______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,6), TypeOfThreat::THREE_TAKE, vec![])
+    // _000_000_
+    #[test]
+    fn threat_connect_3_space_1_align_3_free() {
+        let black_pos = vec![(4, 3), (4, 4), (4, 5), (4, 7), (4, 8), (4, 9)];
+        let white_pos = vec![];
+        let mut white_take = 0_isize;
+        let mut black_take = 0_isize;
+        let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
+            ((4, 2), TypeOfThreat::FOUR_O, vec![]),
+            ((4, 1), TypeOfThreat::FOUR_SO, vec![(4, 2)]),
+            ((4, 6), TypeOfThreat::THREE_TAKE, vec![]),
+        ];
+        assert!(test_threat_3(
+            white_pos,
+            black_pos,
+            &mut white_take,
+            &mut black_take,
+            (4, 3),
+            Some(false),
+            expected_result
+        ))
+    }
+
+    // _000_000#
+    #[test]
+    fn threat_connect_3_space_1_align_3_blocked_simple() {
+        let black_pos = vec![(4, 3), (4, 4), (4, 5), (4, 7), (4, 8), (4, 9)];
+        let white_pos = vec![(4, 10)];
+        let mut white_take = 0_isize;
+        let mut black_take = 0_isize;
+        let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
+            ((4, 2), TypeOfThreat::FOUR_O, vec![]),
+            ((4, 1), TypeOfThreat::FOUR_SO, vec![(4, 2)]),
+            ((4, 6), TypeOfThreat::THREE_TAKE, vec![]),
+        ];
+        assert!(test_threat_3(
+            white_pos,
+            black_pos,
+            &mut white_take,
+            &mut black_take,
+            (4, 3),
+            Some(false),
+            expected_result
+        ))
+    }
+
+    // Initial configuration:
+    // ___________________
+    // ___________________
+    // ___________________
+    // ____⊕______________
+    // ____⊕⊕⊖____________
+    // ____⊕⊕⊖____________
+    // ___________________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊖______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+
+    // Details: [dir:3]
+    // ___________________
+    // ___________________
+    // ___⊙⊛______________
+    // ____⊕______________
+    // ___⊙⊕⊕⊖____________
+    // ___⊙⊕⊕⊖____________
+    // ___________________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊖______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,2), TypeOfThreat::FOUR_O, vec![(3,5),(3,4),(3,2)])
+
+    // Details: [dir:3]
+    // ___________________
+    // ____⊛______________
+    // ___⊙⊙______________
+    // ____⊕______________
+    // ___⊙⊕⊕⊖____________
+    // ___⊙⊕⊕⊖____________
+    // ___________________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊖______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,1), TypeOfThreat::FOUR_SO, vec![(3,5),(3,4),(3,2),(4,2)])
+
+    // Details: [dir:3]
+    // ___________________
+    // ___________________
+    // ___________________
+    // ____⊕______________
+    // ____⊕⊕⊖____________
+    // ___⊙⊕⊕⊖____________
+    // ____⊛______________
+    // ___⊙⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊖______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,6), TypeOfThreat::THREE_TAKE, vec![(3,7),(3,5)])
+    // _000_000#
+    #[test]
+    fn threat_connect_3_space_1_align_3_blocked_simple_with_takes() {
+        let black_pos = vec![
+            (4, 3),
+            (4, 4),
+            (4, 5),
+            (4, 7),
+            (4, 8),
+            (4, 9),
+            (5, 4),
+            (5, 5),
+        ];
+        let white_pos = vec![(4, 10), (6, 4), (6, 5)];
+        let mut white_take = 0_isize;
+        let mut black_take = 0_isize;
+        let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
+            ((4, 2), TypeOfThreat::FOUR_O, vec![(3, 5), (3, 4), (3, 2)]),
+            (
+                (4, 1),
+                TypeOfThreat::FOUR_SO,
+                vec![(3, 5), (3, 4), (3, 2), (4, 2)],
+            ),
+            ((4, 6), TypeOfThreat::THREE_TAKE, vec![(3, 7), (3, 5)]),
+        ];
+        assert!(test_threat_3(
+            white_pos,
+            black_pos,
+            &mut white_take,
+            &mut black_take,
+            (4, 3),
+            Some(false),
+            expected_result
+        ))
+    }
+
+    // Initial configuration:
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+
+    // Details: [dir:3]
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊛______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,3), TypeOfThreat::THREE_TAKE, vec![])
+
+    // Details: [dir:3]
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊛______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,7), TypeOfThreat::FOUR_O, vec![])
+
+    // Details: [dir:3]
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊙______________
+    // ____⊛______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,8), TypeOfThreat::FOUR_SO, vec![(4,7)])
+    // _000_000|
+    #[test]
+    fn threat_connect_3_space_1_align_3_edged() {
+        let black_pos = vec![(4, 0), (4, 1), (4, 2), (4, 4), (4, 5), (4, 6)];
+        let white_pos = vec![];
+        let mut white_take = 0_isize;
+        let mut black_take = 0_isize;
+        let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
+            ((4, 3), TypeOfThreat::THREE_TAKE, vec![]),
+            ((4, 7), TypeOfThreat::FOUR_O, vec![]),
+            ((4, 8), TypeOfThreat::FOUR_SO, vec![(4, 7)]),
+        ];
+        assert!(test_threat_3(
+            white_pos,
+            black_pos,
+            &mut white_take,
+            &mut black_take,
+            (4, 4),
+            Some(false),
+            expected_result
+        ))
+    }
+
+    // Initial configuration:
+    // ___________________
+    // ___________________
+    // ___________________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+
+    // Details: [dir:3]
+    // ___________________
+    // ___________________
+    // ____⊛______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,2), TypeOfThreat::FOUR_O, vec![])
+
+    // Details: [dir:3]
+    // ___________________
+    // ____⊛______________
+    // ____⊙______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,1), TypeOfThreat::FOUR_SO, vec![(4,2)])
+
+    // Details: [dir:3]
+    // ___________________
+    // ___________________
+    // ___________________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊛______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,6), TypeOfThreat::TWO_TAKE, vec![])
+    // _000_0000_
+    #[test]
+    fn threat_connect_3_space_1_align_4_free() {
+        let black_pos = vec![(4, 3), (4, 4), (4, 5), (4, 7), (4, 8), (4, 9), (4, 10)];
+        let white_pos = vec![];
+        let mut white_take = 0_isize;
+        let mut black_take = 0_isize;
+        let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
+            ((4, 2), TypeOfThreat::FOUR_O, vec![]),
+            ((4, 1), TypeOfThreat::FOUR_SO, vec![(4, 2)]),
+            ((4, 6), TypeOfThreat::TWO_TAKE, vec![]),
+        ];
+        assert!(test_threat_3(
+            white_pos,
+            black_pos,
+            &mut white_take,
+            &mut black_take,
+            (4, 3),
+            Some(false),
+            expected_result
+        ))
+    }
+
+    // Initial configuration:
+    // ___________________
+    // ___________________
+    // ___________________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊖______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+
+    // Details: [dir:3]
+    // ___________________
+    // ___________________
+    // ____⊛______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊖______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,2), TypeOfThreat::FOUR_O, vec![])
+
+    // Details: [dir:3]
+    // ___________________
+    // ____⊛______________
+    // ____⊙______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊖______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,1), TypeOfThreat::FOUR_SO, vec![(4,2)])
+
+    // Details: [dir:3]
+    // ___________________
+    // ___________________
+    // ___________________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊛______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊖______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,6), TypeOfThreat::TWO_TAKE, vec![])
+    // _000_0000#
+    #[test]
+    fn threat_connect_3_space_1_align_4_blocked_simple() {
+        let black_pos = vec![(4, 3), (4, 4), (4, 5), (4, 7), (4, 8), (4, 9), (4, 10)];
+        let white_pos = vec![(4, 11)];
+        let mut white_take = 0_isize;
+        let mut black_take = 0_isize;
+        let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
+            ((4, 2), TypeOfThreat::FOUR_O, vec![]),
+            ((4, 1), TypeOfThreat::FOUR_SO, vec![(4, 2)]),
+            ((4, 6), TypeOfThreat::TWO_TAKE, vec![]),
+        ];
+        assert!(test_threat_3(
+            white_pos,
+            black_pos,
+            &mut white_take,
+            &mut black_take,
+            (4, 3),
+            Some(false),
+            expected_result
+        ))
+    }
+
+    // Initial configuration:
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+
+    // Details: [dir:3]
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊛______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,4), TypeOfThreat::TWO_TAKE, vec![])
+
+    // Details: [dir:3]
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊛______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,8), TypeOfThreat::FOUR_O, vec![])
+
+    // Details: [dir:3]
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊙______________
+    // ____⊛______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,9), TypeOfThreat::FOUR_SO, vec![(4,8)])
+    // _000_0000|
+    #[test]
+    fn threat_connect_3_space_1_align_4_edged() {
+        let black_pos = vec![(4, 0), (4, 1), (4, 2), (4, 3), (4, 5), (4, 6), (4, 7)];
+        let white_pos = vec![];
+        let mut white_take = 0_isize;
+        let mut black_take = 0_isize;
+        let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
+            ((4, 4), TypeOfThreat::TWO_TAKE, vec![]),
+            ((4, 8), TypeOfThreat::FOUR_O, vec![]),
+            ((4, 9), TypeOfThreat::FOUR_SO, vec![(4, 8)]),
+        ];
+        assert!(test_threat_3(
+            white_pos,
+            black_pos,
+            &mut white_take,
+            &mut black_take,
+            (4, 5),
+            Some(false),
+            expected_result
+        ))
+    }
+
+    // _000___
     // Initial configuration:
     // ___________________
     // ___________________
@@ -5195,8 +6706,8 @@ mod tests {
     // DEFENSIVE_MOVE:
     // ((4,7), TypeOfThreat::FOUR_SO, vec![(4,6)])
     #[test]
-    fn threat_connect_3_free() {
-        let mut black_pos = vec![(4, 4), (4, 3), (4, 5)];
+    fn threat_connect_3_space_2_free() {
+        let black_pos = vec![(4, 3), (4, 4), (4, 5)];
         let white_pos = vec![];
         let mut white_take = 0_isize;
         let mut black_take = 0_isize;
@@ -5217,6 +6728,1519 @@ mod tests {
         ))
     }
 
+    // Initial configuration:
+    // ___________________
+    // ___________________
+    // ___________________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ___________________
+    // ____⊖______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+
+    // Details: [dir:3]
+    // ___________________
+    // ___________________
+    // ____⊛______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ___________________
+    // ____⊖______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,2), TypeOfThreat::FOUR_O, vec![])
+
+    // Details: [dir:3]
+    // ___________________
+    // ____⊛______________
+    // ____⊙______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ___________________
+    // ____⊖______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,1), TypeOfThreat::FOUR_SO, vec![(4,2)])
+
+    // Details: [dir:3]
+    // ___________________
+    // ___________________
+    // ___________________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊛______________
+    // ___________________
+    // ____⊖______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,6), TypeOfThreat::FOUR_O, vec![])
+
+    // Details: [dir:3]
+    // ___________________
+    // ___________________
+    // ___________________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊙______________
+    // ____⊛______________
+    // ____⊖______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,7), TypeOfThreat::FOUR_SO, vec![(4,6)])
+    // _000__#
     #[test]
-    fn threat_connect_3_free() {}
+    fn threat_connect_3_space_2_blocked_simple() {
+        let black_pos = vec![(4, 3), (4, 4), (4, 5)];
+        let white_pos = vec![(4, 8)];
+        let mut white_take = 0_isize;
+        let mut black_take = 0_isize;
+        let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
+            ((4, 2), TypeOfThreat::FOUR_O, vec![]),
+            ((4, 1), TypeOfThreat::FOUR_SO, vec![(4, 2)]),
+            ((4, 6), TypeOfThreat::FOUR_O, vec![]),
+            ((4, 7), TypeOfThreat::FOUR_SO, vec![(4, 6)]),
+        ];
+        assert!(test_threat_3(
+            white_pos,
+            black_pos,
+            &mut white_take,
+            &mut black_take,
+            (4, 3),
+            Some(false),
+            expected_result
+        ))
+    }
+
+    // Initial configuration:
+    // ___________________
+    // ___________________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+
+    // Details: [dir:3]
+    // ___________________
+    // ____⊛______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,1), TypeOfThreat::FOUR_O, vec![])
+
+    // Details: [dir:3]
+    // ____⊛______________
+    // ____⊙______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,0), TypeOfThreat::FOUR_SO, vec![(4,1)])
+
+    // Details: [dir:3]
+    // ___________________
+    // ___________________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊛______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,5), TypeOfThreat::FOUR_O, vec![])
+
+    // Details: [dir:3]
+    // ___________________
+    // ___________________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊙______________
+    // ____⊛______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,6), TypeOfThreat::FOUR_SO, vec![(4,5)])
+    // _000__|
+    #[test]
+    fn threat_connect_3_space_2_edged() {
+        let black_pos = vec![(4, 2), (4, 3), (4, 4)];
+        let white_pos = vec![];
+        let mut white_take = 0_isize;
+        let mut black_take = 0_isize;
+        let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
+            ((4, 1), TypeOfThreat::FOUR_O, vec![]),
+            ((4, 0), TypeOfThreat::FOUR_SO, vec![(4, 1)]),
+            ((4, 5), TypeOfThreat::FOUR_O, vec![]),
+            ((4, 6), TypeOfThreat::FOUR_SO, vec![(4, 5)]),
+        ];
+        assert!(test_threat_3(
+            white_pos,
+            black_pos,
+            &mut white_take,
+            &mut black_take,
+            (4, 3),
+            Some(false),
+            expected_result
+        ))
+    }
+
+    // Initial configuration:
+    // ___________________
+    // ___________________
+    // ___________________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ___________________
+    // ____⊕______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+
+    // Details: [dir:3]
+    // ___________________
+    // ___________________
+    // ____⊛______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ___________________
+    // ____⊕______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,2), TypeOfThreat::FOUR_O, vec![])
+
+    // Details: [dir:3]
+    // ___________________
+    // ____⊛______________
+    // ____⊙______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ___________________
+    // ____⊕______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,1), TypeOfThreat::FOUR_SO, vec![(4,2)])
+
+    // Details: [dir:3]
+    // ___________________
+    // ___________________
+    // ___________________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊛______________
+    // ___________________
+    // ____⊕______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,6), TypeOfThreat::FOUR_O, vec![])
+
+    // Details: [dir:3]
+    // ___________________
+    // ___________________
+    // ___________________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊙______________
+    // ____⊛______________
+    // ____⊕______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,7), TypeOfThreat::FOUR_SO, vec![(4,6)])
+    // _000__0_
+    #[test]
+    fn threat_connect_3_space_2_align_1() {
+        let black_pos = vec![(4, 3), (4, 4), (4, 5), (4, 8)];
+        let white_pos = vec![];
+        let mut white_take = 0_isize;
+        let mut black_take = 0_isize;
+        let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
+            ((4, 2), TypeOfThreat::FOUR_O, vec![]),
+            ((4, 1), TypeOfThreat::FOUR_SO, vec![(4, 2)]),
+            ((4, 6), TypeOfThreat::FOUR_O, vec![]),
+            ((4, 7), TypeOfThreat::FOUR_SO, vec![(4, 6)]),
+        ];
+        assert!(test_threat_3(
+            white_pos,
+            black_pos,
+            &mut white_take,
+            &mut black_take,
+            (4, 3),
+            Some(false),
+            expected_result
+        ))
+    }
+
+    // Initial configuration:
+    // ___________________
+    // ___________________
+    // ____⊖______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ____⊕______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+
+    // Details: [dir:3]
+    // ___________________
+    // ___________________
+    // ____⊖______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊛______________
+    // ____⊕______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,6), TypeOfThreat::FIVE_TAKE, vec![])
+    // #000_0_
+    #[test]
+    fn threat_connect_3_space_1_align_1_blocked_free() {
+        let black_pos = vec![(4, 3), (4, 4), (4, 5), (4, 7)];
+        let white_pos = vec![(4, 2)];
+        let mut white_take = 0_isize;
+        let mut black_take = 0_isize;
+        let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> =
+            vec![((4, 6), TypeOfThreat::FIVE_TAKE, vec![])];
+        assert!(test_threat_3(
+            white_pos,
+            black_pos,
+            &mut white_take,
+            &mut black_take,
+            (4, 3),
+            Some(false),
+            expected_result
+        ))
+    }
+
+    // Initial configuration:
+    // ___________________
+    // ___________________
+    // ____⊖______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ____⊕______________
+    // ____⊖______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+
+    // Details: [dir:3]
+    // ___________________
+    // ___________________
+    // ____⊖______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊛______________
+    // ____⊕______________
+    // ____⊖______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,6), TypeOfThreat::FIVE_TAKE, vec![])
+    // #000_0#
+    #[test]
+    fn threat_connect_3_space_1_align_1_blocked_blocked() {
+        let black_pos = vec![(4, 3), (4, 4), (4, 5), (4, 7)];
+        let white_pos = vec![(4, 2), (4, 8)];
+        let mut white_take = 0_isize;
+        let mut black_take = 0_isize;
+        let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> =
+            vec![((4, 6), TypeOfThreat::FIVE_TAKE, vec![])];
+        assert!(test_threat_3(
+            white_pos,
+            black_pos,
+            &mut white_take,
+            &mut black_take,
+            (4, 3),
+            Some(false),
+            expected_result
+        ))
+    }
+
+    // Initial configuration:
+    // ____⊕______________
+    // ___________________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊖______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+
+    // Details: [dir:3]
+    // ____⊕______________
+    // ____⊛______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊖______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,1), TypeOfThreat::FIVE_TAKE, vec![])
+    // #000_0|
+    #[test]
+    fn threat_connect_3_space_1_align_1_blocked_edged() {
+        let black_pos = vec![(4, 0), (4, 2), (4, 3), (4, 4)];
+        let white_pos = vec![(4, 5)];
+        let mut white_take = 0_isize;
+        let mut black_take = 0_isize;
+        let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> =
+            vec![((4, 1), TypeOfThreat::FIVE_TAKE, vec![])];
+        assert!(test_threat_3(
+            white_pos,
+            black_pos,
+            &mut white_take,
+            &mut black_take,
+            (4, 3),
+            Some(false),
+            expected_result
+        ))
+    }
+
+    // Initial configuration:
+    // ___________________
+    // ___________________
+    // ____⊖______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+
+    // Details: [dir:3]
+    // ___________________
+    // ___________________
+    // ____⊖______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊛______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,6), TypeOfThreat::FOUR_TAKE, vec![])
+    // #000_00_
+    #[test]
+    fn threat_connect_3_space_1_align_2_blocked_free() {
+        let black_pos = vec![(4, 3), (4, 4), (4, 5), (4, 7), (4, 8)];
+        let white_pos = vec![(4, 2)];
+        let mut white_take = 0_isize;
+        let mut black_take = 0_isize;
+        let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> =
+            vec![((4, 6), TypeOfThreat::FOUR_TAKE, vec![])];
+        assert!(test_threat_3(
+            white_pos,
+            black_pos,
+            &mut white_take,
+            &mut black_take,
+            (4, 3),
+            Some(false),
+            expected_result
+        ))
+    }
+
+    // Initial configuration:
+    // ___________________
+    // ___________________
+    // ____⊖______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊖______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+
+    // Details: [dir:3]
+    // ___________________
+    // ___________________
+    // ____⊖______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊛______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊖______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,6), TypeOfThreat::FOUR_TAKE, vec![])
+    // #000_00#
+    #[test]
+    fn threat_connect_3_space_1_align_2_blocked_blocked() {
+        let black_pos = vec![(4, 3), (4, 4), (4, 5), (4, 7), (4, 8)];
+        let white_pos = vec![(4, 2), (4, 9)];
+        let mut white_take = 0_isize;
+        let mut black_take = 0_isize;
+        let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> =
+            vec![((4, 6), TypeOfThreat::FOUR_TAKE, vec![])];
+        assert!(test_threat_3(
+            white_pos,
+            black_pos,
+            &mut white_take,
+            &mut black_take,
+            (4, 3),
+            Some(false),
+            expected_result
+        ))
+    }
+
+    // Initial configuration:
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊖______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+
+    // Details: [dir:3]
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊛______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊖______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,2), TypeOfThreat::FOUR_TAKE, vec![])
+    // #000_00|
+    #[test]
+    fn threat_connect_3_space_1_align_2_blocked_edged() {
+        let black_pos = vec![(4, 0), (4, 1), (4, 3), (4, 4), (4, 5)];
+        let white_pos = vec![(4, 6)];
+        let mut white_take = 0_isize;
+        let mut black_take = 0_isize;
+        let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> =
+            vec![((4, 2), TypeOfThreat::FOUR_TAKE, vec![])];
+        assert!(test_threat_3(
+            white_pos,
+            black_pos,
+            &mut white_take,
+            &mut black_take,
+            (4, 3),
+            Some(false),
+            expected_result
+        ))
+    }
+
+    // Initial configuration:
+    // ___________________
+    // ___________________
+    // ____⊖______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+
+    // Details: [dir:3]
+    // ___________________
+    // ___________________
+    // ____⊖______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊛______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,6), TypeOfThreat::THREE_TAKE, vec![])
+    // #000_000_
+    #[test]
+    fn threat_connect_3_space_1_align_3_blocked_free() {
+        let black_pos = vec![(4, 3), (4, 4), (4, 5), (4, 7), (4, 8), (4, 9)];
+        let white_pos = vec![(4, 2)];
+        let mut white_take = 0_isize;
+        let mut black_take = 0_isize;
+        let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> =
+            vec![((4, 6), TypeOfThreat::THREE_TAKE, vec![])];
+        assert!(test_threat_3(
+            white_pos,
+            black_pos,
+            &mut white_take,
+            &mut black_take,
+            (4, 3),
+            Some(false),
+            expected_result
+        ))
+    }
+
+    // Initial configuration:
+    // ___________________
+    // ___________________
+    // ____⊖______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊖______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+
+    // Details: [dir:3]
+    // ___________________
+    // ___________________
+    // ____⊖______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊛______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊖______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,6), TypeOfThreat::THREE_TAKE, vec![])
+    // #000_000#
+    #[test]
+    fn threat_connect_3_space_1_align_3_blocked_blocked() {
+        let black_pos = vec![(4, 3), (4, 4), (4, 5), (4, 7), (4, 8), (4, 9)];
+        let white_pos = vec![(4, 2), (4, 10)];
+        let mut white_take = 0_isize;
+        let mut black_take = 0_isize;
+        let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> =
+            vec![((4, 6), TypeOfThreat::THREE_TAKE, vec![])];
+        assert!(test_threat_3(
+            white_pos,
+            black_pos,
+            &mut white_take,
+            &mut black_take,
+            (4, 3),
+            Some(false),
+            expected_result
+        ))
+    }
+
+    // Initial configuration:
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊖______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+
+    // Details: [dir:3]
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊛______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊖______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,3), TypeOfThreat::THREE_TAKE, vec![])
+    // #000_000|
+    #[test]
+    fn threat_connect_3_space_1_align_3_blocked_edged() {
+        let black_pos = vec![(4, 0), (4, 1), (4, 2), (4, 4), (4, 5), (4, 6)];
+        let white_pos = vec![(4, 7)];
+        let mut white_take = 0_isize;
+        let mut black_take = 0_isize;
+        let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> =
+            vec![((4, 3), TypeOfThreat::THREE_TAKE, vec![])];
+        assert!(test_threat_3(
+            white_pos,
+            black_pos,
+            &mut white_take,
+            &mut black_take,
+            (4, 4),
+            Some(false),
+            expected_result
+        ))
+    }
+
+    // Initial configuration:
+    // ___________________
+    // ___________________
+    // ____⊖______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+
+    // Details: [dir:3]
+    // ___________________
+    // ___________________
+    // ____⊖______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊛______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,6), TypeOfThreat::TWO_TAKE, vec![])
+    // #000_0000_
+    #[test]
+    fn threat_connect_3_space_1_align_4_blocked_free() {
+        let black_pos = vec![(4, 3), (4, 4), (4, 5), (4, 7), (4, 8), (4, 9), (4, 10)];
+        let white_pos = vec![(4, 2)];
+        let mut white_take = 0_isize;
+        let mut black_take = 0_isize;
+        let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> =
+            vec![((4, 6), TypeOfThreat::TWO_TAKE, vec![])];
+        assert!(test_threat_3(
+            white_pos,
+            black_pos,
+            &mut white_take,
+            &mut black_take,
+            (4, 3),
+            Some(false),
+            expected_result
+        ))
+    }
+
+    // Initial configuration:
+    // ___________________
+    // ___________________
+    // ____⊖______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊖______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+
+    // Details: [dir:3]
+    // ___________________
+    // ___________________
+    // ____⊖______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊛______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊖______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,6), TypeOfThreat::TWO_TAKE, vec![])
+    // #000_0000#
+    #[test]
+    fn threat_connect_3_space_1_align_4_blocked_blocked() {
+        let black_pos = vec![(4, 3), (4, 4), (4, 5), (4, 7), (4, 8), (4, 9), (4, 10)];
+        let white_pos = vec![(4, 2), (4, 11)];
+        let mut white_take = 0_isize;
+        let mut black_take = 0_isize;
+        let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> =
+            vec![((4, 6), TypeOfThreat::TWO_TAKE, vec![])];
+        assert!(test_threat_3(
+            white_pos,
+            black_pos,
+            &mut white_take,
+            &mut black_take,
+            (4, 3),
+            Some(false),
+            expected_result
+        ))
+    }
+
+    // Initial configuration:
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊖______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+
+    // Details: [dir:3]
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊛______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊖______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,4), TypeOfThreat::TWO_TAKE, vec![])
+    // #000_0000|
+    #[test]
+    fn threat_connect_3_space_1_align_4_blocked_edged() {
+        let black_pos = vec![(4, 0), (4, 1), (4, 2), (4, 3), (4, 5), (4, 6), (4, 7)];
+        let white_pos = vec![(4, 8)];
+        let mut white_take = 0_isize;
+        let mut black_take = 0_isize;
+        let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> =
+            vec![((4, 4), TypeOfThreat::TWO_TAKE, vec![])];
+        assert!(test_threat_3(
+            white_pos,
+            black_pos,
+            &mut white_take,
+            &mut black_take,
+            (4, 5),
+            Some(false),
+            expected_result
+        ))
+    }
+
+    // Initial configuration:
+    // ___________________
+    // ___________________
+    // ____⊖______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+
+    // Details: [dir:3]
+    // ___________________
+    // ___________________
+    // ____⊖______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊛______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,6), TypeOfThreat::FOUR_SO, vec![])
+
+    // Details: [dir:3]
+    // ___________________
+    // ___________________
+    // ____⊖______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊙______________
+    // ____⊛______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,7), TypeOfThreat::FOUR_SO, vec![(4,6)])
+    // #000___
+    #[test]
+    fn threat_connect_3_space_2_blocked_free() {
+        let black_pos = vec![(4, 3), (4, 4), (4, 5)];
+        let white_pos = vec![(4, 2)];
+        let mut white_take = 0_isize;
+        let mut black_take = 0_isize;
+        let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
+            ((4, 6), TypeOfThreat::FOUR_SO, vec![]),
+            ((4, 7), TypeOfThreat::FOUR_SO, vec![(4, 6)]),
+        ];
+        assert!(test_threat_3(
+            white_pos,
+            black_pos,
+            &mut white_take,
+            &mut black_take,
+            (4, 3),
+            Some(false),
+            expected_result
+        ))
+    }
+
+    // Initial configuration:
+    // ___________________
+    // ___________________
+    // ____⊖______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ___________________
+    // ____⊖______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+
+    // Details: [dir:3]
+    // ___________________
+    // ___________________
+    // ____⊖______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊛______________
+    // ___________________
+    // ____⊖______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,6), TypeOfThreat::FOUR_SO, vec![])
+
+    // Details: [dir:3]
+    // ___________________
+    // ___________________
+    // ____⊖______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊙______________
+    // ____⊛______________
+    // ____⊖______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,7), TypeOfThreat::FOUR_SO, vec![(4,6)])
+    // #000__#
+    #[test]
+    fn threat_connect_3_space_2_blocked_blocked() {
+        let black_pos = vec![(4, 3), (4, 4), (4, 5)];
+        let white_pos = vec![(4, 2), (4, 8)];
+        let mut white_take = 0_isize;
+        let mut black_take = 0_isize;
+        let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
+            ((4, 6), TypeOfThreat::FOUR_SO, vec![]),
+            ((4, 7), TypeOfThreat::FOUR_SO, vec![(4, 6)]),
+        ];
+        assert!(test_threat_3(
+            white_pos,
+            black_pos,
+            &mut white_take,
+            &mut black_take,
+            (4, 3),
+            Some(false),
+            expected_result
+        ))
+    }
+
+    // Initial configuration:
+    // ___________________
+    // ___________________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊖______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+
+    // Details: [dir:3]
+    // ___________________
+    // ____⊛______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊖______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,1), TypeOfThreat::FOUR_SO, vec![])
+
+    // Details: [dir:3]
+    // ____⊛______________
+    // ____⊙______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊖______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,0), TypeOfThreat::FOUR_SO, vec![(4,1)])
+    // #000__|
+    #[test]
+    fn threat_connect_3_space_2_blocked_edged() {
+        let black_pos = vec![(4, 2), (4, 3), (4, 4)];
+        let white_pos = vec![(4, 5)];
+        let mut white_take = 0_isize;
+        let mut black_take = 0_isize;
+        let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
+            ((4, 1), TypeOfThreat::FOUR_SO, vec![]),
+            ((4, 0), TypeOfThreat::FOUR_SO, vec![(4, 1)]),
+        ];
+        assert!(test_threat_3(
+            white_pos,
+            black_pos,
+            &mut white_take,
+            &mut black_take,
+            (4, 3),
+            Some(false),
+            expected_result
+        ))
+    }
+
+    // Initial configuration:
+    // ___________________
+    // ____⊖______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ___________________
+    // ____⊕______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+
+    // Details: [dir:3]
+    // ___________________
+    // ____⊖______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊛______________
+    // ___________________
+    // ____⊕______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,5), TypeOfThreat::FOUR_SO, vec![])
+
+    // Details: [dir:3]
+    // ___________________
+    // ____⊖______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊙______________
+    // ____⊛______________
+    // ____⊕______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,6), TypeOfThreat::FOUR_SO, vec![(4,5)])
+    // #000__0?
+    #[test]
+    fn threat_connect_3_space_2_blocked_align_1() {
+        let black_pos = vec![(4, 2), (4, 3), (4, 4), (4, 7)];
+        let white_pos = vec![(4, 1)];
+        let mut white_take = 0_isize;
+        let mut black_take = 0_isize;
+        let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
+            ((4, 5), TypeOfThreat::FOUR_SO, vec![]),
+            ((4, 6), TypeOfThreat::FOUR_SO, vec![(4, 5)]),
+        ];
+        assert!(test_threat_3(
+            white_pos,
+            black_pos,
+            &mut white_take,
+            &mut black_take,
+            (4, 3),
+            Some(false),
+            expected_result
+        ))
+    }
 }
