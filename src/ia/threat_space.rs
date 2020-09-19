@@ -108,7 +108,10 @@ enum TypeOfThreat {
     FOUR_O,
     FOUR_SO,
     FIVE_TAKE,
-    FIVE,
+    FOUR_TAKE,
+    THREE_TAKE,
+    TWO_TAKE,
+    ONE_TAKE,
     TAKE
 }
 
@@ -343,12 +346,12 @@ fn explore_and_find_threats(
      }
      // DEBUG
     //  println!("EXPLORE AND FIND THREATS");
-     for x in 0..tmp_positions.len() {
-        //  println!("New position");
-        for y in 0..tmp_positions[x].len() {
-            // println!("({},{})", tmp_positions[x][y].0, tmp_positions[x][y].1);
-        }
-     }
+    //  for x in 0..tmp_positions.len() {
+    //     //  println!("New position");
+    //     for y in 0..tmp_positions[x].len() {
+    //         // println!("({},{})", tmp_positions[x][y].0, tmp_positions[x][y].1);
+    //     }
+    //  }
      all_threats.push(
         (
             (*new_line as usize, *new_col as usize),
@@ -376,7 +379,7 @@ fn manage_so(
     mut new_col: isize,
     way:isize,
     opp_way: isize,
-    threat: TypeOfThreat,
+    // threat: TypeOfThreat,
     all_threats:&mut Vec<((usize,usize), TypeOfThreat, Vec<(usize,usize)>)>,
 ) -> () {
     explore_align!(board, record, new_line, new_col, actual_player, dir, way);
@@ -389,12 +392,12 @@ fn manage_so(
     if valid_coord!(nline, ncol) && board[nline as usize][ncol as usize] == actual_player
         && score_board[nline as usize][ncol as usize][dir].0 > 0 {
             match score_board[nline as usize][ncol as usize][dir].0 {
-                x if x >= 5 => {  }, // WIN FOR SURE!!!!!!!!
+                x if x >= 5 => {  }, // Instant win, no need to do manage it, we see it in the recursive!
                 4 => { 
                     all_threats.push(
                         (
                             (new_line as usize, new_col as usize),
-                            threat,
+                            TypeOfThreat::ONE_TAKE,
                             capture_coordinates(
                                 score_board,
                                 board,
@@ -406,14 +409,14 @@ fn manage_so(
                         )
                     );
                  },
-                3 => explore_and_find_threats(score_board, board, 2, opp_way, &cline, &ccol, threat, actual_player, dir, all_threats, &new_line, &new_col),
-                2 => explore_and_find_threats(score_board, board, 3, opp_way, &cline, &ccol, threat, actual_player, dir, all_threats, &new_line, &new_col),
-                1 => explore_and_find_threats(score_board, board, 4, opp_way, &cline, &ccol, threat, actual_player, dir, all_threats, &new_line, &new_col),
+                3 => explore_and_find_threats(score_board, board, 2, opp_way, &cline, &ccol, TypeOfThreat::TWO_TAKE, actual_player, dir, all_threats, &new_line, &new_col),
+                2 => explore_and_find_threats(score_board, board, 3, opp_way, &cline, &ccol, TypeOfThreat::THREE_TAKE, actual_player, dir, all_threats, &new_line, &new_col),
+                1 => explore_and_find_threats(score_board, board, 4, opp_way, &cline, &ccol, TypeOfThreat::FOUR_TAKE, actual_player, dir, all_threats, &new_line, &new_col),
                 _ => unreachable!()
             }  
     } else {
         // println!("WINFORSURE");
-        explore_and_find_threats(score_board, board, 5, opp_way, &cline, &ccol, threat, actual_player, dir, all_threats, &new_line, &new_col);
+        explore_and_find_threats(score_board, board, 5, opp_way, &cline, &ccol, TypeOfThreat::FIVE_TAKE, actual_player, dir, all_threats, &new_line, &new_col);
     }
 }
 
@@ -443,14 +446,18 @@ fn connect_4(
         // threat: TypeOfThreat,
         // all_threats: &mut Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)>,
         // (Some(true),Some(false)) | (None,Some(false)) => { println!("oulala"); manage_so(score_board, board, record, actual_player, dir, new_line, new_col, 1, -1, TypeOfThreat::FOUR_SO, &mut all_threats); all_threats },
-        (Some(true),Some(false)) | (None,Some(false)) => { manage_so(score_board, board, record, actual_player, dir, new_line, new_col, 1, -1, TypeOfThreat::FOUR_SO, &mut all_threats); all_threats },
+        // (Some(true),Some(false)) | (None,Some(false)) => { manage_so(score_board, board, record, actual_player, dir, new_line, new_col, 1, -1, TypeOfThreat::FOUR_SO, &mut all_threats); all_threats },
+        (Some(true),Some(false)) | (None,Some(false)) => { manage_so(score_board, board, record, actual_player, dir, new_line, new_col, 1, -1, &mut all_threats); all_threats },
         // (Some(false),Some(true)) | (Some(false),None) => { println!("ouille ouille ouille"); manage_so(score_board, board, record, actual_player, dir, new_line, new_col, -1, 1, TypeOfThreat::FOUR_SO, &mut all_threats); all_threats },
-        (Some(false),Some(true)) | (Some(false),None) => { manage_so(score_board, board, record, actual_player, dir, new_line, new_col, -1, 1, TypeOfThreat::FOUR_SO, &mut all_threats); all_threats },
+        // (Some(false),Some(true)) | (Some(false),None) => { manage_so(score_board, board, record, actual_player, dir, new_line, new_col, -1, 1, TypeOfThreat::FOUR_SO, &mut all_threats); all_threats },
+        (Some(false),Some(true)) | (Some(false),None) => { manage_so(score_board, board, record, actual_player, dir, new_line, new_col, -1, 1, &mut all_threats); all_threats },
         (Some(false),Some(false)) => {
             let new_line2: isize = line as isize;
             let new_col2: isize = col as isize;
-            manage_so(score_board, board, record, actual_player, dir, new_line, new_col, -1, 1, TypeOfThreat::FOUR_O, &mut all_threats);
-            manage_so(score_board, board, record, actual_player, dir, new_line2, new_col2, 1, -1, TypeOfThreat::FOUR_O, &mut all_threats);
+            // manage_so(score_board, board, record, actual_player, dir, new_line, new_col, -1, 1, TypeOfThreat::FOUR_O, &mut all_threats);
+            // manage_so(score_board, board, record, actual_player, dir, new_line2, new_col2, 1, -1, TypeOfThreat::FOUR_O, &mut all_threats);
+            manage_so(score_board, board, record, actual_player, dir, new_line, new_col, -1, 1, &mut all_threats);
+            manage_so(score_board, board, record, actual_player, dir, new_line2, new_col2, 1, -1, &mut all_threats);
             all_threats
             },
         _ => { all_threats },
@@ -787,12 +794,15 @@ mod tests {
 
                 print!("// (({},{}), ", defensive_move.0, defensive_move.1);
                 print!("TypeOfThreat::{}, vec![", match type_of_threat {
-                    TypeOfThreat::FIVE => "FIVE",
-                    TypeOfThreat::FIVE_TAKE => "FIVE_TAKE",
-                    TypeOfThreat::FOUR_O => "FOUR_O",
-                    TypeOfThreat::FOUR_SO => "FOUR_SO",
-                    TypeOfThreat::TAKE => "TAKE",
-                    TypeOfThreat::THREE_O => "THREE_O",
+                TypeOfThreat::FIVE_TAKE => "FIVE_TAKE",
+                TypeOfThreat::FOUR_TAKE => "FOUR_TAKE",
+                TypeOfThreat::THREE_TAKE => "THREE_TAKE",
+                TypeOfThreat::TWO_TAKE => "TWO_TAKE",
+                TypeOfThreat::ONE_TAKE => "ONE_TAKE",
+                TypeOfThreat::FOUR_O => "FOUR_O",
+                TypeOfThreat::FOUR_SO => "FOUR_SO",
+                TypeOfThreat::TAKE => "TAKE",
+                TypeOfThreat::THREE_O => "THREE_O",
                 });
                 opp.iter().enumerate().for_each(|(i,(x,y))| if i == (opp.len() - 1)  { print!("({},{})", x, y) } else { print!("({},{}),", x, y) });
                 println!("])");
@@ -805,8 +815,11 @@ mod tests {
         global_results.iter().enumerate().for_each(|(j,(defensive_move, type_of_threat, opp))| { 
                 print!("(({},{}), ", defensive_move.0, defensive_move.1);
                 print!("TypeOfThreat::{}, vec![", match type_of_threat {
-                TypeOfThreat::FIVE => "FIVE",
                 TypeOfThreat::FIVE_TAKE => "FIVE_TAKE",
+                TypeOfThreat::FOUR_TAKE => "FOUR_TAKE",
+                TypeOfThreat::THREE_TAKE => "THREE_TAKE",
+                TypeOfThreat::TWO_TAKE => "TWO_TAKE",
+                TypeOfThreat::ONE_TAKE => "ONE_TAKE",
                 TypeOfThreat::FOUR_O => "FOUR_O",
                 TypeOfThreat::FOUR_SO => "FOUR_SO",
                 TypeOfThreat::TAKE => "TAKE",
@@ -918,8 +931,8 @@ mod tests {
         let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = 
             vec![
-                ((9,4), TypeOfThreat::FOUR_O, vec![]),
-                ((9,9), TypeOfThreat::FOUR_O, vec![])
+                ((9,4), TypeOfThreat::FIVE_TAKE, vec![]),
+                ((9,9), TypeOfThreat::FIVE_TAKE, vec![])
                 ];
         assert!(test_threat(
             white_pos,
@@ -1006,8 +1019,8 @@ mod tests {
         let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = 
             vec![
-                ((9,4), TypeOfThreat::FOUR_O, vec![(10,8)]),
-                ((9,9), TypeOfThreat::FOUR_O, vec![(10,8)])
+                ((9,4), TypeOfThreat::FIVE_TAKE, vec![(10,8)]),
+                ((9,9), TypeOfThreat::FIVE_TAKE, vec![(10,8)])
                 ];
         assert!(test_threat(
             white_pos,
@@ -1094,8 +1107,8 @@ mod tests {
         let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = 
             vec![
-                ((9,4), TypeOfThreat::FOUR_O, vec![(10,4),(10,6),(10,8)]),
-                ((9,9), TypeOfThreat::FOUR_O, vec![(10,9),(10,8),(10,6)])
+                ((9,4), TypeOfThreat::FIVE_TAKE, vec![(10,4),(10,6),(10,8)]),
+                ((9,9), TypeOfThreat::FIVE_TAKE, vec![(10,9),(10,8),(10,6)])
             ];
         assert!(test_threat(
             white_pos,
@@ -1182,8 +1195,8 @@ mod tests {
         let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = 
             vec![
-                ((9,4), TypeOfThreat::FOUR_O, vec![]),
-                ((9,9), TypeOfThreat::FOUR_O, vec![(10,9)])
+                ((9,4), TypeOfThreat::FIVE_TAKE, vec![]),
+                ((9,9), TypeOfThreat::FIVE_TAKE, vec![(10,9)])
             ];
         assert!(test_threat(
             white_pos,
@@ -1270,8 +1283,8 @@ mod tests {
         let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = 
             vec![
-                ((9,4), TypeOfThreat::FOUR_O, vec![]),
-                ((9,9), TypeOfThreat::FOUR_O, vec![(8,9)])
+                ((9,4), TypeOfThreat::FIVE_TAKE, vec![]),
+                ((9,9), TypeOfThreat::FIVE_TAKE, vec![(8,9)])
             ];
         assert!(test_threat(
             white_pos,
@@ -1358,8 +1371,8 @@ mod tests {
         let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = 
             vec![
-                ((9,4), TypeOfThreat::FOUR_O, vec![]),
-                ((9,9), TypeOfThreat::FOUR_O, vec![(7,9)])
+                ((9,4), TypeOfThreat::FIVE_TAKE, vec![]),
+                ((9,9), TypeOfThreat::FIVE_TAKE, vec![(7,9)])
             ];
         assert!(test_threat(
             white_pos,
@@ -1446,8 +1459,8 @@ mod tests {
         let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = 
             vec![
-                ((9,4), TypeOfThreat::FOUR_O, vec![]),
-                ((9,9), TypeOfThreat::FOUR_O, vec![])
+                ((9,4), TypeOfThreat::FIVE_TAKE, vec![]),
+                ((9,9), TypeOfThreat::FIVE_TAKE, vec![])
             ];
         assert!(test_threat(
             white_pos,
@@ -1534,8 +1547,8 @@ mod tests {
         let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = 
             vec![
-                ((9,4), TypeOfThreat::FOUR_O, vec![]),
-                ((9,9), TypeOfThreat::FOUR_O, vec![])
+                ((9,4), TypeOfThreat::FIVE_TAKE, vec![]),
+                ((9,9), TypeOfThreat::ONE_TAKE, vec![])
             ];
         assert!(test_threat(
             white_pos,
@@ -1622,8 +1635,8 @@ mod tests {
         let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = 
             vec![
-                ((9,4), TypeOfThreat::FOUR_O, vec![]),
-                ((9,9), TypeOfThreat::FOUR_O, vec![(7,9)])
+                ((9,4), TypeOfThreat::FIVE_TAKE, vec![]),
+                ((9,9), TypeOfThreat::ONE_TAKE, vec![(7,9)])
             ];
         assert!(test_threat(
             white_pos,
@@ -1710,8 +1723,8 @@ mod tests {
         let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = 
             vec![
-                ((9,4), TypeOfThreat::FOUR_O, vec![(7,8)]),
-                ((9,9), TypeOfThreat::FOUR_O, vec![])
+                ((9,4), TypeOfThreat::FIVE_TAKE, vec![(7,8)]),
+                ((9,9), TypeOfThreat::ONE_TAKE, vec![])
             ];
         assert!(test_threat(
             white_pos,
@@ -1791,15 +1804,15 @@ mod tests {
     // DEFENSIVE_MOVE:
     // ((2,9), TypeOfThreat::FOUR_O, vec![])
     #[test]
-    fn _fake_catch_9_in_a_row_catch_close_border() {
+    fn threat_connect_4_fake_catch_9_in_a_row_catch_close_border() {
         let mut black_pos = vec![(2,8),(2,7),(2,6),(2,5),(2,10),(2,11),(2,12),(2,13),(1,8)];
         let white_pos = vec![(3,8)];
         let mut white_take = 0_isize;
         let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = 
             vec![
-                ((2,4), TypeOfThreat::FOUR_O, vec![(0,8)]),
-                ((2,9), TypeOfThreat::FOUR_O, vec![])
+                ((2,4), TypeOfThreat::FIVE_TAKE, vec![(0,8)]),
+                ((2,9), TypeOfThreat::ONE_TAKE, vec![])
             ];
         assert!(test_threat(
             white_pos,
@@ -1880,15 +1893,15 @@ mod tests {
     // DEFENSIVE_MOVE:
     // ((2,9), TypeOfThreat::FOUR_O, vec![])
     #[test]
-    fn _fake_catch_9_in_a_row_other_position_0() {
+    fn threat_connect_4_fake_catch_9_in_a_row_other_position_0() {
         let mut black_pos = vec![(2,8),(2,7),(2,6),(2,5),(2,10),(2,11),(2,12),(2,13),(1,8)];
         let white_pos = vec![(3,8)];
         let mut white_take = 0_isize;
         let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = 
             vec![
-                ((2,4), TypeOfThreat::FOUR_O, vec![(0,8)]),
-                ((2,9), TypeOfThreat::FOUR_O, vec![])
+                ((2,4), TypeOfThreat::FIVE_TAKE, vec![(0,8)]),
+                ((2,9), TypeOfThreat::ONE_TAKE, vec![])
             ];
         assert!(test_threat(
             white_pos,
@@ -1975,8 +1988,8 @@ mod tests {
         let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = 
             vec![
-                ((2,4), TypeOfThreat::FOUR_O, vec![(0,8)]),
-                ((2,9), TypeOfThreat::FOUR_O, vec![])
+                ((2,4), TypeOfThreat::FIVE_TAKE, vec![(0,8)]),
+                ((2,9), TypeOfThreat::ONE_TAKE, vec![])
             ];
         assert!(test_threat(
             white_pos,
@@ -2063,8 +2076,8 @@ mod tests {
         let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = 
             vec![
-                ((2,4), TypeOfThreat::FOUR_O, vec![(0,8)]),
-                ((2,9), TypeOfThreat::FOUR_O, vec![])
+                ((2,4), TypeOfThreat::FIVE_TAKE, vec![(0,8)]),
+                ((2,9), TypeOfThreat::ONE_TAKE, vec![])
             ];
         assert!(test_threat(
             white_pos,
@@ -2151,8 +2164,8 @@ mod tests {
         let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = 
             vec![
-                ((2,9), TypeOfThreat::FOUR_O, vec![]),
-                ((2,14), TypeOfThreat::FOUR_O, vec![])
+                ((2,9), TypeOfThreat::ONE_TAKE, vec![]),
+                ((2,14), TypeOfThreat::FIVE_TAKE, vec![])
             ];
         assert!(test_threat(
             white_pos,
@@ -2239,8 +2252,8 @@ mod tests {
         let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = 
             vec![
-                ((2,9), TypeOfThreat::FOUR_O, vec![]),
-                ((2,14), TypeOfThreat::FOUR_O, vec![])
+                ((2,9), TypeOfThreat::ONE_TAKE, vec![]),
+                ((2,14), TypeOfThreat::FIVE_TAKE, vec![])
             ];
         assert!(test_threat(
             white_pos,
@@ -2327,8 +2340,8 @@ mod tests {
         let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = 
             vec![
-                ((2,9), TypeOfThreat::FOUR_O, vec![]),
-                ((2,14), TypeOfThreat::FOUR_O, vec![])
+                ((2,9), TypeOfThreat::ONE_TAKE, vec![]),
+                ((2,14), TypeOfThreat::FIVE_TAKE, vec![])
             ];
         assert!(test_threat(
             white_pos,
@@ -2416,8 +2429,8 @@ mod tests {
         let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = 
             vec![
-                ((2,9), TypeOfThreat::FOUR_O, vec![]),
-                ((2,14), TypeOfThreat::FOUR_O, vec![])
+                ((2,9), TypeOfThreat::ONE_TAKE, vec![]),
+                ((2,14), TypeOfThreat::FIVE_TAKE, vec![])
             ];
         assert!(test_threat(
             white_pos,
@@ -2504,8 +2517,8 @@ mod tests {
         let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = 
             vec![
-                ((1,4), TypeOfThreat::FOUR_O, vec![]),
-                ((1,9), TypeOfThreat::FOUR_O, vec![])
+                ((1,4), TypeOfThreat::FIVE_TAKE, vec![]),
+                ((1,9), TypeOfThreat::ONE_TAKE, vec![])
             ];
         assert!(test_threat(
             white_pos,
@@ -2592,8 +2605,8 @@ mod tests {
         let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = 
             vec![
-                ((0,4), TypeOfThreat::FOUR_O, vec![]),
-                ((0,9), TypeOfThreat::FOUR_O, vec![])
+                ((0,4), TypeOfThreat::FIVE_TAKE, vec![]),
+                ((0,9), TypeOfThreat::ONE_TAKE, vec![])
             ];
         assert!(test_threat(
             white_pos,
@@ -2680,8 +2693,8 @@ mod tests {
         let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = 
             vec![
-                ((2,0), TypeOfThreat::FOUR_O, vec![(0,4)]),
-                ((2,5), TypeOfThreat::FOUR_O, vec![])
+                ((2,0), TypeOfThreat::FIVE_TAKE, vec![(0,4)]),
+                ((2,5), TypeOfThreat::ONE_TAKE, vec![])
             ];
         assert!(test_threat(
             white_pos,
@@ -2768,8 +2781,8 @@ mod tests {
         let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = 
             vec![
-                ((2,0), TypeOfThreat::FOUR_O, vec![(0,0)]),
-                ((2,5), TypeOfThreat::FOUR_O, vec![])
+                ((2,0), TypeOfThreat::FIVE_TAKE, vec![(0,0)]),
+                ((2,5), TypeOfThreat::FIVE_TAKE, vec![])
             ];
         assert!(test_threat(
             white_pos,
@@ -2856,8 +2869,8 @@ mod tests {
         let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = 
             vec![
-                ((2,0), TypeOfThreat::FOUR_O, vec![]),
-                ((2,5), TypeOfThreat::FOUR_O, vec![])
+                ((2,0), TypeOfThreat::FIVE_TAKE, vec![]),
+                ((2,5), TypeOfThreat::FIVE_TAKE, vec![])
             ];
         assert!(test_threat(
             white_pos,
@@ -2921,7 +2934,71 @@ mod tests {
         let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = 
             vec![
-                ((2,4), TypeOfThreat::FOUR_SO, vec![])
+                ((2,4), TypeOfThreat::THREE_TAKE, vec![])
+            ];
+        assert!(test_threat(
+            white_pos,
+            black_pos,
+            &mut white_take,
+            &mut black_take,
+            (2, 0),
+            Some(false),
+            expected_result
+        ))
+    }
+
+    // Initial configuration:
+    // _⊕⊕________________
+    // __⊕________________
+    // __⊕________________
+    // __⊕________________
+    // ___________________
+    // __⊕________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+
+    // Details: [dir:3]
+    // _⊕⊕________________
+    // __⊕________________
+    // __⊕________________
+    // __⊕________________
+    // __⊛________________
+    // __⊕________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((2,4), TypeOfThreat::FOUR_TAKE, vec![])
+    #[test]
+    fn threat_connect_4_fake_catch_9_in_a_row_other_close_top_four() {
+        let mut black_pos = vec![(2,5),(2,3),(2,2),(2,1),(2,0),(1,0)];
+        let white_pos = vec![];
+        let mut white_take = 0_isize;
+        let mut black_take = 0_isize;
+        let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = 
+            vec![
+                ((2,4), TypeOfThreat::FOUR_TAKE, vec![])
             ];
         assert!(test_threat(
             white_pos,
@@ -2986,7 +3063,7 @@ mod tests {
         let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = 
             vec![
-                ((2,6), TypeOfThreat::FOUR_SO, vec![])
+                ((2,6), TypeOfThreat::FIVE_TAKE, vec![])
             ];
         assert!(test_threat(
             white_pos,
@@ -3050,7 +3127,7 @@ mod tests {
         let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = 
             vec![
-                ((4,4), TypeOfThreat::FOUR_SO, vec![])
+                ((4,4), TypeOfThreat::FIVE_TAKE, vec![])
             ];
         assert!(test_threat(
             white_pos,
@@ -3137,8 +3214,8 @@ mod tests {
         let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = 
             vec![
-                ((2,9), TypeOfThreat::FOUR_O, vec![(0,9)]),
-                ((2,14), TypeOfThreat::FOUR_O, vec![])
+                ((2,9), TypeOfThreat::ONE_TAKE, vec![(0,9)]),
+                ((2,14), TypeOfThreat::FIVE_TAKE, vec![])
             ];
         assert!(test_threat(
             white_pos,
@@ -3225,8 +3302,8 @@ mod tests {
         let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = 
             vec![
-                ((2,4), TypeOfThreat::FOUR_O, vec![(0,7),(0,6),(0,8),(0,10)]),
-                ((2,9), TypeOfThreat::FOUR_O, vec![(0,9),(0,6),(0,8),(0,10)]),
+                ((2,4), TypeOfThreat::FIVE_TAKE, vec![(0,7),(0,6),(0,8),(0,10)]),
+                ((2,9), TypeOfThreat::TWO_TAKE, vec![(0,9),(0,6),(0,8),(0,10)]),
             ];
         assert!(test_threat(
             white_pos,
@@ -3290,7 +3367,7 @@ mod tests {
         let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = 
             vec![
-                ((4,4), TypeOfThreat::FOUR_SO, vec![(1,5)]),
+                ((4,4), TypeOfThreat::FIVE_TAKE, vec![(1,5)]),
                 // ((5,5), TypeOfThreat::FOUR_O, vec![])
             ];
         assert!(test_threat(
@@ -3355,7 +3432,7 @@ mod tests {
         let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = 
             vec![
-                ((4,4), TypeOfThreat::FOUR_SO, vec![(5,1)]),
+                ((4,4), TypeOfThreat::FIVE_TAKE, vec![(5,1)]),
                 // ((5,5), TypeOfThreat::FOUR_O, vec![])
             ];
         assert!(test_threat(
@@ -3460,7 +3537,7 @@ mod tests {
         let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = 
             vec![
-                ((0,0), TypeOfThreat::FOUR_SO, vec![(5,1)]),
+                ((0,0), TypeOfThreat::FIVE_TAKE, vec![(5,1)]),
                 // ((5,5), TypeOfThreat::FOUR_O, vec![])
             ];
         assert!(test_threat(
@@ -3525,7 +3602,7 @@ mod tests {
         let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = 
             vec![
-                ((2,0), TypeOfThreat::FOUR_SO, vec![(0,0)])
+                ((2,0), TypeOfThreat::FIVE_TAKE, vec![(0,0)])
             ];
         assert!(test_threat(
             white_pos,
@@ -3589,7 +3666,7 @@ mod tests {
         let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = 
             vec![
-                ((4,14), TypeOfThreat::FOUR_SO, vec![]),
+                ((4,14), TypeOfThreat::FIVE_TAKE, vec![]),
                 // ((2,5), TypeOfThreat::FOUR_O, vec![])
             ];
         assert!(test_threat(
@@ -3654,7 +3731,7 @@ mod tests {
         let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = 
             vec![
-                ((14,14), TypeOfThreat::FOUR_SO, vec![]),
+                ((14,14), TypeOfThreat::FIVE_TAKE, vec![]),
             ];
         assert!(test_threat(
             white_pos,
@@ -3718,7 +3795,7 @@ mod tests {
         let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = 
             vec![
-                ((14,4), TypeOfThreat::FOUR_SO, vec![]),
+                ((14,4), TypeOfThreat::FIVE_TAKE, vec![]),
             ];
         assert!(test_threat(
             white_pos,
@@ -3822,7 +3899,7 @@ mod tests {
         let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = 
             vec![
-                ((0,0), TypeOfThreat::FOUR_SO, vec![])
+                ((0,0), TypeOfThreat::FIVE_TAKE, vec![])
             ];
         assert!(test_threat(
             white_pos,
@@ -3932,9 +4009,9 @@ mod tests {
         let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = 
             vec![
-                ((0,0), TypeOfThreat::FOUR_SO, vec![]),
-                ((1,5), TypeOfThreat::FOUR_O, vec![]),
-                ((6,0), TypeOfThreat::FOUR_O, vec![])
+                ((0,0), TypeOfThreat::FIVE_TAKE, vec![]),
+                ((1,5), TypeOfThreat::FIVE_TAKE, vec![]),
+                ((6,0), TypeOfThreat::FIVE_TAKE, vec![])
             ];
         assert!(test_threat(
             white_pos,
@@ -4021,8 +4098,8 @@ mod tests {
         let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = 
             vec![
-                ((0,0), TypeOfThreat::FOUR_SO, vec![]),
-                ((2,4), TypeOfThreat::FOUR_SO, vec![])
+                ((0,0), TypeOfThreat::FIVE_TAKE, vec![]),
+                ((2,4), TypeOfThreat::FIVE_TAKE, vec![])
             ];
         assert!(test_threat(
             white_pos,
@@ -4126,7 +4203,7 @@ mod tests {
         let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = 
             vec![
-                ((1,5), TypeOfThreat::FOUR_SO, vec![])
+                ((1,5), TypeOfThreat::FIVE_TAKE, vec![])
             ];
         assert!(test_threat(
             white_pos,
@@ -4253,8 +4330,8 @@ mod tests {
         let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = 
             vec![
-                ((3,3), TypeOfThreat::FOUR_O, vec![(8,6)]),
-                ((8,8), TypeOfThreat::FOUR_O, vec![(8,6)])
+                ((3,3), TypeOfThreat::FIVE_TAKE, vec![(8,6)]),
+                ((8,8), TypeOfThreat::FIVE_TAKE, vec![(8,6)])
             ];
         assert!(test_threat(
             white_pos,
@@ -4387,10 +4464,10 @@ mod tests {
         let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = 
             vec![
-                ((3,3), TypeOfThreat::FOUR_O, vec![(8,6)]),
-                ((8,8), TypeOfThreat::FOUR_O, vec![(8,6)]),
-                ((5,7), TypeOfThreat::FOUR_O, vec![(8,2)]),
-                ((10,2), TypeOfThreat::FOUR_O, vec![(8,2)])
+                ((3,3), TypeOfThreat::FIVE_TAKE, vec![(8,6)]),
+                ((8,8), TypeOfThreat::FIVE_TAKE, vec![(8,6)]),
+                ((5,7), TypeOfThreat::FIVE_TAKE, vec![(8,2)]),
+                ((10,2), TypeOfThreat::FIVE_TAKE, vec![(8,2)])
             ];
         assert!(test_threat(
             white_pos,
