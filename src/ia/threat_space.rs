@@ -1126,9 +1126,6 @@ pub fn threat_search_space(
     let threats: Vec<((usize, usize),TypeOfThreat, Vec<(usize,usize)>)> = vec![];
 
     // 1.2. Initialize Threat board -> Vec containing with_capacity data (3 avrg max_possible threats per position) | (4 max defensive)
-    // let mut threat_board: [[(TypeOfThreat, Vec<(usize, usize)>);SIZE_BOARD];SIZE_BOARD] = 
-    //             [[(TypeOfThreat::EMPTY, vec![]);SIZE_BOARD];SIZE_BOARD];
-
     let mut threat_board: Vec<Vec<(TypeOfThreat, Vec<(usize,usize)>)>> =
     (0..SIZE_BOARD).map(|_|
         (0..SIZE_BOARD).map(|_| 
@@ -1161,11 +1158,9 @@ pub fn threat_search_space(
                                 threat_board[*x][*y].0 = *typeofthreat;
                             }
                             opp.iter().for_each(|&el| { threat_board[*x][*y].1.push(el) });
-                            // threat_board[*x][*y].1.append(&mut opp)
                         });
                     }
                 }
-                ()
             } else if board[line][col] == get_opp!(actual_player) {
                 for dir in 0..4 {
                     let (mut new_line, mut new_col):(isize, isize) = (line as isize, col as isize);
@@ -1189,10 +1184,6 @@ pub fn threat_search_space(
                     }
                 }
             }
-            // else if board[line][col] == opposite_player {
-                // 1. Check if opposant == 2 (on peut manger et gagner)
-                // 2. Check if opposant == 4 (regarder si on peut perdre, avec 4 prises)
-            // } 
         }
     }
     // Check for WIN with catches
@@ -1219,18 +1210,18 @@ pub fn threat_search_space(
     // // Check for win with gameplay
     // // 1. Construct the returned datastruct
     let mut result = vec![];
-    // for line in 0..SIZE_BOARD {
-    //     for col in 0..SIZE_BOARD {
-    //         // let (threat, answers) = threat_board[line][col];
-    //         // let toto = threat_board[line][col].1;
+    for line in 0..SIZE_BOARD {
+        for col in 0..SIZE_BOARD {
+            // let (threat, answers) = threat_board[line][col];
+            // let toto = threat_board[line][col].1;
 
-    //         if threat_board[line][col].0 != TypeOfThreat::EMPTY {
-    //             result.push(((line,col), threat_board[line][col].0, threat_board[line][col].1));
-    //         }
-    //     }
-    // }
-    // // Sort by threat in descending order
-    // result.sort_by(|(_,threat_a,_), (_,threat_b,_)| threat_b.partial_cmp(threat_a).unwrap());
+            if threat_board[line][col].0 != TypeOfThreat::EMPTY {
+                result.push(((line,col), threat_board[line][col].0, threat_board[line][col].1.iter().cloned().collect()));
+            }
+        }
+    }
+    // Sort by threat in descending order
+    result.sort_by(|(_,threat_a,_), (_,threat_b,_)| threat_b.partial_cmp(threat_a).unwrap());
 
     result
 }
