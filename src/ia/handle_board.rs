@@ -803,6 +803,7 @@ mod tests {
             }
             println!();
         }
+        let mut score_board = heuristic::evaluate_board(&mut test_board);
         for i in 0..19 {
             for j in 0..19 {
                 match test_board[j][i] {
