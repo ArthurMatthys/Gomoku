@@ -5,6 +5,15 @@ use super::super::render::board::SIZE_BOARD;
 use super::heuristic;
 // use super::handle_board::*;
 
+macro_rules! get_opp {
+    ($e:expr) => {
+        match $e {
+            Some(a) => Some(!a),
+            _ => unreachable!(),
+        }
+    };
+}
+
 macro_rules! valid_coord {
     (
         $x: expr,
@@ -77,18 +86,19 @@ macro_rules! flatten {
 const AVRG_MAX_MULTIPLE_THREATS: usize = 2;
 const MAX_MULTIPLE_DEFENSE_MOVES: usize = 4;
 
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq, PartialOrd)]
 enum TypeOfThreat {
     // NONE,
-    THREE_O,
-    FOUR_O,
-    FOUR_SO,
-    TAKE,
-    FIVE_TAKE,
-    FOUR_TAKE,
-    THREE_TAKE,
-    TWO_TAKE,
-    ONE_TAKE,
+    EMPTY = 0,
+    THREE_O = 1,
+    FOUR_O = 2,
+    FOUR_SO = 3,
+    FIVE_TAKE = 4,
+    FOUR_TAKE = 5,
+    THREE_TAKE = 6,
+    TWO_TAKE = 7,
+    ONE_TAKE = 8,
+    WIN = 9,
 }
 
 // Aim of function :
@@ -1149,64 +1159,137 @@ pub fn threat_search_space(
     score_board: &mut [[[(u8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD],
     actual_player: Option<bool>,
     actual_take: &mut isize,
-) -> () {
+) -> Vec<((usize, usize),TypeOfThreat,Vec<(usize,usize)>)> {
+
     // 1. Initialize datastructures storing ready to be checked positions as well as threats
     let mut record: [[[bool; 4]; SIZE_BOARD]; SIZE_BOARD] =
-        initialize_record(board, score_board, actual_player);
+    initialize_record(board, score_board, actual_player);
+   
+    // 1.1 Create the returned datastruct -> threat
+    let threats: Vec<((usize, usize),TypeOfThreat, Vec<(usize,usize)>)> = vec![];
 
     // 1.2. Initialize Threat board -> Vec containing with_capacity data (3 avrg max_possible threats per position) | (4 max defensive)
     // Optimized version of : [[Vec<(enum, Vec<(usize,usize)>)>; SIZE_BOARD]; SIZE_BOARD]
-    let mut threat_board: Vec<Vec<Vec<(TypeOfThreat, Vec<(usize, usize)>)>>> = (0..SIZE_BOARD)
-        .map(|_| {
-            (0..SIZE_BOARD)
-                .map(|_| Vec::with_capacity(AVRG_MAX_MULTIPLE_THREATS))
-                .collect()
-        })
-        .collect();
+    // let mut threat_board: Vec<Vec<Vec<(TypeOfThreat, Vec<(usize, usize)>)>>> = (0..SIZE_BOARD)
+    //     .map(|_| {
+    //         (0..SIZE_BOARD)
+    //             .map(|_| Vec::with_capacity(AVRG_MAX_MULTIPLE_THREATS))
+    //             .collect()
+    //     })
+    //     .collect();
 
+    let mut threat_board: [[(TypeOfThreat, Vec<(usize, usize)>);SIZE_BOARD];SIZE_BOARD] = 
+                [[(TypeOfThreat::EMPTY, vec![]);SIZE_BOARD];SIZE_BOARD];
+
+    // let mut threat_board: Vec<Vec<(TypeOfThreat, Vec<(usize, usize)>)>> = (0..SIZE_BOARD)
+    // .map(|_| {
+    //     (0..SIZE_BOARD)
+    //         .map(|_| Vec::with_capacity(AVRG_MAX_MULTIPLE_THREATS))
+    //         .collect()
+    // })
+    // .collect();
+
+    let mut catch_board: [[u8; SIZE_BOARD]; SIZE_BOARD] = [[0; SIZE_BOARD]; SIZE_BOARD];
+    
     // 2. Parse board for actual_player's pawns
     for line in 0..SIZE_BOARD {
         for col in 0..SIZE_BOARD {
             if board[line][col] == actual_player {
                 for dir in 0..4 {
                     if record[line][col][dir] {
-                        // let ret: Vec<((usize,usize), TypeOfThreat, Vec<(usize,usize)>)> =
-                        match score_board[line][col][dir].0 {
-                            5 => (), //Instant win ?
-                            4 => {
-                                match connect_4(
-                                    (line, col),
-                                    score_board,
-                                    board,
-                                    &mut record,
-                                    actual_player,
-                                    actual_take,
-                                    dir,
-                                ) {
-                                    None => (),
-                                    Some(x) => x.iter().for_each(|((x, y), typeofthreat, opp)| {
-                                        threat_board[*x][*y].push((*typeofthreat, vec![]));
-                                        opp.iter().for_each(|&opp| {
-                                            let index = threat_board[*x][*y].len();
-                                            threat_board[*x][*y][index].1.push(opp);
-                                        });
-                                    }), // check borrow issue here !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                                }
+                        let ret: Vec<((usize,usize), TypeOfThreat, Vec<(usize,usize)>)> = 
+                            match score_board[line][col][dir].0 {
+                                5 => vec![((line, col), TypeOfThreat::WIN, vec![])], //Instant win ?
+                                4 =>
+                                    // connect_4(
+                                    //     (line, col),
+                                    //     score_board,
+                                    //     board,
+                                    //     &mut record,
+                                    //     actual_player,
+                                    //     actual_take,
+                                    //     dir,
+                                    // )
+                                    (),
+                                3 => (),
+                                2 => (),
+                                1 => continue ,
+                                _ => unreachable!(),
+                            };
+                        if ret.len() >= 1 && ret[0].1 == TypeOfThreat::WIN {
+                            return ret;
+                        }
+                        ret.iter().for_each(|((x, y), typeofthreat, opp)| {
+                            if threat_board[*x][*y].0 > *typeofthreat {
+                                threat_board[*x][*y].0 = *typeofthreat;
                             }
-                            3 => (),
-                            2 => (),
-                            _ => unreachable!(),
-                        };
-                        // ret.iter().for_each(|&((x,y), typeOfThreat, Opp)| threat_board[x][y].push((typeOfThreat, Opp)));
+                            threat_board[*x][*y].1.append(&mut opp);
+                        });
                     }
                 }
                 ()
+            } else if board[line][col] == get_opp!(actual_player) {
+                for dir in 0..4 {
+                    let (mut new_line, mut new_col):(isize, isize) = (line as isize, col as isize);
+                    match score_board[line][col][dir] {
+                        (2, Some(true), Some(false)) => {
+                            // println!("ici");
+                            explore_align_light!(board, new_line, new_col, actual_player, dir, 1);
+                            if !check_double_three_hint(board, actual_player, new_line, new_col) {
+                                catch_board[new_line as usize][new_col as usize] += 1;
+                            }
+                        },
+                        // (2, Some(false), Some(true)) | (2, Some(false), None) => {
+                        (2, Some(false), Some(true)) => {
+                            // println!("la");
+                            explore_align_light!(board, new_line, new_col, actual_player, dir, -1);
+                            if !check_double_three_hint(board, actual_player, new_line, new_col) {
+                                catch_board[new_line as usize][new_col as usize] += 1;
+                            }
+                        },
+                        _ => continue,
+                    }
+                }
+            }
+        }
+    }
+    // Check for WIN with catches
+    // 1. Find max and count how many different catches we have
+    let mut max: ((usize, usize), u8) = ((0,0),0);
+    let mut counter: u8 = 0;
+    catch_board.iter().enumerate().for_each(|(line, elements)| { 
+        elements.iter().enumerate().for_each(|(col, &el)| {
+            if el > 0 {
+                counter += 1;
+                if el > max.1 {
+                    max = ((line, col), el);
+                }
+            }
+        });
+    });
+
+    // 2. Check if catch leads to instant win and returns it yes
+    if *actual_take + (max.1 / 2) as isize >= 5 ||
+        *actual_take + (max.1 / 2) as isize == 4 && counter > 2 {
+        return vec![(max.0, TypeOfThreat::WIN, vec![])];
+    }
+
+    // Check for win with gameplay
+    // 1. Construct the returned datastruct
+    let result = vec![];
+    for line in 0..SIZE_BOARD {
+        for col in 0..SIZE_BOARD {
+            if threat_board[line][col].0 != TypeOfThreat::EMPTY {
+                result.push(((line,col), threat_board[line][col].0, threat_board[line][col].1));
             }
         }
     }
 
-    // 5. Dispatch values inside the constructed datastructure in (1)
+    result.sort_by(|(_,threat_a,_), (_,threat_b,_)| threat_b.partial_cmp(threat_a).unwrap());
+    result
 
+    // 5. Dispatch values inside the constructed datastructure in (1)
+    
     // (
     //     Vec<(usize, usize)>,
     //     Vec<((usize, usize), Vec<(usize, usize)>)>,
@@ -1428,8 +1511,9 @@ mod tests {
                             TypeOfThreat::ONE_TAKE => "ONE_TAKE",
                             TypeOfThreat::FOUR_O => "FOUR_O",
                             TypeOfThreat::FOUR_SO => "FOUR_SO",
-                            TypeOfThreat::TAKE => "TAKE",
                             TypeOfThreat::THREE_O => "THREE_O",
+                            TypeOfThreat::WIN => "WIN",
+                            TypeOfThreat::EMPTY => "EMPTY",
                         }
                     );
                     opp.iter().enumerate().for_each(|(i, (x, y))| {
@@ -1460,8 +1544,9 @@ mod tests {
                         TypeOfThreat::ONE_TAKE => "ONE_TAKE",
                         TypeOfThreat::FOUR_O => "FOUR_O",
                         TypeOfThreat::FOUR_SO => "FOUR_SO",
-                        TypeOfThreat::TAKE => "TAKE",
                         TypeOfThreat::THREE_O => "THREE_O",
+                        TypeOfThreat::WIN => "WIN",
+                        TypeOfThreat::EMPTY => "EMPTY",
                     }
                 );
                 opp.iter().enumerate().for_each(|(i, (x, y))| {
@@ -4911,8 +4996,9 @@ mod tests {
                             TypeOfThreat::ONE_TAKE => "ONE_TAKE",
                             TypeOfThreat::FOUR_O => "FOUR_O",
                             TypeOfThreat::FOUR_SO => "FOUR_SO",
-                            TypeOfThreat::TAKE => "TAKE",
                             TypeOfThreat::THREE_O => "THREE_O",
+                            TypeOfThreat::WIN => "WIN",
+                            TypeOfThreat::EMPTY => "EMPTY",
                         }
                     );
                     opp.iter().enumerate().for_each(|(i, (x, y))| {
@@ -4943,8 +5029,9 @@ mod tests {
                         TypeOfThreat::ONE_TAKE => "ONE_TAKE",
                         TypeOfThreat::FOUR_O => "FOUR_O",
                         TypeOfThreat::FOUR_SO => "FOUR_SO",
-                        TypeOfThreat::TAKE => "TAKE",
                         TypeOfThreat::THREE_O => "THREE_O",
+                        TypeOfThreat::WIN => "WIN",
+                        TypeOfThreat::EMPTY => "EMPTY",
                     }
                 );
                 opp.iter().enumerate().for_each(|(i, (x, y))| {
