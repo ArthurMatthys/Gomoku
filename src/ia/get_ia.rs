@@ -350,7 +350,7 @@ fn ia(
             pawn,
             &mut player_catch,
             &mut opponent_catch,
-            &mut 4,
+            &mut 8,
             &mut 0,
         ) {
             println!("find threat ({},{})", x, y);

@@ -572,7 +572,7 @@ pub fn find_continuous_threats(
         //            .for_each(|(c_x, c_y)| print!("({},{}); ", c_x, c_y));
         //        println!();
 
-        if *typeofthreat < TypeOfThreat::FIVE_TAKE {
+        if counters_valid.len() == 0 && *typeofthreat < TypeOfThreat::FIVE_TAKE {
             for (x, y) in find_available_pos(board, get_opp!(player_actual)) {
                 if !counters_valid
                     .iter()
