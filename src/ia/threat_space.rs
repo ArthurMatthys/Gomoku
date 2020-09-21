@@ -45,9 +45,9 @@ macro_rules! explore_align {
         while valid_coord!($new_line, $new_col)
             && $board[$new_line as usize][$new_col as usize] == $actual_player
         {
+            $record[$new_line as usize][$new_col as usize][$dir] = false;
             $new_line += (DIRECTIONS[$dir].0 * $orientation);
             $new_col += (DIRECTIONS[$dir].1 * $orientation);
-            $record[$new_line as usize][$new_col as usize][$dir] = false;
         }
     };
 }
@@ -438,14 +438,12 @@ fn manage_so(
         );
     }
 }
-
 fn connect_4(
     (line, col): (usize, usize),
     score_board: &mut [[[(u8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD],
     board: &mut [[Option<bool>; SIZE_BOARD]; SIZE_BOARD],
     record: &mut [[[bool; 4]; SIZE_BOARD]; SIZE_BOARD],
     actual_player: Option<bool>,
-    // actual_take: &mut isize,
     dir: usize,
 ) -> Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> {
     let mut new_line: isize = line as isize;
@@ -576,16 +574,17 @@ fn connect_2(
     let focused_tuple = score_board[x][y][dir as usize];
     let (dx, dy) = DIRECTIONS[dir];
 
+    record[x][y][dir] = false;
     for way in [-1, 1].iter() {
+        let mut new_x = x as isize;
+        let mut new_y = y as isize;
+        explore_align!(board, record, new_x, new_y, actual_player, dir, way);
         let (actual_edge, opp_edge): (Option<bool>, Option<bool>) = get_edges!(way, focused_tuple);
         if actual_edge != Some(false) {
             continue;
         }
         let mut space = 1;
         let mut align_ally = 0;
-        let mut new_x = x as isize;
-        let mut new_y = y as isize;
-        explore_align!(board, record, new_x, new_y, actual_player, dir, way);
         // explore_align_light!(board, new_x, new_y, actual_player, dir, way);
         let mut cursor_x = new_x;
         let mut cursor_y = new_y;
@@ -639,7 +638,7 @@ fn connect_2(
                         ));
                     }
                     2 => {
-                        // _00_00?
+                        // _00_00#
                         //opened edge, 1 space, 2 more pawn
                         let steps = vec![-2, -1, 1, 2];
                         let (opp_steps, threat) = (vec![], TypeOfThreat::FIVE_TAKE);
@@ -651,7 +650,7 @@ fn connect_2(
                         ));
                     }
                     3 => {
-                        // _00_000?
+                        // _00_000#
                         //opened edge, 1 space, 3 more pawn
                         let steps = vec![-1, 1, 2];
                         let (opp_steps, threat) = (vec![], TypeOfThreat::FOUR_TAKE);
@@ -663,7 +662,7 @@ fn connect_2(
                         ));
                     }
                     4 => {
-                        // _00_0000?
+                        // _00_0000#
                         //opened edge, 1 space, 4 more pawn
                         let steps = vec![1, 2];
                         let (opp_steps, threat) = (vec![], TypeOfThreat::THREE_TAKE);
@@ -702,7 +701,7 @@ fn connect_2(
                         // }
                     }
                     1 => {
-                        // _00__0?
+                        // _00__0#
                         //opened edge, 2 space, 1 more pawn
                         let steps_no_space = vec![-2, -1, 2];
                         let opp_steps_no_space = vec![-3, 1];
@@ -722,7 +721,7 @@ fn connect_2(
                         ));
                     }
                     2 => {
-                        // _00__00?
+                        // _00__00#
                         //opened edge, 2 space, 2 more pawn
                         let steps_no_space = vec![-1, 2];
                         let opp_steps_no_space = vec![-3, 1];
@@ -742,7 +741,7 @@ fn connect_2(
                         ));
                     }
                     3 => {
-                        // _00__000?
+                        // _00__000#
                         //opened edge, 2 space, 3 more pawn
                         let steps_no_space = vec![2];
                         let opp_steps_no_space = vec![-3, 1];
@@ -762,7 +761,7 @@ fn connect_2(
                         ));
                     }
                     4 => {
-                        // _00__0000?
+                        // _00__0000#
                         //opened edge, 2 space, 4 more pawn
                         let steps_no_space = vec![2];
                         let opp_steps_no_space = vec![-3, 1];
@@ -821,7 +820,7 @@ fn connect_2(
                         }
                         if ally_edge == Some(false) {
                             let steps: Vec<isize> = vec![-2, -1, 1];
-                            let opp_steps = vec![-3, 1];
+                            let opp_steps = vec![2];
                             gather_infos.push((
                                 (new_x as usize, new_y as usize),
                                 TypeOfThreat::FOUR_SO,
@@ -995,16 +994,17 @@ fn connect_3(
     let focused_tuple = score_board[x][y][dir as usize];
     let (dx, dy) = DIRECTIONS[dir];
 
+    record[x][y][dir] = false;
     for way in [-1, 1].iter() {
-        let (actual_edge, opp_edge): (Option<bool>, Option<bool>) = get_edges!(way, focused_tuple);
-        if actual_edge != Some(false) {
-            continue;
-        }
         let mut space = 1;
         let mut align_ally = 0;
         let mut new_x = x as isize;
         let mut new_y = y as isize;
         explore_align!(board, record, new_x, new_y, actual_player, dir, way);
+        let (actual_edge, opp_edge): (Option<bool>, Option<bool>) = get_edges!(way, focused_tuple);
+        if actual_edge != Some(false) {
+            continue;
+        }
         // explore_align_light!(board, new_x, new_y, actual_player, dir, way);
         let mut cursor_x = new_x;
         let mut cursor_y = new_y;
@@ -1171,7 +1171,7 @@ fn connect_3(
                 2 => {
                     // #000__?
                     let steps_no_space = vec![-3, -2, -1];
-                    let opp_steps_no_space = vec![];
+                    let opp_steps_no_space = vec![1];
                     gather_infos.push((
                         (new_x as usize, new_y as usize),
                         TypeOfThreat::FOUR_SO,
@@ -1250,16 +1250,55 @@ pub fn threat_search_space(
                     if record[line][col][dir] {
                         let ret: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> =
                             match score_board[line][col][dir].0 {
-                                5 => vec![((line, col), TypeOfThreat::WIN, vec![])],
-                                4 => vec![],
-                                3 => vec![],
-                                2 => vec![],
+                                5..=9 => vec![((line, col), TypeOfThreat::WIN, vec![])],
+
+                                4 => connect_4(
+                                    (line, col),
+                                    score_board,
+                                    board,
+                                    &mut record,
+                                    actual_player,
+                                    dir,
+                                ),
+                                3 => connect_3(
+                                    board,
+                                    score_board,
+                                    &mut record,
+                                    actual_player,
+                                    (line, col),
+                                    dir,
+                                ),
+                                2 => connect_2(
+                                    board,
+                                    score_board,
+                                    &mut record,
+                                    actual_player,
+                                    (line, col),
+                                    dir,
+                                ),
                                 1 => continue,
-                                _ => unreachable!(),
+                                _ => {
+                                    for i in 0..19 {
+                                        for j in 0..19 {
+                                            match board[j][i] {
+                                                Some(true) => print!("⊖"),
+                                                Some(false) => print!("⊕"),
+                                                None => print!("_"),
+                                            }
+                                        }
+                                        println!();
+                                    }
+
+                                    unreachable!()
+                                }
                             };
+                        //println!("len threat : {}", ret.len());
+                        //ret.iter()
+                        //    .for_each(|((x, y), _, _)| println!("threat : {}:{}", x, y));
                         if ret.len() >= 1 && ret[0].1 == TypeOfThreat::WIN {
                             return ret;
                         }
+                        //                        println!("nbr threats : {} from : ({},{})", ret.len(), line, col);
                         ret.iter()
                             .filter(|((x, y), _, _)| {
                                 !check_double_three_hint(
@@ -1270,7 +1309,7 @@ pub fn threat_search_space(
                                 )
                             })
                             .for_each(|((x, y), typeofthreat, opp)| {
-                                if threat_board[*x][*y].0 > *typeofthreat {
+                                if threat_board[*x][*y].0 < *typeofthreat {
                                     threat_board[*x][*y].0 = *typeofthreat;
                                 }
                                 opp.iter().for_each(|&el| threat_board[*x][*y].1.push(el));
@@ -1328,11 +1367,28 @@ pub fn threat_search_space(
     // // 1. Construct the returned datastruct
     let mut result = vec![];
     for line in 0..SIZE_BOARD {
+        //        print!("//");
         for col in 0..SIZE_BOARD {
             // let (threat, answers) = threat_board[line][col];
             // let toto = threat_board[line][col].1;
+            //print!(
+            //    "{}  ",
+            //    match threat_board[line][col].0 {
+            //        TypeOfThreat::FIVE_TAKE => "FIVE_TAKE",
+            //        TypeOfThreat::FOUR_TAKE => "FOUR_TAKE",
+            //        TypeOfThreat::THREE_TAKE => "THREE_TAKE",
+            //        TypeOfThreat::TWO_TAKE => "TWO_TAKE",
+            //        TypeOfThreat::ONE_TAKE => "ONE_TAKE",
+            //        TypeOfThreat::FOUR_O => "FOUR_O",
+            //        TypeOfThreat::FOUR_SO => "FOUR_SO",
+            //        TypeOfThreat::THREE_O => "THREE_O",
+            //        TypeOfThreat::WIN => "WIN",
+            //        TypeOfThreat::EMPTY => "EMPTY",
+            //    }
+            //);
 
             if threat_board[line][col].0 != TypeOfThreat::EMPTY {
+                //        println!("add threat");
                 result.push((
                     (line, col),
                     threat_board[line][col].0,
@@ -1340,9 +1396,14 @@ pub fn threat_search_space(
                 ));
             }
         }
+        //       println!();
     }
+    //    println!("//all threats :");
+    //    result.iter().for_each(|((x, y), _, answers)| {
+    //        println!("{}:{}", x, y);
+    //    });
     // Sort by threat in descending order
-    result.sort_by(|(_, threat_a, _), (_, threat_b, _)| threat_b.partial_cmp(threat_a).unwrap());
+    result.sort_by(|(_, threat_a, _), (_, threat_b, _)| threat_a.partial_cmp(threat_b).unwrap());
 
     result
 }
@@ -3832,12 +3893,12 @@ mod tests {
     // ___________________
     // ___________________
     // ___________________
-    // _________⊙_________
+    // _________⊖_________
     // _________⊕_________
     // _______⊙⊕⊕⊖________
     // _________⊛_________
+    // _________⊕_________
     // _________⊙_________
-    // ___________________
     // ___________________
     // ___________________
     // ___________________
@@ -3846,7 +3907,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((9,9), TypeOfThreat::FOUR_SO, vec![(7,8),(9,6),(9,10)])
+    // ((9,9), TypeOfThreat::FOUR_SO, vec![(7,8),(9,11)])
     #[test]
     fn threat_connect_2_catch_9_in_a_row_catch_3() {
         let black_pos = vec![(9, 8), (9, 7), (9, 10), (8, 8)];
@@ -3854,7 +3915,7 @@ mod tests {
         let mut white_take = 0_isize;
         let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> =
-            vec![((9, 9), TypeOfThreat::FOUR_SO, vec![(7, 8), (9, 6), (9, 10)])];
+            vec![((9, 9), TypeOfThreat::FOUR_SO, vec![(7, 8), (9, 11)])];
         assert!(test_threat_2(
             white_pos,
             black_pos,
@@ -4931,6 +4992,68 @@ mod tests {
             &mut white_take,
             &mut black_take,
             (2, 1),
+            Some(false),
+            expected_result
+        ))
+    }
+
+    // Initial configuration:
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // _________⊕_________
+    // ___________________
+    // _________⊕_________
+    // _________⊕_________
+    // _________⊖_________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+
+    // Details: [dir:3]
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // _________⊙_________
+    // _________⊕_________
+    // _________⊛_________
+    // _________⊕_________
+    // _________⊕_________
+    // _________⊖_________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((9,6), TypeOfThreat::FOUR_SO, vec![(9,4)])
+    #[test]
+    fn threat_connect_2_space_1_align_1_blocked() {
+        let black_pos = vec![(9, 5), (9, 7), (9, 8)];
+        let white_pos = vec![(9, 9)];
+        let mut white_take = 0_isize;
+        let mut black_take = 0_isize;
+        let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> =
+            vec![((9, 6), TypeOfThreat::FOUR_SO, vec![(9, 4)])];
+        assert!(test_threat_2(
+            white_pos,
+            black_pos,
+            &mut white_take,
+            &mut black_take,
+            (9, 7),
             Some(false),
             expected_result
         ))
@@ -8064,7 +8187,7 @@ mod tests {
     // ____⊕______________
     // ____⊕______________
     // ____⊛______________
-    // ___________________
+    // ____⊙______________
     // ___________________
     // ___________________
     // ___________________
@@ -8077,7 +8200,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((4,6), TypeOfThreat::FOUR_SO, vec![])
+    // ((4,6), TypeOfThreat::FOUR_SO, vec![(4,7)])
 
     // Details: [dir:3]
     // ___________________
@@ -8109,7 +8232,7 @@ mod tests {
         let mut white_take = 0_isize;
         let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
-            ((4, 6), TypeOfThreat::FOUR_SO, vec![]),
+            ((4, 6), TypeOfThreat::FOUR_SO, vec![(4, 7)]),
             ((4, 7), TypeOfThreat::FOUR_SO, vec![(4, 6)]),
         ];
         assert!(test_threat_3(
@@ -8152,7 +8275,7 @@ mod tests {
     // ____⊕______________
     // ____⊕______________
     // ____⊛______________
-    // ___________________
+    // ____⊙______________
     // ____⊖______________
     // ___________________
     // ___________________
@@ -8165,7 +8288,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((4,6), TypeOfThreat::FOUR_SO, vec![])
+    // ((4,6), TypeOfThreat::FOUR_SO, vec![(4,7)])
 
     // Details: [dir:3]
     // ___________________
@@ -8197,7 +8320,7 @@ mod tests {
         let mut white_take = 0_isize;
         let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
-            ((4, 6), TypeOfThreat::FOUR_SO, vec![]),
+            ((4, 6), TypeOfThreat::FOUR_SO, vec![(4, 7)]),
             ((4, 7), TypeOfThreat::FOUR_SO, vec![(4, 6)]),
         ];
         assert!(test_threat_3(
@@ -8233,7 +8356,7 @@ mod tests {
     // ___________________
 
     // Details: [dir:3]
-    // ___________________
+    // ____⊙______________
     // ____⊛______________
     // ____⊕______________
     // ____⊕______________
@@ -8253,7 +8376,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((4,1), TypeOfThreat::FOUR_SO, vec![])
+    // ((4,1), TypeOfThreat::FOUR_SO, vec![(4,0)])
 
     // Details: [dir:3]
     // ____⊛______________
@@ -8285,7 +8408,7 @@ mod tests {
         let mut white_take = 0_isize;
         let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
-            ((4, 1), TypeOfThreat::FOUR_SO, vec![]),
+            ((4, 1), TypeOfThreat::FOUR_SO, vec![(4, 0)]),
             ((4, 0), TypeOfThreat::FOUR_SO, vec![(4, 1)]),
         ];
         assert!(test_threat_3(
@@ -8327,7 +8450,7 @@ mod tests {
     // ____⊕______________
     // ____⊕______________
     // ____⊛______________
-    // ___________________
+    // ____⊙______________
     // ____⊕______________
     // ___________________
     // ___________________
@@ -8341,7 +8464,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((4,5), TypeOfThreat::FOUR_SO, vec![])
+    // ((4,5), TypeOfThreat::FOUR_SO, vec![(4,6)])
 
     // Details: [dir:3]
     // ___________________
@@ -8373,7 +8496,7 @@ mod tests {
         let mut white_take = 0_isize;
         let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
-            ((4, 5), TypeOfThreat::FOUR_SO, vec![]),
+            ((4, 5), TypeOfThreat::FOUR_SO, vec![(4, 6)]),
             ((4, 6), TypeOfThreat::FOUR_SO, vec![(4, 5)]),
         ];
         assert!(test_threat_3(
@@ -12280,5 +12403,216 @@ mod tests {
             Some(false),
             expected_result
         ))
+    }
+
+    #[test]
+    fn test_record_connect_2() {
+        let black_pos: Vec<(usize, usize)> = vec![(5, 3), (5, 5), (5, 6)];
+        let white_pos: Vec<(usize, usize)> = vec![(5, 7)];
+
+        let mut test_board: [[Option<bool>; SIZE_BOARD]; SIZE_BOARD] =
+            [[None; SIZE_BOARD]; SIZE_BOARD];
+        white_pos
+            .iter()
+            .for_each(|&(x, y)| test_board[x][y] = Some(true));
+        black_pos
+            .iter()
+            .for_each(|&(x, y)| test_board[x][y] = Some(false));
+        // Print initial configuration
+        println!("// Initial configuration:");
+        for i in 0..19 {
+            print!("// ");
+            for j in 0..19 {
+                match test_board[j][i] {
+                    Some(true) => print!("⊖"),
+                    Some(false) => print!("⊕"),
+                    None => print!("_"),
+                }
+            }
+            println!();
+        }
+        let mut score_board = heuristic::evaluate_board(&mut test_board);
+
+        let mut record: [[[bool; 4]; SIZE_BOARD]; SIZE_BOARD] =
+            initialize_record(&mut test_board, &mut score_board, Some(false));
+        println!("Initial record : ");
+        for i in 0..19 {
+            for j in 0..19 {
+                for dir in 0..4 {
+                    match record[j][i][dir] {
+                        true => print!("T"),
+                        false => print!("F"),
+                    }
+                }
+                print!(" ");
+            }
+            println!();
+            println!();
+        }
+        let ret = connect_2(
+            &mut test_board,
+            &mut score_board,
+            &mut record,
+            Some(false),
+            (5, 5),
+            3,
+        );
+        println!("found {} results", ret.len());
+        println!("Record after connect_2 : ");
+        for i in 0..19 {
+            for j in 0..19 {
+                for dir in 0..4 {
+                    match record[j][i][dir] {
+                        true => print!("T"),
+                        false => print!("F"),
+                    }
+                }
+                print!(" ");
+            }
+            println!();
+            println!();
+        }
+        //assert!(false)
+        assert!(true)
+    }
+    #[test]
+    fn test_record_connect_3() {
+        let black_pos: Vec<(usize, usize)> = vec![(9, 7), (9, 8), (9, 9)];
+        let white_pos: Vec<(usize, usize)> = vec![(9, 10)];
+
+        let mut test_board: [[Option<bool>; SIZE_BOARD]; SIZE_BOARD] =
+            [[None; SIZE_BOARD]; SIZE_BOARD];
+        white_pos
+            .iter()
+            .for_each(|&(x, y)| test_board[x][y] = Some(true));
+        black_pos
+            .iter()
+            .for_each(|&(x, y)| test_board[x][y] = Some(false));
+        // Print initial configuration
+        println!("// Initial configuration:");
+        for i in 0..19 {
+            print!("// ");
+            for j in 0..19 {
+                match test_board[j][i] {
+                    Some(true) => print!("⊖"),
+                    Some(false) => print!("⊕"),
+                    None => print!("_"),
+                }
+            }
+            println!();
+        }
+        let mut score_board = heuristic::evaluate_board(&mut test_board);
+
+        let mut record: [[[bool; 4]; SIZE_BOARD]; SIZE_BOARD] =
+            initialize_record(&mut test_board, &mut score_board, Some(false));
+        println!("Initial record : ");
+        for i in 0..19 {
+            for j in 0..19 {
+                for dir in 0..4 {
+                    match record[j][i][dir] {
+                        true => print!("T"),
+                        false => print!("F"),
+                    }
+                }
+                print!(" ");
+            }
+            println!();
+            println!();
+        }
+        let ret = connect_3(
+            &mut test_board,
+            &mut score_board,
+            &mut record,
+            Some(false),
+            (9, 7),
+            3,
+        );
+        println!("found {} results", ret.len());
+        println!("Record after connect_3 : ");
+        for i in 0..19 {
+            for j in 0..19 {
+                for dir in 0..4 {
+                    match record[j][i][dir] {
+                        true => print!("T"),
+                        false => print!("F"),
+                    }
+                }
+                print!(" ");
+            }
+            println!();
+            println!();
+        }
+        //assert!(false)
+        assert!(true)
+    }
+    #[test]
+    fn test_record_connect_4() {
+        let black_pos: Vec<(usize, usize)> = vec![(5, 5), (5, 6), (5, 7), (5, 8)];
+        let white_pos: Vec<(usize, usize)> = vec![];
+
+        let mut test_board: [[Option<bool>; SIZE_BOARD]; SIZE_BOARD] =
+            [[None; SIZE_BOARD]; SIZE_BOARD];
+        white_pos
+            .iter()
+            .for_each(|&(x, y)| test_board[x][y] = Some(true));
+        black_pos
+            .iter()
+            .for_each(|&(x, y)| test_board[x][y] = Some(false));
+        // Print initial configuration
+        println!("// Initial configuration:");
+        for i in 0..19 {
+            print!("// ");
+            for j in 0..19 {
+                match test_board[j][i] {
+                    Some(true) => print!("⊖"),
+                    Some(false) => print!("⊕"),
+                    None => print!("_"),
+                }
+            }
+            println!();
+        }
+        let mut score_board = heuristic::evaluate_board(&mut test_board);
+
+        let mut record: [[[bool; 4]; SIZE_BOARD]; SIZE_BOARD] =
+            initialize_record(&mut test_board, &mut score_board, Some(false));
+        println!("Initial record : ");
+        for i in 0..19 {
+            for j in 0..19 {
+                for dir in 0..4 {
+                    match record[j][i][dir] {
+                        true => print!("T"),
+                        false => print!("F"),
+                    }
+                }
+                print!(" ");
+            }
+            println!();
+            println!();
+        }
+        let ret = connect_4(
+            (5, 8),
+            &mut score_board,
+            &mut test_board,
+            &mut record,
+            Some(false),
+            3,
+        );
+        println!("found {} results", ret.len());
+        println!("Record after connect_4 : ");
+        for i in 0..19 {
+            for j in 0..19 {
+                for dir in 0..4 {
+                    match record[j][i][dir] {
+                        true => print!("T"),
+                        false => print!("F"),
+                    }
+                }
+                print!(" ");
+            }
+            println!();
+            println!();
+        }
+        //assert!(false)
+        assert!(true)
     }
 }

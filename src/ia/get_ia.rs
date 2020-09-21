@@ -15,7 +15,7 @@ use rand::seq::SliceRandom;
 
 const MIN_INFINITY: i64 = i64::min_value() + 1;
 const MAX_INFINITY: i64 = i64::max_value();
-const DEPTH_THREATS: i8 = 12;
+const DEPTH_THREATS: i8 = 10;
 
 macro_rules! get_opp {
     ($e:expr) => {
@@ -58,21 +58,6 @@ fn ab_negamax(
     //    None => println!("No threats found"),
     //    Some((x, y)) => println!("threat in {}:{}", x, y),
     //};
-    if let Some((x, y)) = find_continuous_threats(
-        board,
-        score_board,
-        actual,
-        actual_catch,
-        opp_catch,
-        &mut DEPTH_THREATS,
-        &mut 0,
-    ) {
-        println!("yoo");
-        return (
-            heuristic::INSTANT_WIN * heuristic::MULTIPLIER.pow(*current_depth as u32),
-            Some((x, y)),
-        );
-    }
     if tte.is_valid && tte.depth == *depth_max - *current_depth {
         if tte.r#type == zobrist::TypeOfEl::Exact {
             return (tte.value, tte.r#move);
@@ -267,6 +252,7 @@ fn mtdf(
 
 fn iterative_deepening_mtdf(
     board: &mut [[Option<bool>; SIZE_BOARD]; SIZE_BOARD],
+    score_board: &mut [[[(u8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD],
     table: &[[[u64; 2]; SIZE_BOARD]; SIZE_BOARD],
     zhash: &mut u64,
     tt: &mut Vec<zobrist::TT>,
@@ -284,7 +270,6 @@ fn iterative_deepening_mtdf(
         Some(false) => game.firstguess.1,
         None => unreachable!(),
     };
-    let mut score_board = heuristic::evaluate_board(board);
     // println!("before- f: {}", f);
     // for d in [2, 3, 5].iter() {
     for d in (2..(depth_max + 1)).step_by(2) {
@@ -306,7 +291,7 @@ fn iterative_deepening_mtdf(
             &mut beta2,
             &d,
             f,
-            &mut score_board,
+            score_board,
         );
         ret = r#move;
         f = score;
@@ -329,6 +314,7 @@ fn ia(
     let mut player_catch = game.get_actual_player().nb_of_catch;
     let mut opponent_catch = game.get_opponent().nb_of_catch;
     let mut board = game.board;
+    let mut score_board = heuristic::evaluate_board(&mut board);
     let pawn = game.player_to_pawn();
     let mut tt = zobrist::initialize_transposition_table();
 
@@ -343,9 +329,38 @@ fn ia(
     //     None,
     //     &mut MIN_INFINITY,
     //     &mut MAX_INFINITY,
-    // )
+    //
+    println!("Start continuous threats");
+    let mut find_threat = true;
+    if let Some(_) = find_continuous_threats(
+        &mut board,
+        &mut score_board,
+        get_opp!(pawn),
+        &mut opponent_catch,
+        &mut player_catch,
+        &mut 0,
+        &mut 0,
+    ) {
+        find_threat = false;
+    }
+    if find_threat {
+        if let Some((x, y)) = find_continuous_threats(
+            &mut board,
+            &mut score_board,
+            pawn,
+            &mut player_catch,
+            &mut opponent_catch,
+            &mut 4,
+            &mut 0,
+        ) {
+            println!("find threat ({},{})", x, y);
+            return (x, y);
+        }
+    }
+    println!("Start IA");
     iterative_deepening_mtdf(
         &mut board,
+        &mut score_board,
         table,
         &mut hash,
         &mut tt,
