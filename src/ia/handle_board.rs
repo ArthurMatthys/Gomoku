@@ -26,29 +26,29 @@ macro_rules! get_opp {
     };
 }
 
-macro_rules! get_bool {
-    ($e:expr) => {
-        match $e {
-            Some(true) => "T",
-            Some(false) => "F",
-            None => "N",
-        }
-    };
-}
-macro_rules! index_edge {
-    ($delta:expr) => {
-        match delta {
-            (1, 1) => 1,
-            (1, 0) => 1,
-            (1, -1) => 1,
-            (0, 1) => 1,
-            (0, -1) => 0,
-            (-1, 1) => 0,
-            (-1, 0) => 0,
-            (-1, -1) => 0,
-        }
-    };
-}
+//macro_rules! get_bool {
+//    ($e:expr) => {
+//        match $e {
+//            Some(true) => "T",
+//            Some(false) => "F",
+//            None => "N",
+//        }
+//    };
+//}
+//macro_rules! index_edge {
+//    ($delta:expr) => {
+//        match delta {
+//            (1, 1) => 1,
+//            (1, 0) => 1,
+//            (1, -1) => 1,
+//            (0, 1) => 1,
+//            (0, -1) => 0,
+//            (-1, 1) => 0,
+//            (-1, 0) => 0,
+//            (-1, -1) => 0,
+//        }
+//    };
+//}
 
 //fn get_edge_case(
 //    board: &[[Option<bool>; SIZE_BOARD]; SIZE_BOARD],
@@ -96,7 +96,6 @@ fn decrease_align(
     (x, y): (isize, isize),
     (dx, dy): (&isize, &isize),
     dir: usize,
-    len_align: u8,
     left_edge: Option<bool>,
     right_edge: Option<bool>,
 ) {
@@ -145,7 +144,7 @@ fn change_score_board_remove(
                 match board[new_x as usize][new_y as usize] {
                     //                   None => (println!("Hello3")),
                     a if a == pawn => {
-                        let (align, mut left_edge, mut right_edge) =
+                        let (_, mut left_edge, mut right_edge) =
                             score_board[new_x as usize][new_y as usize][i];
                         if *way == -1 {
                             right_edge = Some(false);
@@ -160,7 +159,6 @@ fn change_score_board_remove(
                             (x, y),
                             (&(way * dx), &(way * dy)),
                             i,
-                            align,
                             left_edge,
                             right_edge,
                         );
@@ -537,14 +535,14 @@ pub fn find_continuous_threats(
         //            x,
         //            y,
         //            match typeofthreat {
-        //                TypeOfThreat::FIVE_TAKE => "FIVE_TAKE",
-        //                TypeOfThreat::FOUR_TAKE => "FOUR_TAKE",
-        //                TypeOfThreat::THREE_TAKE => "THREE_TAKE",
-        //                TypeOfThreat::TWO_TAKE => "TWO_TAKE",
-        //                TypeOfThreat::ONE_TAKE => "ONE_TAKE",
-        //                TypeOfThreat::FOUR_O => "FOUR_O",
-        //                TypeOfThreat::FOUR_SO => "FOUR_SO",
-        //                TypeOfThreat::THREE_O => "THREE_O",
+        //                TypeOfThreat::FiveTake => "FiveTake",
+        //                TypeOfThreat::FourTake => "FourTake",
+        //                TypeOfThreat::ThreeTake => "ThreeTake",
+        //                TypeOfThreat::TwoTake => "TwoTake",
+        //                TypeOfThreat::OneTake => "OneTake",
+        //                TypeOfThreat::FourO => "FourO",
+        //                TypeOfThreat::FourSO => "FourSO",
+        //                TypeOfThreat::ThreeO => "ThreeO",
         //                TypeOfThreat::WIN => "WIN",
         //                TypeOfThreat::EMPTY => "EMPTY",
         //            }
@@ -575,7 +573,7 @@ pub fn find_continuous_threats(
         //            .for_each(|(c_x, c_y)| print!("({},{}); ", c_x, c_y));
         //        println!();
 
-        if counters_valid.len() == 0 && *typeofthreat < TypeOfThreat::FIVE_TAKE {
+        if counters_valid.len() == 0 && *typeofthreat < TypeOfThreat::FiveTake {
             for (x, y) in find_available_pos(board, get_opp!(player_actual)) {
                 if !counters_valid
                     .iter()
@@ -658,18 +656,17 @@ pub fn find_continuous_threats(
     None
 }
 
-macro_rules! get_bool {
-    ($e:expr) => {
-        match $e {
-            Some(true) => "T",
-            Some(false) => "F",
-            None => "N",
-        }
-    };
-}
+//macro_rules! get_bool {
+//    ($e:expr) => {
+//        match $e {
+//            Some(true) => "T",
+//            Some(false) => "F",
+//            None => "N",
+//        }
+//    };
+//}
 
 pub fn board_state_win(
-    board: &mut [[Option<bool>; SIZE_BOARD]; SIZE_BOARD],
     score_board: &mut [[[(u8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD],
     actual_take: &mut isize,
     opp_take: &mut isize,
@@ -949,7 +946,7 @@ mod tests {
             }
             println!();
         }
-        board_state_win(&mut test_board, &mut score_tab, actual_take, opp_take)
+        board_state_win(&mut score_tab, actual_take, opp_take)
     }
 
     #[test]
@@ -1167,7 +1164,7 @@ mod tests {
         black_pos
             .iter()
             .for_each(|&(x, y)| test_board[x][y] = Some(false));
-            
+
         // Print initial configuration
         println!("// Initial configuration:");
         for i in 0..19 {
@@ -1184,13 +1181,13 @@ mod tests {
         let mut score_board = heuristic::evaluate_board(&mut test_board);
 
         let ret = get_space(
-                        &mut test_board,
-                        &mut score_board,
-                        actual_player,
-                        *actual_take,
-                    );
+            &mut test_board,
+            &mut score_board,
+            actual_player,
+            *actual_take,
+        );
 
-        ret.iter().for_each(|&(x,y,_)| { 
+        ret.iter().for_each(|&(x, y, _)| {
             test_board_tmp[x][y] = Some(2);
         });
 
@@ -1209,8 +1206,8 @@ mod tests {
             println!();
         }
 
-        ret.iter().for_each(|(x,y,z)| { 
-            println!("output: ({},{},{})", x, y, z); 
+        ret.iter().for_each(|(x, y, z)| {
+            println!("output: ({},{},{})", x, y, z);
         });
 
         ret == expected_result
@@ -1259,12 +1256,26 @@ mod tests {
     // ___________________
     #[test]
     fn threat_get_space_1() {
-        let black_pos = vec![(9, 8), (9, 7), (9,9)];
-        let white_pos = vec![(9,10)];
+        let black_pos = vec![(9, 8), (9, 7), (9, 9)];
+        let white_pos = vec![(9, 10)];
         let mut white_take = 0_isize;
         let mut black_take = 0_isize;
-        let expected_result = vec![(9,6,500000),(8,8,300),(10,8,300),(8,9,250),(10,9,250),(8,7,200),(9,11,200),(10,7,200),(8,10,150),(10,10,150),(8,6,100),(10,6,100),(8,11,50),
-        (10,11,50)];
+        let expected_result = vec![
+            (9, 6, 500000),
+            (8, 8, 300),
+            (10, 8, 300),
+            (8, 9, 250),
+            (10, 9, 250),
+            (8, 7, 200),
+            (9, 11, 200),
+            (10, 7, 200),
+            (8, 10, 150),
+            (10, 10, 150),
+            (8, 6, 100),
+            (10, 6, 100),
+            (8, 11, 50),
+            (10, 11, 50),
+        ];
 
         assert!(test_get_space(
             white_pos,
@@ -1278,11 +1289,31 @@ mod tests {
 
     #[test]
     fn threat_get_space_2() {
-        let black_pos = vec![(9, 8), (9, 7), (9,9),(7,7)];
-        let white_pos = vec![(9,10)];
+        let black_pos = vec![(9, 8), (9, 7), (9, 9), (7, 7)];
+        let white_pos = vec![(9, 10)];
         let mut white_take = 0_isize;
         let mut black_take = 0_isize;
-        let expected_result = vec![(9,6,500000),(10,8,300),(8,7,250),(8,9,250),(10,9,250),(8,8,200),(9,11,200),(10,7,200),(8,6,150),(8,10,150),(10,10,150),(6,6,100),(6,7,100),(6,8,100),(7,6,100),(7,8,100),(10,6,100),(8,11,50),(10,11,50)];
+        let expected_result = vec![
+            (9, 6, 500000),
+            (10, 8, 300),
+            (8, 7, 250),
+            (8, 9, 250),
+            (10, 9, 250),
+            (8, 8, 200),
+            (9, 11, 200),
+            (10, 7, 200),
+            (8, 6, 150),
+            (8, 10, 150),
+            (10, 10, 150),
+            (6, 6, 100),
+            (6, 7, 100),
+            (6, 8, 100),
+            (7, 6, 100),
+            (7, 8, 100),
+            (10, 6, 100),
+            (8, 11, 50),
+            (10, 11, 50),
+        ];
 
         assert!(test_get_space(
             white_pos,
@@ -1373,6 +1404,4 @@ mod tests {
             expected_result
         ))
     }
-
-
 }

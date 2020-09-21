@@ -31,14 +31,14 @@ mod checks;
 
 const DEPTH_MAX: i8 = 4;
 
-macro_rules! string_of_index {
-    ($line:expr, $col:expr) => {{
-        let col: char = std::char::from_u32('A' as u32 + *$col as u32)
-            .expect("Could not convert number to char");
-        let line = *$line;
-        format!("{}{}", col, line)
-    }};
-}
+//macro_rules! string_of_index {
+//    ($line:expr, $col:expr) => {{
+//        let col: char = std::char::from_u32('A' as u32 + *$col as u32)
+//            .expect("Could not convert number to char");
+//        let line = *$line;
+//        format!("{}{}", col, line)
+//    }};
+//}
 
 const IMAGES: [&str; 46] = [
     "src/content/normal_board.png",

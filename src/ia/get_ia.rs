@@ -15,7 +15,7 @@ use rand::seq::SliceRandom;
 
 const MIN_INFINITY: i64 = i64::min_value() + 1;
 const MAX_INFINITY: i64 = i64::max_value();
-const DEPTH_THREATS: i8 = 10;
+const DEPTH_THREATS: i8 = 8;
 
 macro_rules! get_opp {
     ($e:expr) => {
@@ -72,8 +72,7 @@ fn ab_negamax(
         }
     }
 
-    if *current_depth == *depth_max || board_state_win(board, score_board, actual_catch, opp_catch)
-    {
+    if *current_depth == *depth_max || board_state_win(score_board, actual_catch, opp_catch) {
         let weight = heuristic::first_heuristic_hint(
             board,
             score_board,
@@ -259,7 +258,6 @@ fn iterative_deepening_mtdf(
     actual: Option<bool>,
     actual_catch: &mut isize,
     opp_catch: &mut isize,
-    alpha: &mut i64,
     beta: &mut i64,
     depth_max: &i8,
     game: &mut game::Game,
@@ -273,7 +271,6 @@ fn iterative_deepening_mtdf(
     // println!("before- f: {}", f);
     // for d in [2, 3, 5].iter() {
     for d in (2..(depth_max + 1)).step_by(2) {
-        let mut alpha2 = *alpha;
         let mut beta2 = *beta;
         let mut actual_catch2 = *actual_catch;
         let mut opp_catch2 = *opp_catch;
@@ -350,7 +347,7 @@ fn ia(
             pawn,
             &mut player_catch,
             &mut opponent_catch,
-            &mut 8,
+            &mut DEPTH_THREATS,
             &mut 0,
         ) {
             println!("find threat ({},{})", x, y);
@@ -367,7 +364,6 @@ fn ia(
         pawn,
         &mut player_catch,
         &mut opponent_catch,
-        &mut MIN_INFINITY,
         &mut MAX_INFINITY,
         depth_max,
         game,

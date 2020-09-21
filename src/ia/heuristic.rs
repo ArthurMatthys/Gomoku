@@ -75,7 +75,6 @@ const TWO_STEP_WIN: i64 = 000100000;
 const FOUR_STEP_WIN: i64 = 000010000;
 const SIX_STEP_WIN: i64 = 000001000;
 const FIVE_CAN_TAKE: i64 = 1000000000;
-const TEN_STEP_WIN: i64 = 000000010;
 const SCORE_TAKE: i64 = 000000100;
 pub const MULTIPLIER: i64 = 10;
 
@@ -127,9 +126,9 @@ fn score_to_points(
     total += (nb_3_so / 3) as i64 * FOUR_STEP_WIN / 2;
     total -= (nb_3_c / 3) as i64 * FOUR_STEP_WIN / 4;
 
-    //    total += (nb_2_o / 2) as i64 * SIX_STEP_WIN;
-    //    total += (nb_2_so / 2) as i64 * SIX_STEP_WIN / 2;
-    //    total -= (nb_2_c / 2) as i64 * SIX_STEP_WIN / 4;
+    total += (nb_2_o / 2) as i64 * SIX_STEP_WIN;
+    total += (nb_2_so / 2) as i64 * SIX_STEP_WIN / 2;
+    total -= (nb_2_c / 2) as i64 * SIX_STEP_WIN / 4;
 
     total * ((*depth + 1) as i64 * 2)
 }
