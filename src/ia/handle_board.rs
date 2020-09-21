@@ -4,6 +4,8 @@ use super::super::checks::double_three::check_double_three_hint;
 use super::super::render::board::SIZE_BOARD;
 
 use super::heuristic;
+use super::threat_space::threat_search_space;
+use super::threat_space::TypeOfThreat;
 use super::zobrist;
 
 const SCORE_ALIGN: i64 = 100;
@@ -12,6 +14,15 @@ const SCORE_TAKE: i64 = 100;
 macro_rules! valid_coord {
     ($x: expr, $y: expr) => {
         $x >= 0 && $x < SIZE_BOARD as isize && $y >= 0 && $y < SIZE_BOARD as isize
+    };
+}
+
+macro_rules! get_opp {
+    ($e:expr) => {
+        match $e {
+            Some(a) => Some(!a),
+            _ => unreachable!(),
+        }
     };
 }
 
@@ -485,25 +496,49 @@ pub fn find_continuous_threats(
     if *depth < *depth_win {
         return None;
     }
-    let (winning_pos, available_theats) =
-        get_threats(board, score_board, player_actual, player_actual_catch);
+    let threats: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> =
+        threat_search_space(board, score_board, player_actual, player_actual_catch);
 
-    if winning_pos.len() > 0 {
-        *depth_win = *depth;
-        return Some(winning_pos[0]);
+    if threats.len() == 0 {
+        return None;
     }
 
-    for (threat, counters) in available_theats.iter() {
+    if threats.len() == 1 && threats[0].1 == TypeOfThreat::WIN {
+        return Some(threats[0].0);
+    }
+
+    for (threat, _, counters) in threats.iter() {
         let (x, y) = threat;
         let removed = change_board_hint(board, score_board, *x, *y, player_actual);
         *player_actual_catch += removed.len() as isize;
 
-        //        if (counter.len() == 0){
-        //            INSTANT_WIN
-        //        }
-        for (counter_x, counter_y) in counters.iter() {
-            let removed_counter =
-                change_board_hint(board, score_board, *counter_x, *counter_y, player_actual);
+        let mut counters_valid: Vec<(usize, usize)> = vec![];
+        for (opp_x, opp_y) in counters.iter() {
+            if !check_double_three_hint(board, player_actual, *opp_x as isize, *opp_y as isize) {
+                counters_valid.push((*opp_x, *opp_y));
+            }
+        }
+
+        if counters_valid.len() == 0 {
+            for (x, y, _) in get_space(
+                board,
+                score_board,
+                get_opp!(player_actual),
+                *player_opposite_catch,
+            ) {
+                counters_valid.push((x, y));
+            }
+        }
+        let mut win: bool = true;
+
+        for (counter_x, counter_y) in counters_valid.iter() {
+            let removed_counter = change_board_hint(
+                board,
+                score_board,
+                *counter_x,
+                *counter_y,
+                get_opp!(player_actual),
+            );
             *player_opposite_catch += removed_counter.len() as isize;
             let res = find_continuous_threats(
                 board,
@@ -515,14 +550,25 @@ pub fn find_continuous_threats(
                 depth_win,
             );
             *player_opposite_catch -= removed_counter.len() as isize;
-            remove_last_pawn_hint(board, score_board, *x, *y, player_actual, removed_counter);
-            if let Some(coords) = res {
-                return Some(coords);
+            remove_last_pawn_hint(
+                board,
+                score_board,
+                *counter_x,
+                *counter_y,
+                get_opp!(player_actual),
+                removed_counter,
+            );
+
+            if res == None {
+                win = false;
             }
         }
-
         *player_actual_catch -= removed.len() as isize;
         remove_last_pawn_hint(board, score_board, *x, *y, player_actual, removed);
+
+        if win {
+            return Some((*x, *y));
+        }
     }
     None
 }

@@ -45,6 +45,19 @@ fn ab_negamax(
     let mut tte = zobrist::retrieve_tt_from_hash(tt, zhash);
     let alpha_orig = *alpha;
 
+    //let test_threats = find_continuous_threats(
+    //    board,
+    //    score_board,
+    //    actual,
+    //    actual_catch,
+    //    opp_catch,
+    //    &mut DEPTH_THREATS,
+    //    &mut 0,
+    //);
+    //match test_threats {
+    //    None => println!("No threats found"),
+    //    Some((x, y)) => println!("threat in {}:{}", x, y),
+    //};
     if let Some((x, y)) = find_continuous_threats(
         board,
         score_board,
@@ -54,6 +67,7 @@ fn ab_negamax(
         &mut DEPTH_THREATS,
         &mut 0,
     ) {
+        println!("yoo");
         return (
             heuristic::INSTANT_WIN * heuristic::MULTIPLIER.pow(*current_depth as u32),
             Some((x, y)),
@@ -112,20 +126,19 @@ fn ab_negamax(
                     &mut (-*beta),
                     &mut (-*alpha),
                     &mut (-*color),
-                    depth_max
+                    depth_max,
                 );
                 let x = -recursed_score;
 
                 *actual_catch -= removed.len() as isize;
                 remove_last_pawn(board, score_board, line, col, actual, removed, table, zhash);
-                
-                
+
                 if x >= *beta {
                     // println!("rentré_cutoff");
                     best_score = x;
                     best_move = tte.r#move;
                     trig = true;
-                } 
+                }
                 // else {
                 //     best_score = MIN_INFINITY;
                 //     best_move = None;
@@ -156,7 +169,7 @@ fn ab_negamax(
                 &mut (-*beta),
                 &mut (-*alpha),
                 &mut (-*color),
-                depth_max
+                depth_max,
             );
 
             let x = -recursed_score;
@@ -265,11 +278,11 @@ fn iterative_deepening_mtdf(
     depth_max: &i8,
     game: &mut game::Game,
 ) -> (usize, usize) {
-    let mut ret = (0,0);
+    let mut ret = (0, 0);
     let mut f = match actual {
         Some(true) => game.firstguess.0,
         Some(false) => game.firstguess.1,
-        None => unreachable!()
+        None => unreachable!(),
     };
     let mut score_board = heuristic::evaluate_board(board);
     // println!("before- f: {}", f);
@@ -302,7 +315,7 @@ fn iterative_deepening_mtdf(
     match actual {
         Some(true) => game.firstguess.0 = f,
         Some(false) => game.firstguess.1 = f,
-        None => unreachable!()
+        None => unreachable!(),
     };
     // println!("after- f: {}", f);
     ret
