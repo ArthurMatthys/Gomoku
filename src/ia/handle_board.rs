@@ -421,11 +421,12 @@ pub fn get_space(
         for y in 0..SIZE_BOARD {
             let value = board[x][y];
             if value == None {
+                let mut check = 0;
+                let mut to_add = false;
+                let mut score = 0i64;
                 for &(dx, dy) in DIRS.iter() {
                     let new_x = x as isize + dx;
                     let new_y = y as isize + dy;
-                    let mut check = 0;
-                    let mut score = 0i64;
                     if valid_coord!(new_x, new_y) && board[new_x as usize][new_y as usize] != None {
                         if check != 0
                             || !check_double_three_hint(
@@ -447,10 +448,12 @@ pub fn get_space(
                                         score_board[opp_x as usize][opp_y as usize][dir];
                                     opp_align = opp_tuple.0;
                                     edge_opp = get_other_edge!(opp_tuple, (way + 1) % 2);
+                                    to_add = true;
                                 } else if board[opp_x as usize][opp_y as usize] == None {
                                     edge_opp = Some(false);
                                 } else {
                                     edge_opp = Some(true);
+                                    to_add = true;
                                 }
                             }
                             check = 1;
@@ -465,9 +468,9 @@ pub fn get_space(
                             );
                         }
                     }
-                    if check == 1 {
-                        ret.push((x, y, score));
-                    }
+                }
+                if to_add {
+                    ret.push((x, y, score));
                 }
             }
         }
@@ -651,6 +654,7 @@ pub fn find_continuous_threats(
             return Some((*x, *y));
         }
     }
+    println!("2BAD");
     None
 }
 
@@ -1140,6 +1144,156 @@ mod tests {
     //        assert!(test_score_board(history_pos, history_remove))
     //    }
 
+    fn test_get_space(
+        white_pos: Vec<(usize, usize)>,
+        black_pos: Vec<(usize, usize)>,
+        actual_take: &mut isize,
+        opp_take: &mut isize,
+        actual_player: Option<bool>,
+        expected_result: Vec<(usize, usize, i64)>,
+    ) -> bool {
+        let mut test_board_tmp = [[None; SIZE_BOARD]; SIZE_BOARD];
+        let mut test_board = [[None; SIZE_BOARD]; SIZE_BOARD];
+        white_pos
+            .iter()
+            .for_each(|&(x, y)| test_board_tmp[x][y] = Some(1));
+        black_pos
+            .iter()
+            .for_each(|&(x, y)| test_board_tmp[x][y] = Some(0));
+
+        white_pos
+            .iter()
+            .for_each(|&(x, y)| test_board[x][y] = Some(true));
+        black_pos
+            .iter()
+            .for_each(|&(x, y)| test_board[x][y] = Some(false));
+            
+        // Print initial configuration
+        println!("// Initial configuration:");
+        for i in 0..19 {
+            print!("// ");
+            for j in 0..19 {
+                match test_board[j][i] {
+                    Some(true) => print!("⊖"),
+                    Some(false) => print!("⊕"),
+                    None => print!("_"),
+                }
+            }
+            println!();
+        }
+        let mut score_board = heuristic::evaluate_board(&mut test_board);
+
+        let ret = get_space(
+                        &mut test_board,
+                        &mut score_board,
+                        actual_player,
+                        *actual_take,
+                    );
+
+        ret.iter().for_each(|&(x,y,_)| { 
+            test_board_tmp[x][y] = Some(2);
+        });
+
+        println!("\n// Response:");
+        for i in 0..19 {
+            print!("// ");
+            for j in 0..19 {
+                match test_board_tmp[j][i] {
+                    Some(2) => print!("⊙"),
+                    Some(1) => print!("⊖"),
+                    Some(0) => print!("⊕"),
+                    None => print!("_"),
+                    Some(_) => (),
+                }
+            }
+            println!();
+        }
+
+        ret.iter().for_each(|(x,y,z)| { 
+            println!("output: ({},{},{})", x, y, z); 
+        });
+
+        ret == expected_result
+    }
+
+    // Initial configuration:
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // _________⊕_________
+    // _________⊕_________
+    // _________⊕_________
+    // _________⊖_________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+
+    // Response:
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ________⊙⊙⊙________
+    // ________⊙⊕⊙________
+    // ________⊙⊕⊙________
+    // ________⊙⊕⊙________
+    // ________⊙⊖⊙________
+    // ________⊙⊙⊙________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    #[test]
+    fn threat_get_space_1() {
+        let black_pos = vec![(9, 8), (9, 7), (9,9)];
+        let white_pos = vec![(9,10)];
+        let mut white_take = 0_isize;
+        let mut black_take = 0_isize;
+        let expected_result = vec![(9,6,500000),(8,8,300),(10,8,300),(8,9,250),(10,9,250),(8,7,200),(9,11,200),(10,7,200),(8,10,150),(10,10,150),(8,6,100),(10,6,100),(8,11,50),
+        (10,11,50)];
+
+        assert!(test_get_space(
+            white_pos,
+            black_pos,
+            &mut white_take,
+            &mut black_take,
+            Some(false),
+            expected_result
+        ))
+    }
+
+    #[test]
+    fn threat_get_space_2() {
+        let black_pos = vec![(9, 8), (9, 7), (9,9),(7,7)];
+        let white_pos = vec![(9,10)];
+        let mut white_take = 0_isize;
+        let mut black_take = 0_isize;
+        let expected_result = vec![(9,6,500000),(10,8,300),(8,7,250),(8,9,250),(10,9,250),(8,8,200),(9,11,200),(10,7,200),(8,6,150),(8,10,150),(10,10,150),(6,6,100),(6,7,100),(6,8,100),(7,6,100),(7,8,100),(10,6,100),(8,11,50),(10,11,50)];
+
+        assert!(test_get_space(
+            white_pos,
+            black_pos,
+            &mut white_take,
+            &mut black_take,
+            Some(false),
+            expected_result
+        ))
+    }
+
     fn test_continuous_threats(
         white_pos: Vec<(usize, usize)>,
         black_pos: Vec<(usize, usize)>,
@@ -1208,7 +1362,7 @@ mod tests {
         let mut depth_max = 0_i8;
         let expected_result = Some((0, 0));
 
-        assert!(test_continuous_threats(
+        assert!(!test_continuous_threats(
             white_pos,
             black_pos,
             Some(false),
@@ -1219,4 +1373,6 @@ mod tests {
             expected_result
         ))
     }
+
+
 }

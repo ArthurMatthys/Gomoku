@@ -1213,6 +1213,87 @@ fn connect_3(
     ret
 }
 
+fn test_catch_board(
+    board: &mut [[Option<bool>; SIZE_BOARD]; SIZE_BOARD],
+    score_board: &mut [[[(u8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD],
+    actual_player: Option<bool>,
+    actual_take: &mut isize,
+) -> (((usize, usize), u8), bool) {
+    let mut catch_board: [[u8; SIZE_BOARD]; SIZE_BOARD] = [[0; SIZE_BOARD]; SIZE_BOARD];
+    
+    for line in 0..SIZE_BOARD {
+        for col in 0..SIZE_BOARD {
+            if board[line][col] == get_opp!(actual_player) {
+                for dir in 0..4 {
+                    let (mut new_line, mut new_col): (isize, isize) = (line as isize, col as isize);
+                    match score_board[line][col][dir] {
+                        (2, Some(true), Some(false)) => {
+                            println!("PREV_MATCH: ({},{})", new_line, new_col);
+                            // println!("ici");
+                            explore_align_light!(board, new_line, new_col, get_opp!(actual_player), dir, 1);
+                            // explore_one!(new_line, new_col, dir, 1);
+                            // if true {
+                            if !check_double_three_hint(board, actual_player, new_line, new_col) {
+                                println!("I MATCH1: ({},{})", new_line, new_col);
+                                catch_board[new_line as usize][new_col as usize] += 1;
+                            }
+                        }
+                        // (2, Some(false), Some(true)) | (2, Some(false), None) => {
+                        (2, Some(false), Some(true)) => {
+                            println!("PREV_MATCH: ({},{})", new_line, new_col);
+                            // println!("la");
+                            explore_align_light!(board, new_line, new_col, get_opp!(actual_player), dir, -1);
+                            // explore_one!(new_line, new_col, dir, -1);
+                            // explore_one!(new_line, new_col, dir, -1);
+                            if !check_double_three_hint(board, actual_player, new_line, new_col) {
+                                println!("I MATCH2: ({},{})", new_line, new_col);
+                                catch_board[new_line as usize][new_col as usize] += 1;
+                            }
+                        }
+                        _ => continue,
+                    }
+                }
+            }
+        }
+    }
+
+    for line in 0..SIZE_BOARD {
+        for col in 0..SIZE_BOARD {
+            print!("{} ", catch_board[col][line]);
+        }
+        println!("");
+    }
+
+    // Check for WIN with catches
+    // 1. Find max and count how many different catches we have
+    let mut max: ((usize, usize), u8) = ((0, 0), 0);
+    let mut counter: u8 = 0;
+    catch_board.iter().enumerate().for_each(|(line, elements)| {
+        elements.iter().enumerate().for_each(|(col, &el)| {
+            if el > 0 {
+                counter += 1;
+                if el > max.1 {
+                    println!("good");
+                    max = ((line, col), el);
+                }
+            }
+        });
+    });
+
+    let decompos = max.0;
+    println!("Counter: {}, [({},{}),{}]", counter, decompos.0, decompos.1, max.1);
+
+    // 2. Check if catch leads to instant win and returns it yes
+    if *actual_take + (max.1 / 2) as isize >= 5
+        || *actual_take + (max.1 / 2) as isize == 4 && counter > 2
+    {
+       println!("WIN");
+      return (max, true)
+    }
+
+    (max,false)
+}
+
 pub fn threat_search_space(
     board: &mut [[Option<bool>; SIZE_BOARD]; SIZE_BOARD],
     score_board: &mut [[[(u8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD],
@@ -1322,7 +1403,7 @@ pub fn threat_search_space(
                     match score_board[line][col][dir] {
                         (2, Some(true), Some(false)) => {
                             // println!("ici");
-                            explore_align_light!(board, new_line, new_col, actual_player, dir, 1);
+                            explore_align_light!(board, new_line, new_col, get_opp!(actual_player), dir, 1);
                             if !check_double_three_hint(board, actual_player, new_line, new_col) {
                                 catch_board[new_line as usize][new_col as usize] += 1;
                             }
@@ -1330,7 +1411,7 @@ pub fn threat_search_space(
                         // (2, Some(false), Some(true)) | (2, Some(false), None) => {
                         (2, Some(false), Some(true)) => {
                             // println!("la");
-                            explore_align_light!(board, new_line, new_col, actual_player, dir, -1);
+                            explore_align_light!(board, new_line, new_col, get_opp!(actual_player), dir, -1);
                             if !check_double_three_hint(board, actual_player, new_line, new_col) {
                                 catch_board[new_line as usize][new_col as usize] += 1;
                             }
@@ -1505,6 +1586,274 @@ mod tests {
         assert!(!test_capture_blank(white_pos, black_pos, Some(false), x, y))
     }
 
+    fn test_catch_tss(
+        white_pos: Vec<(usize, usize)>,
+        black_pos: Vec<(usize, usize)>,
+        actual_take: &mut isize,
+        opp_take: &mut isize,
+        actual_player: Option<bool>,
+        expected_result: (((usize, usize), u8), bool),
+    ) -> bool {
+        let mut test_board = [[None; SIZE_BOARD]; SIZE_BOARD];
+        white_pos
+            .iter()
+            .for_each(|&(x, y)| test_board[x][y] = Some(true));
+        black_pos
+            .iter()
+            .for_each(|&(x, y)| test_board[x][y] = Some(false));
+        // Print initial configuration
+        println!("// Initial configuration:");
+        for i in 0..19 {
+            print!("// ");
+            for j in 0..19 {
+                match test_board[j][i] {
+                    Some(true) => print!("⊖"),
+                    Some(false) => print!("⊕"),
+                    None => print!("_"),
+                }
+            }
+            println!();
+        }
+        let mut score_board = heuristic::evaluate_board(&mut test_board);
+
+            let ret = test_catch_board(
+            &mut test_board,
+            &mut score_board,
+            actual_player,
+            actual_take,
+        );
+        ret == expected_result
+    }
+
+    // Initial configuration:
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // _________⊕_________
+    // _________⊕_________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    #[test]
+    fn threat_catch_tss_1() {
+        let black_pos = vec![(9, 8), (9, 7)];
+        let white_pos = vec![];
+        let mut white_take = 0_isize;
+        let mut black_take = 0_isize;
+        let expected_result = (((0, 0), 0), false);
+
+        assert!(test_catch_tss(
+            white_pos,
+            black_pos,
+            &mut white_take,
+            &mut black_take,
+            Some(false),
+            expected_result
+        ))
+    }
+
+    // Initial configuration:
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // _________⊖_________
+    // _________⊕_________
+    // _________⊕_________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    #[test]
+    fn threat_catch_tss_2() {
+        let black_pos = vec![(9, 8), (9, 7)];
+        let white_pos = vec![(9,6)];
+        let mut white_take = 0_isize;
+        let mut black_take = 0_isize;
+        let expected_result = (((0, 0), 0), false);
+
+        assert!(test_catch_tss(
+            white_pos,
+            black_pos,
+            &mut white_take,
+            &mut black_take,
+            Some(false),
+            expected_result
+        ))
+    }
+
+    // Initial configuration:
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // _________⊖_________
+    // _________⊕_________
+    // _________⊕_________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    #[test]
+    fn threat_catch_tss_3() {
+        let black_pos = vec![(9, 8), (9, 7)];
+        let white_pos = vec![(9,6)];
+        let mut white_take = 4_isize;
+        let mut black_take = 0_isize;
+        let expected_result = (((9, 9), 2), true);
+
+        assert!(test_catch_tss(
+            white_pos,
+            black_pos,
+            &mut white_take,
+            &mut black_take,
+            Some(true),
+            expected_result
+        ))
+    }
+
+    // Initial configuration:
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // _________⊖_________
+    // _________⊕_________
+    // _________⊕_________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    #[test]
+    fn threat_catch_tss_4() {
+        let black_pos = vec![(9, 8), (9, 7)];
+        let white_pos = vec![(9,6)];
+        let mut white_take = 3_isize;
+        let mut black_take = 0_isize;
+        let expected_result = (((9, 9), 2), false);
+
+        assert!(test_catch_tss(
+            white_pos,
+            black_pos,
+            &mut white_take,
+            &mut black_take,
+            Some(true),
+            expected_result
+        ))
+    }
+
+    // Initial configuration:
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // _________⊖_________
+    // _________⊕_________
+    // _________⊕_________
+    // __________⊖⊖_______
+    // __________⊖________
+    // ___________⊖_______
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    #[test]
+    fn threat_catch_tss_5() {
+        let black_pos = vec![(9, 8),(9, 7)];
+        let white_pos = vec![(9,6),(10,9),(11,9), (10,10), (11,11)];
+        let mut white_take = 4_isize;
+        let mut black_take = 0_isize;
+        let expected_result = (((0, 0), 0), false);
+
+        assert!(test_catch_tss(
+            white_pos,
+            black_pos,
+            &mut white_take,
+            &mut black_take,
+            Some(true),
+            expected_result
+        ))
+    }
+
+    // Initial configuration:
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // _________⊖_________
+    // _________⊕_________
+    // _________⊕_________
+    // ___________________
+    // __________⊕________
+    // ___________⊕_______
+    // ____________⊖______
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    #[test]
+    fn threat_catch_tss_6() {
+        let black_pos = vec![(9, 8), (9, 7), (10,10), (11,11)];
+        let white_pos = vec![(9,6), (12,12)];
+        let mut white_take = 3_isize;
+        let mut black_take = 0_isize;
+        let expected_result = (((9, 9), 4), true);
+
+        assert!(test_catch_tss(
+            white_pos,
+            black_pos,
+            &mut white_take,
+            &mut black_take,
+            Some(true),
+            expected_result
+        ))
+    }
+
+
     fn test_threat_2(
         white_pos: Vec<(usize, usize)>,
         black_pos: Vec<(usize, usize)>,
@@ -1537,38 +1886,13 @@ mod tests {
         let mut score_board = heuristic::evaluate_board(&mut test_board);
         let mut record: [[[bool; 4]; SIZE_BOARD]; SIZE_BOARD] =
             initialize_record(&mut test_board, &mut score_board, actual_player);
-        // let mut threat_board: Vec<Vec<Vec<(TypeOfThreat, Vec<(usize,usize)>)>>> = (0..SIZE_BOARD).map(|_|
-        //         (0..SIZE_BOARD).map(|_|
-        //             Vec::with_capacity(AVRG_MAX_MULTIPLE_THREATS)
-        //         ).collect()
-        //  ).collect();
 
         let mut tmp_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![];
         let mut global_results: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![];
-        // for i in 0..19 {
-        //     for j in 0..19 {
-        //         match test_board[j][i] {
-        //             Some(true) => print!("B"),
-        //             Some(false) => print!("N"),
-        //             None => print!("E"),
-        //         }
-        //         score_board[j][i].iter().for_each(|&(value, a, b)| {
-        //             print!("{:2}{}{}", value, get_bool!(a), get_bool!(b))
-        //         });
-        //         print!(" ");
-        //     }
-        //     println!();
-        // }
+        
         for dir in 0..4 {
             tmp_result = match score_board[pos2check.0][pos2check.1][dir].0 {
-                4 => connect_4(
-                    pos2check,
-                    &mut score_board,
-                    &mut test_board,
-                    &mut record,
-                    actual_player,
-                    dir,
-                ),
+                // 4 => (),
                 // 3 => { connect_4(pos2check, &mut score_board, &mut test_board, &mut record, actual_player, actual_take, dir) },
                 // 2 => { println!("OUPS_I_DID_IT_AGAIN") ; connect_2(&mut test_board, &mut score_board, &mut record, actual_player, pos2check, dir) }
                 2 => connect_2(
