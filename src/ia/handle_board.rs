@@ -931,7 +931,6 @@ mod tests {
             }
             println!();
         }
-        let mut score_board = heuristic::evaluate_board(&mut test_board);
         for i in 0..19 {
             for j in 0..19 {
                 match test_board[j][i] {
@@ -1040,86 +1039,6 @@ mod tests {
         ))
     }
 
-    fn test_score_board(
-        history_pos: Vec<(usize, usize)>,
-        history_remove: Vec<(usize, usize)>,
-    ) -> bool {
-        let mut test_board = [[None; SIZE_BOARD]; SIZE_BOARD];
-        let mut score_board: [[[(u8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD] =
-            [[[(0, Some(false), Some(false)); 4]; SIZE_BOARD]; SIZE_BOARD];
-        let mut pawn = Some(false);
-
-        for &(x, y) in history_pos.iter() {
-            test_board[x][y] = pawn;
-            change_score_board_add(&mut test_board, &mut score_board, x as isize, y as isize);
-            for i in 0..19 {
-                for j in 0..19 {
-                    match test_board[j][i] {
-                        Some(true) => print!("⊖"),
-                        Some(false) => print!("⊕"),
-                        None => print!("_"),
-                    }
-                }
-                println!();
-            }
-            for i in 0..19 {
-                for j in 0..19 {
-                    match test_board[j][i] {
-                        Some(true) => print!("W"),
-                        Some(false) => print!("B"),
-                        None => print!("E"),
-                    }
-                    score_board[j][i].iter().for_each(|&(value, a, b)| {
-                        print!("{:2}{}{}", value, get_bool!(a), get_bool!(b))
-                    });
-                    print!(" ");
-                }
-                println!();
-            }
-            if pawn == Some(false) {
-                pawn = Some(true);
-            } else {
-                pawn = Some(false);
-            }
-            println!("-----------");
-        }
-        for &(x, y) in history_remove.iter() {
-            change_score_board_remove(&mut test_board, &mut score_board, x as isize, y as isize);
-            test_board[x][y] = None;
-            for i in 0..19 {
-                for j in 0..19 {
-                    match test_board[j][i] {
-                        Some(true) => print!("⊖"),
-                        Some(false) => print!("⊕"),
-                        None => print!("_"),
-                    }
-                }
-                println!();
-            }
-            for i in 0..19 {
-                for j in 0..19 {
-                    match test_board[j][i] {
-                        Some(true) => print!("W"),
-                        Some(false) => print!("B"),
-                        None => print!("E"),
-                    }
-                    score_board[j][i].iter().for_each(|&(value, a, b)| {
-                        print!("{:2}{}{}", value, get_bool!(a), get_bool!(b))
-                    });
-                    print!(" ");
-                }
-                println!();
-            }
-            if pawn == Some(false) {
-                pawn = Some(true);
-            } else {
-                pawn = Some(false);
-            }
-            println!("-----------");
-        }
-        false
-    }
-
     //    #[test]
     //    fn test_add_pawn_scoreboard0() {
     //        let history_pos = vec![
@@ -1141,11 +1060,90 @@ mod tests {
     //        assert!(test_score_board(history_pos, history_remove))
     //    }
 
+    // fn test_score_board(
+    //     history_pos: Vec<(usize, usize)>,
+    //     history_remove: Vec<(usize, usize)>,
+    // ) -> bool {
+    //     let mut test_board = [[None; SIZE_BOARD]; SIZE_BOARD];
+    //     let mut score_board: [[[(u8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD] =
+    //         [[[(0, Some(false), Some(false)); 4]; SIZE_BOARD]; SIZE_BOARD];
+    //     let mut pawn = Some(false);
+
+    //     for &(x, y) in history_pos.iter() {
+    //         test_board[x][y] = pawn;
+    //         change_score_board_add(&mut test_board, &mut score_board, x as isize, y as isize);
+    //         for i in 0..19 {
+    //             for j in 0..19 {
+    //                 match test_board[j][i] {
+    //                     Some(true) => print!("⊖"),
+    //                     Some(false) => print!("⊕"),
+    //                     None => print!("_"),
+    //                 }
+    //             }
+    //             println!();
+    //         }
+    //         for i in 0..19 {
+    //             for j in 0..19 {
+    //                 match test_board[j][i] {
+    //                     Some(true) => print!("W"),
+    //                     Some(false) => print!("B"),
+    //                     None => print!("E"),
+    //                 }
+    //                 score_board[j][i].iter().for_each(|&(value, a, b)| {
+    //                     print!("{:2}{}{}", value, get_bool!(a), get_bool!(b))
+    //                 });
+    //                 print!(" ");
+    //             }
+    //             println!();
+    //         }
+    //         if pawn == Some(false) {
+    //             pawn = Some(true);
+    //         } else {
+    //             pawn = Some(false);
+    //         }
+    //         println!("-----------");
+    //     }
+    //     for &(x, y) in history_remove.iter() {
+    //         change_score_board_remove(&mut test_board, &mut score_board, x as isize, y as isize);
+    //         test_board[x][y] = None;
+    //         for i in 0..19 {
+    //             for j in 0..19 {
+    //                 match test_board[j][i] {
+    //                     Some(true) => print!("⊖"),
+    //                     Some(false) => print!("⊕"),
+    //                     None => print!("_"),
+    //                 }
+    //             }
+    //             println!();
+    //         }
+    //         for i in 0..19 {
+    //             for j in 0..19 {
+    //                 match test_board[j][i] {
+    //                     Some(true) => print!("W"),
+    //                     Some(false) => print!("B"),
+    //                     None => print!("E"),
+    //                 }
+    //                 score_board[j][i].iter().for_each(|&(value, a, b)| {
+    //                     print!("{:2}{}{}", value, get_bool!(a), get_bool!(b))
+    //                 });
+    //                 print!(" ");
+    //             }
+    //             println!();
+    //         }
+    //         if pawn == Some(false) {
+    //             pawn = Some(true);
+    //         } else {
+    //             pawn = Some(false);
+    //         }
+    //         println!("-----------");
+    //     }
+    //     false
+    // }
+
     fn test_get_space(
         white_pos: Vec<(usize, usize)>,
         black_pos: Vec<(usize, usize)>,
         actual_take: &mut isize,
-        opp_take: &mut isize,
         actual_player: Option<bool>,
         expected_result: Vec<(usize, usize, i64)>,
     ) -> bool {
@@ -1259,7 +1257,6 @@ mod tests {
         let black_pos = vec![(9, 8), (9, 7), (9, 9)];
         let white_pos = vec![(9, 10)];
         let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result = vec![
             (9, 6, 500000),
             (8, 8, 300),
@@ -1281,7 +1278,6 @@ mod tests {
             white_pos,
             black_pos,
             &mut white_take,
-            &mut black_take,
             Some(false),
             expected_result
         ))
@@ -1292,7 +1288,6 @@ mod tests {
         let black_pos = vec![(9, 8), (9, 7), (9, 9), (7, 7)];
         let white_pos = vec![(9, 10)];
         let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result = vec![
             (9, 6, 500000),
             (10, 8, 300),
@@ -1319,7 +1314,6 @@ mod tests {
             white_pos,
             black_pos,
             &mut white_take,
-            &mut black_take,
             Some(false),
             expected_result
         ))
