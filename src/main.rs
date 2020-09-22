@@ -26,8 +26,10 @@ mod ia;
 use ia::get_ia;
 use ia::zobrist;
 //use ia::heuristic;
-
 mod checks;
+
+#[global_allocator]
+static GLOBAL: jemallocator::Jemalloc = jemallocator::Jemalloc;
 
 const DEPTH_MAX: i8 = 4;
 

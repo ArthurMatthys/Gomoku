@@ -652,7 +652,6 @@ pub fn find_continuous_threats(
             return Some((*x, *y));
         }
     }
-    println!("2BAD");
     None
 }
 
