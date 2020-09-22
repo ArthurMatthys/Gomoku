@@ -1,4 +1,6 @@
 use super::super::checks::after_turn_check::DIRECTIONS;
+use std::thread::sleep;
+use std::time::Duration;
 
 use super::super::render::board::SIZE_BOARD;
 
@@ -367,7 +369,21 @@ fn get_alignements(
                         actual_tuple.1 += 1;
                     }
                 }
-                (_, _, _) => unreachable!(),
+                (a, _, _) => {
+                    for i in 0..19 {
+                        for j in 0..19 {
+                            match board[j][i] {
+                                Some(true) => print!("⊖"),
+                                Some(false) => print!("⊕"),
+                                None => print!("_"),
+                            }
+                        }
+                        println!();
+                    }
+                    println!("len : {}, ({},{})", a, x, y);
+                    sleep(Duration::new(15, 1_000_000_000u32 / 60));
+                    unreachable!()
+                }
             }
         }
     };
