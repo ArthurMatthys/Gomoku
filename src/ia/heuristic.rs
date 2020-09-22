@@ -74,8 +74,9 @@ pub const INSTANT_WIN: i64 = 00010000000000;
 const TWO_STEP_WIN: i64 = 000100000;
 const FOUR_STEP_WIN: i64 = 000010000;
 const SIX_STEP_WIN: i64 = 000001000;
-const FIVE_CAN_TAKE: i64 = 1000000000;
-const SCORE_TAKE: i64 = 000000100;
+const FIVE_CAN_TAKE: i64 = 0010000000;
+const SCORE_TAKE: i64 = 000010000;
+const SCORE_CAN_TAKE: i64 = 000000100;
 pub const MULTIPLIER: i64 = 10;
 
 fn score_to_points(
@@ -98,10 +99,10 @@ fn score_to_points(
 ) -> i64 {
     let mut total = 0i64;
     match *nb_caught {
-        5..=8 => return INSTANT_WIN * MULTIPLIER.pow(*depth as u32),
+        5..=8 => return INSTANT_WIN * ((*depth + 1) as i64 * 2),
         4 => {
             if nb_catch > 2 {
-                return INSTANT_WIN * MULTIPLIER.pow(*depth as u32);
+                return INSTANT_WIN * ((*depth + 1) as i64 * 2);
             } else if nb_catch == 2 {
                 total += TWO_STEP_WIN;
             }
@@ -110,13 +111,13 @@ fn score_to_points(
             //
             //        }
         }
-        a => total += SCORE_TAKE * MULTIPLIER.pow((a + 1) as u32 * 2) * nb_catch as i64,
+        a => total += SCORE_TAKE * (a as i64 * SCORE_CAN_TAKE) * ((nb_catch + 1) as u32) as i64,
         // a => total += 0,
     }
     if nb_5 > 0 {
-        return INSTANT_WIN * MULTIPLIER.pow(*depth as u32);
+        return INSTANT_WIN * ((*depth + 1) as i64 * 2);
     }
-    total += (nb_5_take / 5) as i64 * FIVE_CAN_TAKE * MULTIPLIER.pow(*depth as u32);
+    total += (nb_5_take / 5) as i64 * FIVE_CAN_TAKE;
 
     total += (nb_4_o / 4) as i64 * TWO_STEP_WIN;
     total += (nb_4_so / 4) as i64 * TWO_STEP_WIN / 2;
@@ -126,11 +127,11 @@ fn score_to_points(
     total += (nb_3_so / 3) as i64 * FOUR_STEP_WIN / 2;
     total -= (nb_3_c / 3) as i64 * FOUR_STEP_WIN / 4;
 
-    total += (nb_2_o / 2) as i64 * SIX_STEP_WIN;
-    total += (nb_2_so / 2) as i64 * SIX_STEP_WIN / 2;
-    total -= (nb_2_c / 2) as i64 * SIX_STEP_WIN / 4;
+    //total += (nb_2_o / 2) as i64 * SIX_STEP_WIN;
+    //total += (nb_2_so / 2) as i64 * SIX_STEP_WIN / 2;
+    //total -= (nb_2_c / 2) as i64 * SIX_STEP_WIN / 4;
 
-    total * ((*depth + 1) as i64 * 2)
+    total * ((*depth + 1) as i64 * 10)
 }
 
 pub fn first_heuristic_hint(
@@ -144,7 +145,7 @@ pub fn first_heuristic_hint(
     let (good_points, bad_points) = get_alignements(board, score_board, player_actual);
 
     score_to_points(player_actual_catch, good_points, depth)
-        - score_to_points(player_opposite_catch, bad_points, depth)
+        - 10 * score_to_points(player_opposite_catch, bad_points, depth)
 }
 
 fn get_alignements(

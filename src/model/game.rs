@@ -187,7 +187,7 @@ impl Game {
                 best_move: vec![],
                 instant_win: false,
                 winner: None,
-                firstguess: (0,0),
+                firstguess: (0, 0),
             },
             events,
         ))
@@ -633,7 +633,7 @@ impl Game {
                         for y in 0..19 {
                             if Some(!winner) == self.board[x][y] {
                                 for dir in 0..4 {
-                                    if score_board[x][y][dir].0 == 5 {
+                                    if score_board[x][y][dir].0 >= 5 {
                                         self.instant_win = true;
                                         self.winner = self.player_to_pawn();
                                         return true;

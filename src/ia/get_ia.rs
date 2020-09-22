@@ -5,7 +5,8 @@ use super::super::checks::capture;
 use super::super::model::game;
 use super::super::render::board::SIZE_BOARD;
 use super::handle_board::{
-    board_state_win, change_board, find_continuous_threats, get_space, remove_last_pawn,
+    board_state_win, change_board, find_continuous_threats, get_space, null_move_heuristic,
+    remove_last_pawn,
 };
 // use super::super::model::player;
 use super::heuristic;
@@ -15,7 +16,7 @@ use rand::seq::SliceRandom;
 
 const MIN_INFINITY: i64 = i64::min_value() + 1;
 const MAX_INFINITY: i64 = i64::max_value();
-const DEPTH_THREATS: i8 = 8;
+const DEPTH_THREATS: i8 = 10;
 
 macro_rules! get_opp {
     ($e:expr) => {
@@ -45,17 +46,6 @@ fn ab_negamax(
     let mut tte = zobrist::retrieve_tt_from_hash(tt, zhash);
     let alpha_orig = *alpha;
 
-    if let Some((x, y)) = find_continuous_threats(
-        board,
-        score_board,
-        actual,
-        actual_catch,
-        opp_catch,
-        &mut DEPTH_THREATS,
-        &mut 0,
-    ) {
-        return (*alpha, Some((x, y)));
-    }
     if tte.is_valid && tte.depth == *depth_max - *current_depth {
         if tte.r#type == zobrist::TypeOfEl::Exact {
             return (tte.value, tte.r#move);
@@ -266,6 +256,7 @@ fn iterative_deepening_mtdf(
         Some(false) => game.firstguess.1,
         None => unreachable!(),
     };
+
     // println!("before- f: {}", f);
     // for d in [2, 3, 5].iter() {
     for d in (2..(depth_max + 1)).step_by(2) {
@@ -325,34 +316,29 @@ fn ia(
     //     &mut MIN_INFINITY,
     //     &mut MAX_INFINITY,
     //
-    //    println!("Start continuous threats");
-    //    let mut find_threat = true;
-    //    if let Some(_) = find_continuous_threats(
-    //        &mut board,
-    //        &mut score_board,
-    //        get_opp!(pawn),
-    //        &mut opponent_catch,
-    //        &mut player_catch,
-    //        &mut 0,
-    //        &mut 0,
-    //    ) {
-    //        find_threat = false;
-    //    }
-    //    if find_threat {
-    //        if let Some((x, y)) = find_continuous_threats(
-    //            &mut board,
-    //            &mut score_board,
-    //            pawn,
-    //            &mut player_catch,
-    //            &mut opponent_catch,
-    //            &mut DEPTH_THREATS,
-    //            &mut 0,
-    //        ) {
-    //            println!("find threat ({},{})", x, y);
-    //            return (x, y);
-    //        }
-    //    }
-    println!("Start IA");
+    if let Some((x, y)) = null_move_heuristic(
+        &mut board,
+        &mut score_board,
+        pawn,
+        &mut opponent_catch,
+        &mut player_catch,
+    ) {
+        println!("Answer null move ({},{})", x, y);
+        return (x, y);
+    }
+    if let Some((x, y)) = find_continuous_threats(
+        &mut board,
+        &mut score_board,
+        pawn,
+        &mut player_catch,
+        &mut opponent_catch,
+        &mut DEPTH_THREATS,
+        &mut 0,
+        true,
+    ) {
+        println!("find threat ({},{})", x, y);
+        return (x, y);
+    }
     iterative_deepening_mtdf(
         &mut board,
         &mut score_board,
@@ -394,5 +380,124 @@ pub fn get_ia(
             let ret = ia(game, (ztable, hash), depth_max);
             ret
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn test_ia(
+        white_pos: Vec<(usize, usize)>,
+        black_pos: Vec<(usize, usize)>,
+        actual: Option<bool>,
+        actual_catch: &mut isize,
+        opp_catch: &mut isize,
+        depth_max: &i8,
+        expected_result: (usize, usize),
+    ) -> bool {
+        let mut board = [[None; SIZE_BOARD]; SIZE_BOARD];
+        white_pos
+            .iter()
+            .for_each(|&(x, y)| board[x][y] = Some(true));
+        black_pos
+            .iter()
+            .for_each(|&(x, y)| board[x][y] = Some(false));
+        let mut score_board = heuristic::evaluate_board(&mut board);
+        let mut tt = zobrist::initialize_transposition_table();
+        let ztable = zobrist::init_zboard();
+        let mut hash = zobrist::board_to_zhash(&mut board, &ztable);
+        println!("// Initial configuration:");
+        for i in 0..19 {
+            print!("// ");
+            for j in 0..19 {
+                match board[j][i] {
+                    Some(true) => print!("⊖"),
+                    Some(false) => print!("⊕"),
+                    None => print!("_"),
+                }
+            }
+            println!();
+        }
+        let (_, (x, y)) = mtdf(
+            &mut board,
+            &ztable,
+            &mut hash,
+            &mut tt,
+            actual,
+            actual_catch,
+            opp_catch,
+            &mut MAX_INFINITY,
+            depth_max,
+            0,
+            &mut score_board,
+        );
+        println!("// Result IA ({},{}) :", x, y);
+        for i in 0..19 {
+            print!("// ");
+            for j in 0..19 {
+                if i == y && j == x && actual == Some(false) {
+                    print!("⊛");
+                } else if i == y && j == x && actual == Some(true) {
+                    print!("⊙");
+                } else {
+                    match board[j][i] {
+                        Some(true) => print!("⊖"),
+                        Some(false) => print!("⊕"),
+                        None => print!("_"),
+                    }
+                }
+            }
+            println!();
+        }
+        expected_result == (x, y)
+    }
+
+    #[test]
+    fn test_ia_board_00() {
+        let black_pos = vec![
+            (6, 8),
+            (10, 8),
+            (7, 9),
+            (9, 9),
+            (6, 10),
+            (8, 10),
+            (10, 10),
+            (5, 11),
+            (7, 11),
+            (10, 11),
+            (7, 12),
+            (10, 12),
+            (10, 13),
+        ];
+        let white_pos = vec![
+            (5, 7),
+            (7, 7),
+            (9, 7),
+            (11, 7),
+            (8, 6),
+            (9, 8),
+            (8, 9),
+            (7, 10),
+            (10, 9),
+            (9, 11),
+            (11, 11),
+            (4, 12),
+            (10, 14),
+        ];
+        let actual = Some(true);
+        let mut actual_catch = 1isize;
+        let mut opp_catch = 1isize;
+        let depth_max = 5i8;
+        let expected_result = (0, 0);
+        assert!(test_ia(
+            black_pos,
+            white_pos,
+            actual,
+            &mut actual_catch,
+            &mut opp_catch,
+            &depth_max,
+            expected_result,
+        ));
     }
 }
