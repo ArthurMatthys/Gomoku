@@ -1620,7 +1620,6 @@ mod tests {
         white_pos: Vec<(usize, usize)>,
         black_pos: Vec<(usize, usize)>,
         actual_take: &mut isize,
-        opp_take: &mut isize,
         actual_player: Option<bool>,
         expected_result: (((usize, usize), u8), bool),
     ) -> bool {
@@ -1680,14 +1679,12 @@ mod tests {
         let black_pos = vec![(9, 8), (9, 7)];
         let white_pos = vec![];
         let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result = (((0, 0), 0), false);
 
         assert!(test_catch_tss(
             white_pos,
             black_pos,
             &mut white_take,
-            &mut black_take,
             Some(false),
             expected_result
         ))
@@ -1718,14 +1715,12 @@ mod tests {
         let black_pos = vec![(9, 8), (9, 7)];
         let white_pos = vec![(9, 6)];
         let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result = (((0, 0), 0), false);
 
         assert!(test_catch_tss(
             white_pos,
             black_pos,
             &mut white_take,
-            &mut black_take,
             Some(false),
             expected_result
         ))
@@ -1756,14 +1751,12 @@ mod tests {
         let black_pos = vec![(9, 8), (9, 7)];
         let white_pos = vec![(9, 6)];
         let mut white_take = 4_isize;
-        let mut black_take = 0_isize;
         let expected_result = (((9, 9), 2), true);
 
         assert!(test_catch_tss(
             white_pos,
             black_pos,
             &mut white_take,
-            &mut black_take,
             Some(true),
             expected_result
         ))
@@ -1794,14 +1787,12 @@ mod tests {
         let black_pos = vec![(9, 8), (9, 7)];
         let white_pos = vec![(9, 6)];
         let mut white_take = 3_isize;
-        let mut black_take = 0_isize;
         let expected_result = (((9, 9), 2), false);
 
         assert!(test_catch_tss(
             white_pos,
             black_pos,
             &mut white_take,
-            &mut black_take,
             Some(true),
             expected_result
         ))
@@ -1832,14 +1823,12 @@ mod tests {
         let black_pos = vec![(9, 8), (9, 7)];
         let white_pos = vec![(9, 6), (10, 9), (11, 9), (10, 10), (11, 11)];
         let mut white_take = 4_isize;
-        let mut black_take = 0_isize;
         let expected_result = (((0, 0), 0), false);
 
         assert!(test_catch_tss(
             white_pos,
             black_pos,
             &mut white_take,
-            &mut black_take,
             Some(true),
             expected_result
         ))
@@ -1870,14 +1859,12 @@ mod tests {
         let black_pos = vec![(9, 8), (9, 7), (10, 10), (11, 11)];
         let white_pos = vec![(9, 6), (12, 12)];
         let mut white_take = 3_isize;
-        let mut black_take = 0_isize;
         let expected_result = (((9, 9), 4), true);
 
         assert!(test_catch_tss(
             white_pos,
             black_pos,
             &mut white_take,
-            &mut black_take,
             Some(true),
             expected_result
         ))
@@ -1886,8 +1873,6 @@ mod tests {
     fn test_threat_2(
         white_pos: Vec<(usize, usize)>,
         black_pos: Vec<(usize, usize)>,
-        actual_take: &mut isize,
-        opp_take: &mut isize,
         pos2check: (usize, usize),
         actual_player: Option<bool>,
         expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)>,
@@ -1916,11 +1901,10 @@ mod tests {
         let mut record: [[[bool; 4]; SIZE_BOARD]; SIZE_BOARD] =
             initialize_record(&mut test_board, actual_player);
 
-        let mut tmp_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![];
         let mut global_results: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![];
 
         for dir in 0..4 {
-            tmp_result = match score_board[pos2check.0][pos2check.1][dir].0 {
+            let tmp_result = match score_board[pos2check.0][pos2check.1][dir].0 {
                 // 4 => (),
                 // 3 => { connect_4(pos2check, &mut score_board, &mut test_board, &mut record, actual_player, actual_take, dir) },
                 // 2 => { println!("OUPS_I_DID_IT_AGAIN") ; connect_2(&mut test_board, &mut score_board, &mut record, actual_player, pos2check, dir) }
@@ -2176,8 +2160,6 @@ mod tests {
     fn threat_connect_2_normal_0() {
         let black_pos = vec![(9, 8), (9, 7)];
         let white_pos = vec![];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((9, 6), TypeOfThreat::ThreeO, vec![(9, 9), (9, 5)]),
             ((9, 5), TypeOfThreat::ThreeO, vec![(9, 6), (9, 9), (9, 4)]),
@@ -2187,8 +2169,6 @@ mod tests {
         assert!(test_threat_2(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (9, 7),
             Some(false),
             expected_result
@@ -2265,8 +2245,6 @@ mod tests {
     fn threat_connect_2_normal_blocked() {
         let black_pos = vec![(9, 8), (9, 7)];
         let white_pos = vec![(9, 10)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((9, 6), TypeOfThreat::ThreeO, vec![(9, 9), (9, 5)]),
             ((9, 5), TypeOfThreat::ThreeO, vec![(9, 6), (9, 9), (9, 4)]),
@@ -2274,8 +2252,6 @@ mod tests {
         assert!(test_threat_2(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (9, 7),
             Some(false),
             expected_result
@@ -2490,8 +2466,6 @@ mod tests {
     fn threat_connect2_catchis() {
         let black_pos = vec![(9, 8), (9, 7), (8, 8)];
         let white_pos = vec![(7, 8)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             (
                 (7, 9),
@@ -2529,8 +2503,6 @@ mod tests {
         assert!(test_threat_2(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (9, 7),
             Some(false),
             expected_result
@@ -2745,8 +2717,6 @@ mod tests {
     fn threat_connect2_extremity1() {
         let black_pos = vec![(9, 8), (9, 7), (8, 9), (8, 6), (8, 8)];
         let white_pos = vec![(7, 9), (7, 6), (7, 8)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((7, 5), TypeOfThreat::ThreeO, vec![(10, 6), (10, 8), (6, 4)]),
             (
@@ -2788,8 +2758,6 @@ mod tests {
         assert!(test_threat_2(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (9, 7),
             Some(false),
             expected_result
@@ -2912,8 +2880,6 @@ mod tests {
     fn threat_connect2_extremity2() {
         let black_pos = vec![(9, 8), (9, 7), (8, 9)];
         let white_pos = vec![(7, 9)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((9, 6), TypeOfThreat::ThreeO, vec![(9, 9), (9, 5)]),
             ((9, 5), TypeOfThreat::ThreeO, vec![(9, 6), (9, 9), (9, 4)]),
@@ -2923,8 +2889,6 @@ mod tests {
         assert!(test_threat_2(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (9, 7),
             Some(false),
             expected_result
@@ -3047,8 +3011,6 @@ mod tests {
     fn threat_connect2_extremity3() {
         let black_pos = vec![(9, 8), (9, 7), (10, 9)];
         let white_pos = vec![(11, 9)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((9, 6), TypeOfThreat::ThreeO, vec![(9, 9), (9, 5)]),
             ((9, 5), TypeOfThreat::ThreeO, vec![(9, 6), (9, 9), (9, 4)]),
@@ -3058,8 +3020,6 @@ mod tests {
         assert!(test_threat_2(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (9, 7),
             Some(false),
             expected_result
@@ -3182,8 +3142,6 @@ mod tests {
     fn threat_connect_2_catch_extremity_hard1_0() {
         let black_pos = vec![(9, 8), (9, 7), (8, 9)];
         let white_pos = vec![(10, 9)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((9, 6), TypeOfThreat::ThreeO, vec![(9, 9), (9, 5)]),
             ((9, 5), TypeOfThreat::ThreeO, vec![(9, 6), (9, 9), (9, 4)]),
@@ -3193,8 +3151,6 @@ mod tests {
         assert!(test_threat_2(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (9, 7),
             Some(false),
             expected_result
@@ -3317,8 +3273,6 @@ mod tests {
     fn threat_connect_2_catch_extremity_hard1_reverse() {
         let black_pos = vec![(9, 8), (9, 7), (10, 9)];
         let white_pos = vec![(8, 9)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((9, 6), TypeOfThreat::ThreeO, vec![(9, 9), (9, 5)]),
             ((9, 5), TypeOfThreat::ThreeO, vec![(9, 6), (9, 9), (9, 4)]),
@@ -3328,8 +3282,6 @@ mod tests {
         assert!(test_threat_2(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (9, 7),
             Some(false),
             expected_result
@@ -3452,8 +3404,6 @@ mod tests {
     fn threat_connect_2_catch_extremity2() {
         let black_pos = vec![(9, 8), (9, 7), (8, 9)];
         let white_pos = vec![(7, 9)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((9, 6), TypeOfThreat::ThreeO, vec![(9, 9), (9, 5)]),
             ((9, 5), TypeOfThreat::ThreeO, vec![(9, 6), (9, 9), (9, 4)]),
@@ -3463,8 +3413,6 @@ mod tests {
         assert!(test_threat_2(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (9, 7),
             Some(false),
             expected_result
@@ -3587,8 +3535,6 @@ mod tests {
     fn threat_connect_2_not_catch_extremity() {
         let black_pos = vec![(9, 8), (9, 7), (8, 9)];
         let white_pos = vec![(10, 9), (7, 9)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((9, 6), TypeOfThreat::ThreeO, vec![(9, 9), (9, 5)]),
             ((9, 5), TypeOfThreat::ThreeO, vec![(9, 6), (9, 9), (9, 4)]),
@@ -3598,8 +3544,6 @@ mod tests {
         assert!(test_threat_2(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (9, 7),
             Some(false),
             expected_result
@@ -3699,8 +3643,6 @@ mod tests {
     fn threat_connect_2_catch_9_in_a_row_first() {
         let black_pos = vec![(9, 8), (9, 7), (9, 10), (9, 11)];
         let white_pos = vec![(10, 9), (7, 9)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((9, 6), TypeOfThreat::ThreeO, vec![(9, 9), (9, 5)]),
             ((9, 5), TypeOfThreat::ThreeO, vec![(9, 6), (9, 9), (9, 4)]),
@@ -3709,8 +3651,6 @@ mod tests {
         assert!(test_threat_2(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (9, 7),
             Some(false),
             expected_result
@@ -3810,8 +3750,6 @@ mod tests {
     fn threat_connect_2_catch_9_in_a_row_catch_0() {
         let black_pos = vec![(9, 8), (9, 7), (9, 10), (9, 11), (8, 9)];
         let white_pos = vec![(10, 9)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((9, 6), TypeOfThreat::ThreeO, vec![(9, 9), (9, 5)]),
             ((9, 5), TypeOfThreat::ThreeO, vec![(9, 6), (9, 9), (9, 4)]),
@@ -3820,8 +3758,6 @@ mod tests {
         assert!(test_threat_2(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (9, 7),
             Some(false),
             expected_result
@@ -4013,8 +3949,6 @@ mod tests {
     fn threat_connect_2_catch_9_in_a_row_catch_1() {
         let black_pos = vec![(9, 8), (9, 7), (9, 10), (9, 11), (8, 8)];
         let white_pos = vec![(10, 8)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((7, 9), TypeOfThreat::ThreeO, vec![(7, 8), (10, 6), (6, 10)]),
             (
@@ -4039,8 +3973,6 @@ mod tests {
         assert!(test_threat_2(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (9, 7),
             Some(false),
             expected_result
@@ -4140,8 +4072,6 @@ mod tests {
     fn threat_connect_2_catch_9_in_a_row_catch_2() {
         let black_pos = vec![(9, 8), (9, 7), (9, 10), (8, 8)];
         let white_pos = vec![(10, 8)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((9, 6), TypeOfThreat::ThreeO, vec![(7, 8), (9, 9), (9, 5)]),
             (
@@ -4154,8 +4084,6 @@ mod tests {
         assert!(test_threat_2(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (9, 8),
             Some(false),
             expected_result
@@ -4209,15 +4137,11 @@ mod tests {
     fn threat_connect_2_catch_9_in_a_row_catch_3() {
         let black_pos = vec![(9, 8), (9, 7), (9, 10), (8, 8)];
         let white_pos = vec![(10, 8), (9, 6)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> =
             vec![((9, 9), TypeOfThreat::FourSO, vec![(7, 8), (9, 11)])];
         assert!(test_threat_2(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (9, 8),
             Some(false),
             expected_result
@@ -4294,8 +4218,6 @@ mod tests {
     fn threat_connect_2_catch_9_in_a_row_catch_4() {
         let black_pos = vec![(9, 8), (9, 7), (9, 11), (8, 8)];
         let white_pos = vec![(10, 8), (9, 6)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((9, 9), TypeOfThreat::FourSO, vec![(7, 8), (9, 10)]),
             ((9, 10), TypeOfThreat::FourSO, vec![(7, 8), (9, 9)]),
@@ -4303,8 +4225,6 @@ mod tests {
         assert!(test_threat_2(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (9, 8),
             Some(false),
             expected_result
@@ -4404,8 +4324,6 @@ mod tests {
     fn threat_connect_2_catch_9_in_a_row_catch_5() {
         let black_pos = vec![(9, 8), (9, 7), (9, 10), (9, 11), (8, 8)];
         let white_pos = vec![(10, 8)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((9, 9), TypeOfThreat::FiveTake, vec![(7, 8)]),
             ((9, 12), TypeOfThreat::ThreeO, vec![(9, 9), (9, 13)]),
@@ -4418,8 +4336,6 @@ mod tests {
         assert!(test_threat_2(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (9, 10),
             Some(false),
             expected_result
@@ -4565,8 +4481,6 @@ mod tests {
     fn threat_connect_2_fake_catch_9_in_a_row_other_position_0() {
         let black_pos = vec![(2, 8), (2, 7), (2, 10), (2, 11), (2, 12), (2, 13), (1, 8)];
         let white_pos = vec![(3, 8)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((3, 6), TypeOfThreat::ThreeO, vec![(0, 8), (0, 9), (4, 5)]),
             (
@@ -4585,8 +4499,6 @@ mod tests {
         assert!(test_threat_2(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (2, 7),
             Some(false),
             expected_result
@@ -4598,8 +4510,6 @@ mod tests {
     fn threat_connect_2_fake_catch_9_in_a_row_other_position_1() {
         let black_pos = vec![(2, 8), (2, 7), (2, 10), (2, 11), (2, 12), (2, 13), (1, 8)];
         let white_pos = vec![(3, 8)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((2, 6), TypeOfThreat::ThreeO, vec![(0, 8), (2, 9), (2, 5)]),
             (
@@ -4612,8 +4522,6 @@ mod tests {
         assert!(test_threat_2(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (2, 8),
             Some(false),
             expected_result
@@ -4690,8 +4598,6 @@ mod tests {
     fn threat_connect_2_fake_catch_9_in_a_row_other_position_2() {
         let black_pos = vec![(2, 8), (2, 7), (2, 10), (2, 11), (2, 12), (2, 13), (1, 8)];
         let white_pos = vec![(3, 8)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((3, 6), TypeOfThreat::ThreeO, vec![(0, 8), (0, 9), (4, 5)]),
             (
@@ -4703,8 +4609,6 @@ mod tests {
         assert!(test_threat_2(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (1, 8),
             Some(false),
             expected_result
@@ -4735,14 +4639,10 @@ mod tests {
     fn threat_connect_2_diagonal_left_0() {
         let black_pos = vec![(0, 0), (1, 1)];
         let white_pos = vec![(2, 1)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![];
         assert!(test_threat_2(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (2, 2),
             Some(false),
             expected_result
@@ -4773,14 +4673,10 @@ mod tests {
     fn threat_connect_2_diagonal_left_1() {
         let black_pos = vec![(0, 0), (1, 1)];
         let white_pos = vec![(2, 1)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![];
         assert!(test_threat_2(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (1, 1),
             Some(false),
             expected_result
@@ -4811,14 +4707,10 @@ mod tests {
     fn threat_connect_2_diagonal_left_2() {
         let black_pos = vec![(0, 0), (1, 1)];
         let white_pos = vec![(2, 1)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![];
         assert!(test_threat_2(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (0, 0),
             Some(false),
             expected_result
@@ -4895,8 +4787,6 @@ mod tests {
     fn threat_connect_2_fake_catch_close_top_2_s0_0() {
         let black_pos = vec![(2, 2), (2, 1), (1, 0)];
         let white_pos = vec![(3, 0)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((2, 3), TypeOfThreat::ThreeO, vec![(2, 0), (2, 4)]),
             ((2, 4), TypeOfThreat::ThreeO, vec![(2, 3), (2, 0), (2, 5)]),
@@ -4904,8 +4794,6 @@ mod tests {
         assert!(test_threat_2(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (2, 2),
             Some(false),
             expected_result
@@ -4916,8 +4804,6 @@ mod tests {
     fn threat_connect_2_fake_catch_close_top_2_s0_4() {
         let black_pos = vec![(3, 2), (3, 0), (3, 3)];
         let white_pos = vec![(3, 0)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((3, 1), TypeOfThreat::FourSO, vec![(3, 4)]),
             ((3, 4), TypeOfThreat::ThreeO, vec![(3, 1), (3, 5)]),
@@ -4926,8 +4812,6 @@ mod tests {
         assert!(test_threat_2(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (3, 3),
             Some(false),
             expected_result
@@ -5050,8 +4934,6 @@ mod tests {
     fn threat_connect_2_fake_catch_close_top_2_s0_1() {
         let black_pos = vec![(2, 2), (2, 3), (1, 0)];
         let white_pos = vec![(3, 0)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((2, 1), TypeOfThreat::ThreeO, vec![(2, 4), (2, 0)]),
             ((2, 4), TypeOfThreat::ThreeO, vec![(2, 1), (2, 5)]),
@@ -5060,8 +4942,6 @@ mod tests {
         assert!(test_threat_2(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (2, 3),
             Some(false),
             expected_result
@@ -5184,8 +5064,6 @@ mod tests {
     fn threat_connect_2_fake_catch_close_top_2_s0_2() {
         let black_pos = vec![(2, 4), (2, 3), (1, 1)];
         let white_pos = vec![(3, 1)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((2, 2), TypeOfThreat::ThreeO, vec![(2, 5), (2, 1)]),
             (
@@ -5199,8 +5077,6 @@ mod tests {
         assert!(test_threat_2(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (2, 3),
             Some(false),
             expected_result
@@ -5277,8 +5153,6 @@ mod tests {
     fn threat_connect_2_fake_catch_close_top_2_s0_3() {
         let black_pos = vec![(2, 2), (2, 1), (1, 0)];
         let white_pos = vec![(3, 0)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((2, 3), TypeOfThreat::ThreeO, vec![(2, 0), (2, 4)]),
             ((2, 4), TypeOfThreat::ThreeO, vec![(2, 3), (2, 0), (2, 5)]),
@@ -5286,8 +5160,6 @@ mod tests {
         assert!(test_threat_2(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (2, 1),
             Some(false),
             expected_result
@@ -5341,15 +5213,11 @@ mod tests {
     fn threat_connect_2_space_1_align_1_blocked() {
         let black_pos = vec![(9, 5), (9, 7), (9, 8)];
         let white_pos = vec![(9, 9)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> =
             vec![((9, 6), TypeOfThreat::FourSO, vec![(9, 4)])];
         assert!(test_threat_2(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (9, 7),
             Some(false),
             expected_result
@@ -5359,8 +5227,6 @@ mod tests {
     fn test_threat_3(
         white_pos: Vec<(usize, usize)>,
         black_pos: Vec<(usize, usize)>,
-        actual_take: &mut isize,
-        opp_take: &mut isize,
         pos2check: (usize, usize),
         actual_player: Option<bool>,
         expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)>,
@@ -5394,7 +5260,7 @@ mod tests {
         //         ).collect()
         //  ).collect();
 
-        let mut tmp_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![];
+        // let mut tmp_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![];
         let mut global_results: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![];
         // for i in 0..19 {
         //     for j in 0..19 {
@@ -5411,7 +5277,7 @@ mod tests {
         //     println!();
         // }
         for dir in 0..4 {
-            tmp_result = match score_board[pos2check.0][pos2check.1][dir].0 {
+            let tmp_result = match score_board[pos2check.0][pos2check.1][dir].0 {
                 // 4 => { connect_4(pos2check, &mut score_board, &mut test_board, &mut record, actual_player, actual_take, dir) },
                 // 3 => { connect_4(pos2check, &mut score_board, &mut test_board, &mut record, actual_player, actual_take, dir) },
                 // 2 => { println!("OUPS_I_DID_IT_AGAIN") ; connect_2(&mut test_board, &mut score_board, &mut record, actual_player, pos2check, dir) }
@@ -5645,8 +5511,6 @@ mod tests {
     fn threat_connect_3_space_1_blocked() {
         let black_pos = vec![(4, 3), (4, 4), (4, 5)];
         let white_pos = vec![(4, 7)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((4, 2), TypeOfThreat::FourO, vec![]),
             ((4, 1), TypeOfThreat::FourSO, vec![(4, 2)]),
@@ -5655,8 +5519,6 @@ mod tests {
         assert!(test_threat_3(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (4, 3),
             Some(false),
             expected_result
@@ -5757,8 +5619,6 @@ mod tests {
     fn threat_connect_3_space_1_edged() {
         let black_pos = vec![(4, 1), (4, 2), (4, 3)];
         let white_pos = vec![];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((4, 0), TypeOfThreat::FourSO, vec![(4, 4)]),
             ((4, 4), TypeOfThreat::FourO, vec![]),
@@ -5767,8 +5627,6 @@ mod tests {
         assert!(test_threat_3(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (4, 3),
             Some(false),
             expected_result
@@ -5869,8 +5727,6 @@ mod tests {
     fn threat_connect_3_space_1_align_1_free() {
         let black_pos = vec![(4, 3), (4, 4), (4, 5), (4, 7)];
         let white_pos = vec![];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((4, 2), TypeOfThreat::FourO, vec![]),
             ((4, 1), TypeOfThreat::FourSO, vec![(4, 2)]),
@@ -5879,8 +5735,6 @@ mod tests {
         assert!(test_threat_3(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (4, 3),
             Some(false),
             expected_result
@@ -5981,8 +5835,6 @@ mod tests {
     fn threat_connect_3_space_1_align_1_blocked() {
         let black_pos = vec![(4, 3), (4, 4), (4, 5), (4, 7)];
         let white_pos = vec![(4, 8)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((4, 2), TypeOfThreat::FourO, vec![]),
             ((4, 1), TypeOfThreat::FourSO, vec![(4, 2)]),
@@ -5991,8 +5843,6 @@ mod tests {
         assert!(test_threat_3(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (4, 3),
             Some(false),
             expected_result
@@ -6093,8 +5943,6 @@ mod tests {
     fn threat_connect_3_space_1_align_1_edged() {
         let black_pos = vec![(4, 0), (4, 2), (4, 3), (4, 4)];
         let white_pos = vec![];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((4, 1), TypeOfThreat::FiveTake, vec![]),
             ((4, 5), TypeOfThreat::FourO, vec![]),
@@ -6103,8 +5951,6 @@ mod tests {
         assert!(test_threat_3(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (4, 3),
             Some(false),
             expected_result
@@ -6205,8 +6051,6 @@ mod tests {
     fn threat_connect_3_space_1_align_2_free() {
         let black_pos = vec![(4, 3), (4, 4), (4, 5), (4, 7), (4, 8)];
         let white_pos = vec![];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((4, 2), TypeOfThreat::FourO, vec![]),
             ((4, 1), TypeOfThreat::FourSO, vec![(4, 2)]),
@@ -6215,8 +6059,6 @@ mod tests {
         assert!(test_threat_3(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (4, 3),
             Some(false),
             expected_result
@@ -6317,8 +6159,6 @@ mod tests {
     fn threat_connect_3_space_1_align_2_blocked_simple() {
         let black_pos = vec![(4, 3), (4, 4), (4, 5), (4, 7), (4, 8)];
         let white_pos = vec![(4, 9)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((4, 2), TypeOfThreat::FourO, vec![]),
             ((4, 1), TypeOfThreat::FourSO, vec![(4, 2)]),
@@ -6327,8 +6167,6 @@ mod tests {
         assert!(test_threat_3(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (4, 3),
             Some(false),
             expected_result
@@ -6429,8 +6267,6 @@ mod tests {
     fn threat_connect_3_space_1_align_2_edged() {
         let black_pos = vec![(4, 0), (4, 1), (4, 3), (4, 4), (4, 5)];
         let white_pos = vec![];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((4, 2), TypeOfThreat::FourTake, vec![]),
             ((4, 6), TypeOfThreat::FourO, vec![]),
@@ -6439,8 +6275,6 @@ mod tests {
         assert!(test_threat_3(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (4, 3),
             Some(false),
             expected_result
@@ -6541,8 +6375,6 @@ mod tests {
     fn threat_connect_3_space_1_align_3_free() {
         let black_pos = vec![(4, 3), (4, 4), (4, 5), (4, 7), (4, 8), (4, 9)];
         let white_pos = vec![];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((4, 2), TypeOfThreat::FourO, vec![]),
             ((4, 1), TypeOfThreat::FourSO, vec![(4, 2)]),
@@ -6551,8 +6383,6 @@ mod tests {
         assert!(test_threat_3(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (4, 3),
             Some(false),
             expected_result
@@ -6564,8 +6394,6 @@ mod tests {
     fn threat_connect_3_space_1_align_3_blocked_simple() {
         let black_pos = vec![(4, 3), (4, 4), (4, 5), (4, 7), (4, 8), (4, 9)];
         let white_pos = vec![(4, 10)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((4, 2), TypeOfThreat::FourO, vec![]),
             ((4, 1), TypeOfThreat::FourSO, vec![(4, 2)]),
@@ -6574,8 +6402,6 @@ mod tests {
         assert!(test_threat_3(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (4, 3),
             Some(false),
             expected_result
@@ -6685,8 +6511,6 @@ mod tests {
             (5, 5),
         ];
         let white_pos = vec![(4, 10), (6, 4), (6, 5)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((4, 2), TypeOfThreat::FourO, vec![(3, 5), (3, 4), (3, 2)]),
             (
@@ -6699,8 +6523,6 @@ mod tests {
         assert!(test_threat_3(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (4, 3),
             Some(false),
             expected_result
@@ -6801,8 +6623,6 @@ mod tests {
     fn threat_connect_3_space_1_align_3_edged() {
         let black_pos = vec![(4, 0), (4, 1), (4, 2), (4, 4), (4, 5), (4, 6)];
         let white_pos = vec![];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((4, 3), TypeOfThreat::ThreeTake, vec![]),
             ((4, 7), TypeOfThreat::FourO, vec![]),
@@ -6811,8 +6631,6 @@ mod tests {
         assert!(test_threat_3(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (4, 4),
             Some(false),
             expected_result
@@ -6913,8 +6731,6 @@ mod tests {
     fn threat_connect_3_space_1_align_4_free() {
         let black_pos = vec![(4, 3), (4, 4), (4, 5), (4, 7), (4, 8), (4, 9), (4, 10)];
         let white_pos = vec![];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((4, 2), TypeOfThreat::FourO, vec![]),
             ((4, 1), TypeOfThreat::FourSO, vec![(4, 2)]),
@@ -6923,8 +6739,6 @@ mod tests {
         assert!(test_threat_3(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (4, 3),
             Some(false),
             expected_result
@@ -7025,8 +6839,6 @@ mod tests {
     fn threat_connect_3_space_1_align_4_blocked_simple() {
         let black_pos = vec![(4, 3), (4, 4), (4, 5), (4, 7), (4, 8), (4, 9), (4, 10)];
         let white_pos = vec![(4, 11)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((4, 2), TypeOfThreat::FourO, vec![]),
             ((4, 1), TypeOfThreat::FourSO, vec![(4, 2)]),
@@ -7035,8 +6847,6 @@ mod tests {
         assert!(test_threat_3(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (4, 3),
             Some(false),
             expected_result
@@ -7137,8 +6947,6 @@ mod tests {
     fn threat_connect_3_space_1_align_4_edged() {
         let black_pos = vec![(4, 0), (4, 1), (4, 2), (4, 3), (4, 5), (4, 6), (4, 7)];
         let white_pos = vec![];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((4, 4), TypeOfThreat::TwoTake, vec![]),
             ((4, 8), TypeOfThreat::FourO, vec![]),
@@ -7147,8 +6955,6 @@ mod tests {
         assert!(test_threat_3(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (4, 5),
             Some(false),
             expected_result
@@ -7272,8 +7078,6 @@ mod tests {
     fn threat_connect_3_space_2_free() {
         let black_pos = vec![(4, 3), (4, 4), (4, 5)];
         let white_pos = vec![];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((4, 2), TypeOfThreat::FourO, vec![]),
             ((4, 1), TypeOfThreat::FourSO, vec![(4, 2)]),
@@ -7283,8 +7087,6 @@ mod tests {
         assert!(test_threat_3(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (4, 3),
             Some(false),
             expected_result
@@ -7408,8 +7210,6 @@ mod tests {
     fn threat_connect_3_space_2_blocked_simple() {
         let black_pos = vec![(4, 3), (4, 4), (4, 5)];
         let white_pos = vec![(4, 8)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((4, 2), TypeOfThreat::FourO, vec![]),
             ((4, 1), TypeOfThreat::FourSO, vec![(4, 2)]),
@@ -7419,8 +7219,6 @@ mod tests {
         assert!(test_threat_3(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (4, 3),
             Some(false),
             expected_result
@@ -7544,8 +7342,6 @@ mod tests {
     fn threat_connect_3_space_2_edged() {
         let black_pos = vec![(4, 2), (4, 3), (4, 4)];
         let white_pos = vec![];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((4, 1), TypeOfThreat::FourO, vec![]),
             ((4, 0), TypeOfThreat::FourSO, vec![(4, 1)]),
@@ -7555,8 +7351,6 @@ mod tests {
         assert!(test_threat_3(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (4, 3),
             Some(false),
             expected_result
@@ -7680,8 +7474,6 @@ mod tests {
     fn threat_connect_3_space_2_align_1() {
         let black_pos = vec![(4, 3), (4, 4), (4, 5), (4, 8)];
         let white_pos = vec![];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((4, 2), TypeOfThreat::FourO, vec![]),
             ((4, 1), TypeOfThreat::FourSO, vec![(4, 2)]),
@@ -7691,8 +7483,6 @@ mod tests {
         assert!(test_threat_3(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (4, 3),
             Some(false),
             expected_result
@@ -7747,15 +7537,11 @@ mod tests {
     fn threat_connect_3_space_1_align_1_blocked_free() {
         let black_pos = vec![(4, 3), (4, 4), (4, 5), (4, 7)];
         let white_pos = vec![(4, 2)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> =
             vec![((4, 6), TypeOfThreat::FiveTake, vec![])];
         assert!(test_threat_3(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (4, 3),
             Some(false),
             expected_result
@@ -7810,15 +7596,11 @@ mod tests {
     fn threat_connect_3_space_1_align_1_blocked_blocked() {
         let black_pos = vec![(4, 3), (4, 4), (4, 5), (4, 7)];
         let white_pos = vec![(4, 2), (4, 8)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> =
             vec![((4, 6), TypeOfThreat::FiveTake, vec![])];
         assert!(test_threat_3(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (4, 3),
             Some(false),
             expected_result
@@ -7873,15 +7655,11 @@ mod tests {
     fn threat_connect_3_space_1_align_1_blocked_edged() {
         let black_pos = vec![(4, 0), (4, 2), (4, 3), (4, 4)];
         let white_pos = vec![(4, 5)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> =
             vec![((4, 1), TypeOfThreat::FiveTake, vec![])];
         assert!(test_threat_3(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (4, 3),
             Some(false),
             expected_result
@@ -7936,15 +7714,11 @@ mod tests {
     fn threat_connect_3_space_1_align_2_blocked_free() {
         let black_pos = vec![(4, 3), (4, 4), (4, 5), (4, 7), (4, 8)];
         let white_pos = vec![(4, 2)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> =
             vec![((4, 6), TypeOfThreat::FourTake, vec![])];
         assert!(test_threat_3(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (4, 3),
             Some(false),
             expected_result
@@ -7999,15 +7773,11 @@ mod tests {
     fn threat_connect_3_space_1_align_2_blocked_blocked() {
         let black_pos = vec![(4, 3), (4, 4), (4, 5), (4, 7), (4, 8)];
         let white_pos = vec![(4, 2), (4, 9)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> =
             vec![((4, 6), TypeOfThreat::FourTake, vec![])];
         assert!(test_threat_3(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (4, 3),
             Some(false),
             expected_result
@@ -8062,15 +7832,11 @@ mod tests {
     fn threat_connect_3_space_1_align_2_blocked_edged() {
         let black_pos = vec![(4, 0), (4, 1), (4, 3), (4, 4), (4, 5)];
         let white_pos = vec![(4, 6)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> =
             vec![((4, 2), TypeOfThreat::FourTake, vec![])];
         assert!(test_threat_3(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (4, 3),
             Some(false),
             expected_result
@@ -8125,15 +7891,11 @@ mod tests {
     fn threat_connect_3_space_1_align_3_blocked_free() {
         let black_pos = vec![(4, 3), (4, 4), (4, 5), (4, 7), (4, 8), (4, 9)];
         let white_pos = vec![(4, 2)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> =
             vec![((4, 6), TypeOfThreat::ThreeTake, vec![])];
         assert!(test_threat_3(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (4, 3),
             Some(false),
             expected_result
@@ -8188,15 +7950,11 @@ mod tests {
     fn threat_connect_3_space_1_align_3_blocked_blocked() {
         let black_pos = vec![(4, 3), (4, 4), (4, 5), (4, 7), (4, 8), (4, 9)];
         let white_pos = vec![(4, 2), (4, 10)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> =
             vec![((4, 6), TypeOfThreat::ThreeTake, vec![])];
         assert!(test_threat_3(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (4, 3),
             Some(false),
             expected_result
@@ -8251,15 +8009,11 @@ mod tests {
     fn threat_connect_3_space_1_align_3_blocked_edged() {
         let black_pos = vec![(4, 0), (4, 1), (4, 2), (4, 4), (4, 5), (4, 6)];
         let white_pos = vec![(4, 7)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> =
             vec![((4, 3), TypeOfThreat::ThreeTake, vec![])];
         assert!(test_threat_3(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (4, 4),
             Some(false),
             expected_result
@@ -8314,15 +8068,11 @@ mod tests {
     fn threat_connect_3_space_1_align_4_blocked_free() {
         let black_pos = vec![(4, 3), (4, 4), (4, 5), (4, 7), (4, 8), (4, 9), (4, 10)];
         let white_pos = vec![(4, 2)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> =
             vec![((4, 6), TypeOfThreat::TwoTake, vec![])];
         assert!(test_threat_3(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (4, 3),
             Some(false),
             expected_result
@@ -8377,15 +8127,11 @@ mod tests {
     fn threat_connect_3_space_1_align_4_blocked_blocked() {
         let black_pos = vec![(4, 3), (4, 4), (4, 5), (4, 7), (4, 8), (4, 9), (4, 10)];
         let white_pos = vec![(4, 2), (4, 11)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> =
             vec![((4, 6), TypeOfThreat::TwoTake, vec![])];
         assert!(test_threat_3(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (4, 3),
             Some(false),
             expected_result
@@ -8440,15 +8186,11 @@ mod tests {
     fn threat_connect_3_space_1_align_4_blocked_edged() {
         let black_pos = vec![(4, 0), (4, 1), (4, 2), (4, 3), (4, 5), (4, 6), (4, 7)];
         let white_pos = vec![(4, 8)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> =
             vec![((4, 4), TypeOfThreat::TwoTake, vec![])];
         assert!(test_threat_3(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (4, 5),
             Some(false),
             expected_result
@@ -8526,8 +8268,6 @@ mod tests {
     fn threat_connect_3_space_2_blocked_free() {
         let black_pos = vec![(4, 3), (4, 4), (4, 5)];
         let white_pos = vec![(4, 2)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((4, 6), TypeOfThreat::FourSO, vec![(4, 7)]),
             ((4, 7), TypeOfThreat::FourSO, vec![(4, 6)]),
@@ -8535,8 +8275,6 @@ mod tests {
         assert!(test_threat_3(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (4, 3),
             Some(false),
             expected_result
@@ -8614,8 +8352,6 @@ mod tests {
     fn threat_connect_3_space_2_blocked_blocked() {
         let black_pos = vec![(4, 3), (4, 4), (4, 5)];
         let white_pos = vec![(4, 2), (4, 8)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((4, 6), TypeOfThreat::FourSO, vec![(4, 7)]),
             ((4, 7), TypeOfThreat::FourSO, vec![(4, 6)]),
@@ -8623,8 +8359,6 @@ mod tests {
         assert!(test_threat_3(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (4, 3),
             Some(false),
             expected_result
@@ -8702,8 +8436,6 @@ mod tests {
     fn threat_connect_3_space_2_blocked_edged() {
         let black_pos = vec![(4, 2), (4, 3), (4, 4)];
         let white_pos = vec![(4, 5)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((4, 1), TypeOfThreat::FourSO, vec![(4, 0)]),
             ((4, 0), TypeOfThreat::FourSO, vec![(4, 1)]),
@@ -8711,8 +8443,6 @@ mod tests {
         assert!(test_threat_3(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (4, 3),
             Some(false),
             expected_result
@@ -8790,8 +8520,6 @@ mod tests {
     fn threat_connect_3_space_2_blocked_align_1() {
         let black_pos = vec![(4, 2), (4, 3), (4, 4), (4, 7)];
         let white_pos = vec![(4, 1)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((4, 5), TypeOfThreat::FourSO, vec![(4, 6)]),
             ((4, 6), TypeOfThreat::FourSO, vec![(4, 5)]),
@@ -8799,8 +8527,6 @@ mod tests {
         assert!(test_threat_3(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (4, 3),
             Some(false),
             expected_result
@@ -8810,8 +8536,6 @@ mod tests {
     fn test_threat_4(
         white_pos: Vec<(usize, usize)>,
         black_pos: Vec<(usize, usize)>,
-        actual_take: &mut isize,
-        opp_take: &mut isize,
         pos2check: (usize, usize),
         actual_player: Option<bool>,
         expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)>,
@@ -8838,10 +8562,9 @@ mod tests {
         let mut score_board = heuristic::evaluate_board(&mut test_board);
         let mut record: [[[bool; 4]; SIZE_BOARD]; SIZE_BOARD] =
             initialize_record(&mut test_board, actual_player);
-        let mut tmp_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![];
         let mut global_results: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![];
         for dir in 0..4 {
-            tmp_result = match score_board[pos2check.0][pos2check.1][dir].0 {
+            let tmp_result = match score_board[pos2check.0][pos2check.1][dir].0 {
                 4 => connect_4(
                     pos2check,
                     &mut score_board,
@@ -9016,8 +8739,6 @@ mod tests {
     fn threat_connect_4_connect_4_normal() {
         let black_pos = vec![(9, 8), (9, 7), (9, 6), (9, 5)];
         let white_pos = vec![];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((9, 4), TypeOfThreat::FiveTake, vec![]),
             ((9, 9), TypeOfThreat::FiveTake, vec![]),
@@ -9025,8 +8746,6 @@ mod tests {
         assert!(test_threat_4(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (9, 7),
             Some(false),
             expected_result
@@ -9103,8 +8822,6 @@ mod tests {
     fn threat_connect_4_catchis() {
         let black_pos = vec![(9, 8), (9, 7), (9, 6), (9, 5), (8, 8)];
         let white_pos = vec![(7, 8)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((9, 4), TypeOfThreat::FiveTake, vec![(10, 8)]),
             ((9, 9), TypeOfThreat::FiveTake, vec![(10, 8)]),
@@ -9112,8 +8829,6 @@ mod tests {
         assert!(test_threat_4(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (9, 7),
             Some(false),
             expected_result
@@ -9190,8 +8905,6 @@ mod tests {
     fn threat_connect_4_catch_extremity1() {
         let black_pos = vec![(9, 8), (9, 7), (9, 6), (9, 5), (8, 9), (8, 4), (8, 8)];
         let white_pos = vec![(7, 9), (7, 4), (7, 8)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             (
                 (9, 4),
@@ -9207,8 +8920,6 @@ mod tests {
         assert!(test_threat_4(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (9, 7),
             Some(false),
             expected_result
@@ -9285,8 +8996,6 @@ mod tests {
     fn threat_connect_4_catch_extremity2() {
         let black_pos = vec![(9, 8), (9, 7), (9, 6), (9, 5), (8, 9)];
         let white_pos = vec![(7, 9)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((9, 4), TypeOfThreat::FiveTake, vec![]),
             ((9, 9), TypeOfThreat::FiveTake, vec![(10, 9)]),
@@ -9294,8 +9003,6 @@ mod tests {
         assert!(test_threat_4(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (9, 7),
             Some(false),
             expected_result
@@ -9372,8 +9079,6 @@ mod tests {
     fn threat_connect_4_catch_extremity3() {
         let black_pos = vec![(9, 8), (9, 7), (9, 6), (9, 5), (10, 9)];
         let white_pos = vec![(11, 9)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((9, 4), TypeOfThreat::FiveTake, vec![]),
             ((9, 9), TypeOfThreat::FiveTake, vec![(8, 9)]),
@@ -9381,8 +9086,6 @@ mod tests {
         assert!(test_threat_4(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (9, 7),
             Some(false),
             expected_result
@@ -9459,8 +9162,6 @@ mod tests {
     fn threat_connect_4_catch_extremity_hard1() {
         let black_pos = vec![(9, 8), (9, 7), (9, 6), (9, 5), (8, 9)];
         let white_pos = vec![(10, 9)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((9, 4), TypeOfThreat::FiveTake, vec![]),
             ((9, 9), TypeOfThreat::FiveTake, vec![(7, 9)]),
@@ -9468,8 +9169,6 @@ mod tests {
         assert!(test_threat_4(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (9, 7),
             Some(false),
             expected_result
@@ -9546,8 +9245,6 @@ mod tests {
     fn threat_connect_4_not_catch_extremity() {
         let black_pos = vec![(9, 8), (9, 7), (9, 6), (9, 5), (8, 9)];
         let white_pos = vec![(10, 9), (7, 9)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((9, 4), TypeOfThreat::FiveTake, vec![]),
             ((9, 9), TypeOfThreat::FiveTake, vec![]),
@@ -9555,8 +9252,6 @@ mod tests {
         assert!(test_threat_4(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (9, 7),
             Some(false),
             expected_result
@@ -9642,8 +9337,6 @@ mod tests {
             (9, 13),
         ];
         let white_pos = vec![(10, 9), (7, 9)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((9, 4), TypeOfThreat::FiveTake, vec![]),
             ((9, 9), TypeOfThreat::OneTake, vec![]),
@@ -9651,8 +9344,6 @@ mod tests {
         assert!(test_threat_4(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (9, 7),
             Some(false),
             expected_result
@@ -9739,8 +9430,6 @@ mod tests {
             (8, 9),
         ];
         let white_pos = vec![(10, 9)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((9, 4), TypeOfThreat::FiveTake, vec![]),
             ((9, 9), TypeOfThreat::OneTake, vec![(7, 9)]),
@@ -9748,8 +9437,6 @@ mod tests {
         assert!(test_threat_4(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (9, 7),
             Some(false),
             expected_result
@@ -9836,8 +9523,6 @@ mod tests {
             (8, 8),
         ];
         let white_pos = vec![(10, 8)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((9, 4), TypeOfThreat::FiveTake, vec![(7, 8)]),
             ((9, 9), TypeOfThreat::OneTake, vec![]),
@@ -9845,8 +9530,6 @@ mod tests {
         assert!(test_threat_4(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (9, 7),
             Some(false),
             expected_result
@@ -9933,8 +9616,6 @@ mod tests {
             (1, 8),
         ];
         let white_pos = vec![(3, 8)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((2, 4), TypeOfThreat::FiveTake, vec![(0, 8)]),
             ((2, 9), TypeOfThreat::OneTake, vec![]),
@@ -9942,8 +9623,6 @@ mod tests {
         assert!(test_threat_4(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (2, 7),
             Some(false),
             expected_result
@@ -10030,8 +9709,6 @@ mod tests {
             (1, 8),
         ];
         let white_pos = vec![(3, 8)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((2, 4), TypeOfThreat::FiveTake, vec![(0, 8)]),
             ((2, 9), TypeOfThreat::OneTake, vec![]),
@@ -10039,8 +9716,6 @@ mod tests {
         assert!(test_threat_4(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (2, 6),
             Some(false),
             expected_result
@@ -10127,8 +9802,6 @@ mod tests {
             (1, 8),
         ];
         let white_pos = vec![(3, 8)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((2, 4), TypeOfThreat::FiveTake, vec![(0, 8)]),
             ((2, 9), TypeOfThreat::OneTake, vec![]),
@@ -10136,8 +9809,6 @@ mod tests {
         assert!(test_threat_4(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (2, 5),
             Some(false),
             expected_result
@@ -10224,8 +9895,6 @@ mod tests {
             (1, 8),
         ];
         let white_pos = vec![(3, 8)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((2, 4), TypeOfThreat::FiveTake, vec![(0, 8)]),
             ((2, 9), TypeOfThreat::OneTake, vec![]),
@@ -10233,8 +9902,6 @@ mod tests {
         assert!(test_threat_4(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (2, 8),
             Some(false),
             expected_result
@@ -10321,8 +9988,6 @@ mod tests {
             (1, 8),
         ];
         let white_pos = vec![(3, 8)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((2, 9), TypeOfThreat::OneTake, vec![]),
             ((2, 14), TypeOfThreat::FiveTake, vec![]),
@@ -10330,8 +9995,6 @@ mod tests {
         assert!(test_threat_4(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (2, 10),
             Some(false),
             expected_result
@@ -10418,8 +10081,6 @@ mod tests {
             (1, 8),
         ];
         let white_pos = vec![(3, 8)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((2, 9), TypeOfThreat::OneTake, vec![]),
             ((2, 14), TypeOfThreat::FiveTake, vec![]),
@@ -10427,8 +10088,6 @@ mod tests {
         assert!(test_threat_4(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (2, 11),
             Some(false),
             expected_result
@@ -10515,8 +10174,6 @@ mod tests {
             (1, 8),
         ];
         let white_pos = vec![(3, 8)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((2, 9), TypeOfThreat::OneTake, vec![]),
             ((2, 14), TypeOfThreat::FiveTake, vec![]),
@@ -10524,8 +10181,6 @@ mod tests {
         assert!(test_threat_4(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (2, 12),
             Some(false),
             expected_result
@@ -10612,8 +10267,6 @@ mod tests {
             (1, 8),
         ];
         let white_pos = vec![(3, 8)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((2, 9), TypeOfThreat::OneTake, vec![]),
             ((2, 14), TypeOfThreat::FiveTake, vec![]),
@@ -10621,8 +10274,6 @@ mod tests {
         assert!(test_threat_4(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (2, 13),
             Some(false),
             expected_result
@@ -10709,8 +10360,6 @@ mod tests {
             (0, 8),
         ];
         let white_pos = vec![(2, 8)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((1, 4), TypeOfThreat::FiveTake, vec![]),
             ((1, 9), TypeOfThreat::OneTake, vec![]),
@@ -10718,8 +10367,6 @@ mod tests {
         assert!(test_threat_4(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (1, 6),
             Some(false),
             expected_result
@@ -10805,8 +10452,6 @@ mod tests {
             (0, 13),
         ];
         let white_pos = vec![(1, 8)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((0, 4), TypeOfThreat::FiveTake, vec![]),
             ((0, 9), TypeOfThreat::OneTake, vec![]),
@@ -10814,8 +10459,6 @@ mod tests {
         assert!(test_threat_4(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (0, 6),
             Some(false),
             expected_result
@@ -10902,8 +10545,6 @@ mod tests {
             (1, 4),
         ];
         let white_pos = vec![(3, 4)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((2, 0), TypeOfThreat::FiveTake, vec![(0, 4)]),
             ((2, 5), TypeOfThreat::OneTake, vec![]),
@@ -10911,8 +10552,6 @@ mod tests {
         assert!(test_threat_4(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (2, 2),
             Some(false),
             expected_result
@@ -10989,8 +10628,6 @@ mod tests {
     fn threat_connect_4_fake_catch_close_top_1() {
         let black_pos = vec![(2, 4), (2, 3), (2, 2), (2, 1), (1, 0)];
         let white_pos = vec![(3, 0)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((2, 0), TypeOfThreat::FiveTake, vec![(0, 0)]),
             ((2, 5), TypeOfThreat::FiveTake, vec![]),
@@ -10998,8 +10635,6 @@ mod tests {
         assert!(test_threat_4(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (2, 2),
             Some(false),
             expected_result
@@ -11076,8 +10711,6 @@ mod tests {
     fn threat_connect_4_fake_catch_9_in_a_row_other_close_top_2() {
         let black_pos = vec![(2, 4), (2, 3), (2, 2), (2, 1), (1, 0)];
         let white_pos = vec![];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((2, 0), TypeOfThreat::FiveTake, vec![]),
             ((2, 5), TypeOfThreat::FiveTake, vec![]),
@@ -11085,8 +10718,6 @@ mod tests {
         assert!(test_threat_4(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (2, 2),
             Some(false),
             expected_result
@@ -11140,15 +10771,11 @@ mod tests {
     fn threat_connect_4_fake_catch_9_in_a_row_other_close_top_3() {
         let black_pos = vec![(2, 6), (2, 5), (2, 3), (2, 2), (2, 1), (2, 0), (1, 0)];
         let white_pos = vec![];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> =
             vec![((2, 4), TypeOfThreat::ThreeTake, vec![])];
         assert!(test_threat_4(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (2, 0),
             Some(false),
             expected_result
@@ -11202,15 +10829,11 @@ mod tests {
     fn threat_connect_4_fake_catch_9_in_a_row_other_close_top_four() {
         let black_pos = vec![(2, 5), (2, 3), (2, 2), (2, 1), (2, 0), (1, 0)];
         let white_pos = vec![];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> =
             vec![((2, 4), TypeOfThreat::FourTake, vec![])];
         assert!(test_threat_4(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (2, 0),
             Some(false),
             expected_result
@@ -11264,15 +10887,11 @@ mod tests {
     fn threat_connect_4_fake_catch_4_in_a_row_so() {
         let black_pos = vec![(2, 5), (2, 4), (2, 3), (2, 2), (1, 2)];
         let white_pos = vec![(2, 1)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> =
             vec![((2, 6), TypeOfThreat::FiveTake, vec![])];
         assert!(test_threat_4(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (2, 2),
             Some(false),
             expected_result
@@ -11326,15 +10945,11 @@ mod tests {
     fn threat_connect_4_diagonal_left_0() {
         let black_pos = vec![(0, 0), (3, 3), (1, 1), (2, 2)];
         let white_pos = vec![(2, 1)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> =
             vec![((4, 4), TypeOfThreat::FiveTake, vec![])];
         assert!(test_threat_4(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (2, 2),
             Some(false),
             expected_result
@@ -11421,8 +11036,6 @@ mod tests {
             (1, 9),
         ];
         let white_pos = vec![(3, 9)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((2, 9), TypeOfThreat::OneTake, vec![(0, 9)]),
             ((2, 14), TypeOfThreat::FiveTake, vec![]),
@@ -11430,8 +11043,6 @@ mod tests {
         assert!(test_threat_4(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (2, 13),
             Some(false),
             expected_result
@@ -11519,8 +11130,6 @@ mod tests {
             (1, 7),
         ];
         let white_pos = vec![(3, 9), (3, 8), (3, 7)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             (
                 (2, 4),
@@ -11536,8 +11145,6 @@ mod tests {
         assert!(test_threat_4(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (2, 7),
             Some(false),
             expected_result
@@ -11591,8 +11198,6 @@ mod tests {
     fn threat_connect_4_diagonal_left_catch1() {
         let black_pos = vec![(0, 0), (3, 3), (1, 1), (2, 2), (2, 4)];
         let white_pos = vec![(4, 2)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((4, 4), TypeOfThreat::FiveTake, vec![(1, 5)]),
             // ((5,5), TypeOfThreat::FourO, vec![])
@@ -11600,8 +11205,6 @@ mod tests {
         assert!(test_threat_4(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (2, 2),
             Some(false),
             expected_result
@@ -11655,8 +11258,6 @@ mod tests {
     fn threat_connect_4_diagonal_left_catch_bloup1() {
         let black_pos = vec![(0, 0), (3, 3), (1, 1), (2, 2), (4, 2)];
         let white_pos = vec![(2, 4)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((4, 4), TypeOfThreat::FiveTake, vec![(5, 1)]),
             // ((5,5), TypeOfThreat::FourO, vec![])
@@ -11664,8 +11265,6 @@ mod tests {
         assert!(test_threat_4(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (2, 2),
             Some(false),
             expected_result
@@ -11696,14 +11295,10 @@ mod tests {
     fn threat_connect_4_diagonal_left_catch_bloup_close_0() {
         let black_pos = vec![(0, 0), (3, 3), (1, 1), (2, 2), (4, 2)];
         let white_pos = vec![(2, 4), (4, 4)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![];
         assert!(test_threat_4(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (2, 2),
             Some(false),
             expected_result
@@ -11757,8 +11352,6 @@ mod tests {
     fn threat_connect_4_diagonal_left_catch_bloup_close_bottom() {
         let black_pos = vec![(3, 3), (1, 1), (2, 2), (4, 4), (4, 2)];
         let white_pos = vec![(2, 4), (5, 5)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((0, 0), TypeOfThreat::FiveTake, vec![(5, 1)]),
             // ((5,5), TypeOfThreat::FourO, vec![])
@@ -11766,8 +11359,6 @@ mod tests {
         assert!(test_threat_4(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (2, 2),
             Some(false),
             expected_result
@@ -11818,18 +11409,14 @@ mod tests {
     // DEFENSIVE_MOVE:
     // ((2,0), TypeOfThreat::FourSO, vec![(0,0)])
     #[test]
-    fn threat_connect_4_fake_catch_close_top_2_SO_0() {
+    fn threat_connect_4_fake_catch_close_top_2_so_0() {
         let black_pos = vec![(2, 4), (2, 3), (2, 2), (2, 1), (1, 0)];
         let white_pos = vec![(3, 0), (2, 5)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> =
             vec![((2, 0), TypeOfThreat::FiveTake, vec![(0, 0)])];
         assert!(test_threat_4(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (2, 2),
             Some(false),
             expected_result
@@ -11880,11 +11467,9 @@ mod tests {
     // DEFENSIVE_MOVE:
     // ((4,14), TypeOfThreat::FourSO, vec![])
     #[test]
-    fn threat_connect_4_diagonal_bottom_left_SO() {
+    fn threat_connect_4_diagonal_bottom_left_so() {
         let black_pos = vec![(0, 18), (1, 17), (2, 16), (3, 15)];
         let white_pos = vec![];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((4, 14), TypeOfThreat::FiveTake, vec![]),
             // ((2,5), TypeOfThreat::FourO, vec![])
@@ -11892,8 +11477,6 @@ mod tests {
         assert!(test_threat_4(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (3, 15),
             Some(false),
             expected_result
@@ -11944,18 +11527,14 @@ mod tests {
     // DEFENSIVE_MOVE:
     // ((14,14), TypeOfThreat::FourSO, vec![])
     #[test]
-    fn threat_connect_4_diagonal_bottom_right_SO() {
+    fn threat_connect_4_diagonal_bottom_right_so() {
         let black_pos = vec![(18, 18), (17, 17), (16, 16), (15, 15)];
         let white_pos = vec![];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> =
             vec![((14, 14), TypeOfThreat::FiveTake, vec![])];
         assert!(test_threat_4(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (18, 18),
             Some(false),
             expected_result
@@ -12006,18 +11585,14 @@ mod tests {
     // DEFENSIVE_MOVE:
     // ((14,4), TypeOfThreat::FourSO, vec![])
     #[test]
-    fn threat_connect_4_diagonal_up_right_SO() {
+    fn threat_connect_4_diagonal_up_right_so() {
         let black_pos = vec![(18, 0), (17, 1), (16, 2), (15, 3)];
         let white_pos = vec![];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> =
             vec![((14, 4), TypeOfThreat::FiveTake, vec![])];
         assert!(test_threat_4(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (16, 2),
             Some(false),
             expected_result
@@ -12048,14 +11623,10 @@ mod tests {
     fn threat_connect_4_diago_not_take() {
         let black_pos = vec![(18, 0), (17, 1), (16, 2), (15, 3)];
         let white_pos = vec![(14, 4)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![];
         assert!(test_threat_4(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (16, 2),
             Some(false),
             expected_result
@@ -12109,15 +11680,11 @@ mod tests {
     fn threat_connect_4_diagonal_multiple_4_in_a_row_0() {
         let black_pos = vec![(3, 3), (1, 1), (2, 2), (4, 4), (4, 2), (2, 4), (5, 1)];
         let white_pos = vec![(5, 5)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> =
             vec![((0, 0), TypeOfThreat::FiveTake, vec![])];
         assert!(test_threat_4(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (2, 2),
             Some(false),
             expected_result
@@ -12217,8 +11784,6 @@ mod tests {
     fn threat_connect_4_diagonal_multiple_4_in_a_row_1() {
         let black_pos = vec![(3, 3), (1, 1), (2, 2), (4, 4), (4, 2), (2, 4), (5, 1)];
         let white_pos = vec![(5, 5)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((0, 0), TypeOfThreat::FiveTake, vec![]),
             ((1, 5), TypeOfThreat::FiveTake, vec![]),
@@ -12227,8 +11792,6 @@ mod tests {
         assert!(test_threat_4(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (3, 3),
             Some(false),
             expected_result
@@ -12305,8 +11868,6 @@ mod tests {
     fn threat_connect_4_diagonal_multiple_4_in_a_row_2() {
         let black_pos = vec![(3, 3), (1, 1), (2, 2), (4, 4), (4, 2), (5, 1), (6, 0)];
         let white_pos = vec![(5, 5)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((0, 0), TypeOfThreat::FiveTake, vec![]),
             ((2, 4), TypeOfThreat::FiveTake, vec![]),
@@ -12314,8 +11875,6 @@ mod tests {
         assert!(test_threat_4(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (3, 3),
             Some(false),
             expected_result
@@ -12346,14 +11905,10 @@ mod tests {
     fn threat_connect_4_diagonal_multiple_4_in_a_row_3() {
         let black_pos = vec![(3, 3), (1, 1), (2, 2), (4, 4), (4, 2), (5, 1)];
         let white_pos = vec![(5, 5), (6, 0), (0, 0)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![];
         assert!(test_threat_4(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (3, 3),
             Some(false),
             expected_result
@@ -12407,15 +11962,11 @@ mod tests {
     fn threat_connect_4_diagonal_multiple_4_in_a_row_4() {
         let black_pos = vec![(3, 3), (1, 1), (2, 2), (4, 4), (4, 2), (5, 1), (2, 4)];
         let white_pos = vec![(5, 5), (6, 0), (0, 0)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> =
             vec![((1, 5), TypeOfThreat::FiveTake, vec![])];
         assert!(test_threat_4(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (3, 3),
             Some(false),
             expected_result
@@ -12446,14 +11997,10 @@ mod tests {
     fn threat_connect_4_diagonal_multiple_4_in_a_row_5() {
         let black_pos = vec![(5, 5), (6, 6), (7, 7), (4, 4), (9, 3), (8, 4), (7, 5)];
         let white_pos = vec![];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![];
         assert!(test_threat_4(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (3, 3),
             Some(false),
             expected_result
@@ -12540,8 +12087,6 @@ mod tests {
             (10, 4),
         ];
         let white_pos = vec![(5, 9), (11, 5)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((3, 3), TypeOfThreat::FiveTake, vec![(8, 6)]),
             ((8, 8), TypeOfThreat::FiveTake, vec![(8, 6)]),
@@ -12549,8 +12094,6 @@ mod tests {
         assert!(test_threat_4(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (4, 4),
             Some(false),
             expected_result
@@ -12683,8 +12226,6 @@ mod tests {
             (10, 4),
         ];
         let white_pos = vec![(5, 9), (11, 5)];
-        let mut white_take = 0_isize;
-        let mut black_take = 0_isize;
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((3, 3), TypeOfThreat::FiveTake, vec![(8, 6)]),
             ((8, 8), TypeOfThreat::FiveTake, vec![(8, 6)]),
@@ -12694,8 +12235,6 @@ mod tests {
         assert!(test_threat_4(
             white_pos,
             black_pos,
-            &mut white_take,
-            &mut black_take,
             (6, 6),
             Some(false),
             expected_result
