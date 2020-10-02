@@ -12,11 +12,11 @@ sdl2 = "0.34.0"
 rand = "0.7.3"
 clap = { git = "https://github.com/clap-rs/clap/" }
 array_tool = "1.0.3"
-jemallocator = "0.3.2"
+#jemallocator = "0.3.2"
 
 [features]
 default = ["sdl2/image", "sdl2/ttf"]
 
 [profile.release]
-lto = "fat"
-codegen-units = 1
+#lto = "fat"
+#codegen-units = 1

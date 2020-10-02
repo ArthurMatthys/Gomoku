@@ -966,6 +966,7 @@ fn connect_2(
             .for_each(|(pos, threat, alignement, opp_pos)| {
                 let mut answers: Vec<(usize, usize)> =
                     capture_blank(board, actual_player, pos.0, pos.1, dir);
+                opp_pos.iter().for_each(|&coord| answers.push(coord));
                 alignement.iter().for_each(|&(align_x, align_y)| {
                     let captures = capture_coordinates(
                         score_board,
@@ -977,7 +978,6 @@ fn connect_2(
                     );
                     captures.iter().for_each(|&tuple| answers.push(tuple));
                 });
-                opp_pos.iter().for_each(|&coord| answers.push(coord));
                 ret.push((*pos, *threat, remove_duplicates_pos(answers)));
             });
     }
@@ -1197,6 +1197,7 @@ fn connect_3(
             .for_each(|(pos, threat, alignement, opp_pos)| {
                 let mut answers: Vec<(usize, usize)> =
                     capture_blank(board, actual_player, pos.0, pos.1, dir);
+                opp_pos.iter().for_each(|&coord| answers.push(coord));
                 alignement.iter().for_each(|&(align_x, align_y)| {
                     let captures = capture_coordinates(
                         score_board,
@@ -1208,7 +1209,6 @@ fn connect_3(
                     );
                     captures.iter().for_each(|&tuple| answers.push(tuple));
                 });
-                opp_pos.iter().for_each(|&coord| answers.push(coord));
                 ret.push((*pos, *threat, remove_duplicates_pos(answers)));
             });
     }
@@ -1393,7 +1393,7 @@ pub fn threat_search_space(
             //        TypeOfThreat::TwoTake => "TwoTake",
             //        TypeOfThreat::OneTake => "OneTake",
             //        TypeOfThreat::FourO => "FourO",
-            //        TypeOfThreat::FourSO => "FourSO",
+            //        TypeOfThreat::FourSOF => "FourSOF",
             //        TypeOfThreat::ThreeOF => "ThreeOF",
             //        TypeOfThreat::WIN => "WIN",
             //        TypeOfThreat::EMPTY => "EMPTY",
@@ -1958,7 +1958,7 @@ mod tests {
                         }
                         println!();
                     }
-                    // ((9,4), TypeOfThreat::FourO, vec![(10,8)]),
+                    // ((9,4), TypeOfThreat::FourOF, vec![(10,8)]),
                     println!("// DEFENSIVE_MOVE:");
 
                     print!("// (({},{}), ", defensive_move.0, defensive_move.1);
@@ -1970,10 +1970,14 @@ mod tests {
                             TypeOfThreat::ThreeTake => "ThreeTake",
                             TypeOfThreat::TwoTake => "TwoTake",
                             TypeOfThreat::OneTake => "OneTake",
-                            TypeOfThreat::FourO => "FourO",
-                            TypeOfThreat::FourSO => "FourSO",
+                            TypeOfThreat::FourOC => "FourOC",
+                            TypeOfThreat::FourOF => "FourOF",
+                            TypeOfThreat::FourSOC => "FourSOC",
+                            TypeOfThreat::FourSOF => "FourSOF",
+                            TypeOfThreat::ThreeOC => "ThreeOC",
                             TypeOfThreat::ThreeOF => "ThreeOF",
                             TypeOfThreat::WIN => "WIN",
+                            TypeOfThreat::AlreadyWon => "WON",
                             TypeOfThreat::EMPTY => "EMPTY",
                         }
                     );
@@ -2003,10 +2007,14 @@ mod tests {
                         TypeOfThreat::ThreeTake => "ThreeTake",
                         TypeOfThreat::TwoTake => "TwoTake",
                         TypeOfThreat::OneTake => "OneTake",
-                        TypeOfThreat::FourO => "FourO",
-                        TypeOfThreat::FourSO => "FourSO",
+                        TypeOfThreat::FourOC => "FourOC",
+                        TypeOfThreat::FourOF => "FourOF",
+                        TypeOfThreat::FourSOC => "FourSOC",
+                        TypeOfThreat::FourSOF => "FourSOF",
+                        TypeOfThreat::ThreeOC => "ThreeOC",
                         TypeOfThreat::ThreeOF => "ThreeOF",
                         TypeOfThreat::WIN => "WIN",
+                        TypeOfThreat::AlreadyWon => "WON",
                         TypeOfThreat::EMPTY => "EMPTY",
                     }
                 );
@@ -2038,8 +2046,8 @@ mod tests {
         //             match type_of_threat {
         //                 TypeOfThreat::FIVE => println!("FIVE"),
         //                 TypeOfThreat::FiveTake => println!("FiveTake"),
-        //                 TypeOfThreat::FourO => println!("FourO"),
-        //                 TypeOfThreat::FourSO => println!("FourSO"),
+        //                 TypeOfThreat::FourOF => println!("FourOF"),
+        //                 TypeOfThreat::FourSOF => println!("FourSOF"),
         //                 TypeOfThreat::TAKE => println!("TAKE"),
         //                 TypeOfThreat::ThreeOF => println!("ThreeOF"),
         //             }
@@ -2093,7 +2101,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((9,6), TypeOfThreat::ThreeOF, vec![(9,9),(9,5)])
+    // ((9,6), TypeOfThreat::ThreeOC, vec![(9,9),(9,5)])
 
     // Details: [dir:3]
     // ___________________
@@ -2139,7 +2147,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((9,9), TypeOfThreat::ThreeOF, vec![(9,6),(9,10)])
+    // ((9,9), TypeOfThreat::ThreeOC, vec![(9,6),(9,10)])
 
     // Details: [dir:3]
     // ___________________
@@ -2168,9 +2176,9 @@ mod tests {
         let black_pos = vec![(9, 8), (9, 7)];
         let white_pos = vec![];
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
-            ((9, 6), TypeOfThreat::ThreeOF, vec![(9, 9), (9, 5)]),
+            ((9, 6), TypeOfThreat::ThreeOC, vec![(9, 9), (9, 5)]),
             ((9, 5), TypeOfThreat::ThreeOF, vec![(9, 6), (9, 9), (9, 4)]),
-            ((9, 9), TypeOfThreat::ThreeOF, vec![(9, 6), (9, 10)]),
+            ((9, 9), TypeOfThreat::ThreeOC, vec![(9, 6), (9, 10)]),
             (
                 (9, 10),
                 TypeOfThreat::ThreeOF,
@@ -2228,7 +2236,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((9,6), TypeOfThreat::ThreeOF, vec![(9,9),(9,5)])
+    // ((9,6), TypeOfThreat::ThreeOC, vec![(9,9),(9,5)])
 
     // Details: [dir:3]
     // ___________________
@@ -2257,7 +2265,7 @@ mod tests {
         let black_pos = vec![(9, 8), (9, 7)];
         let white_pos = vec![(9, 10)];
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
-            ((9, 6), TypeOfThreat::ThreeOF, vec![(9, 9), (9, 5)]),
+            ((9, 6), TypeOfThreat::ThreeOC, vec![(9, 9), (9, 5)]),
             ((9, 5), TypeOfThreat::ThreeOF, vec![(9, 6), (9, 9), (9, 4)]),
         ];
         assert!(test_threat_2(
@@ -2311,7 +2319,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((7,9), TypeOfThreat::ThreeOF, vec![(10,8),(10,6),(6,10)])
+    // ((7,9), TypeOfThreat::ThreeOC, vec![(10,8),(10,6),(6,10)])
 
     // Details: [dir:2]
     // ___________________
@@ -2320,12 +2328,12 @@ mod tests {
     // ___________________
     // ___________________
     // ___________________
-    // ___________________
+    // __________⊙________
     // _________⊕_________
     // _______⊖⊕⊕⊙________
     // _______⊙___________
     // ______⊛____________
-    // ___________________
+    // _____⊙_____________
     // ___________________
     // ___________________
     // ___________________
@@ -2334,7 +2342,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((6,10), TypeOfThreat::ThreeOF, vec![(10,8),(7,9)])
+    // ((6,10), TypeOfThreat::ThreeOF, vec![(10,8),(7,9),(10,6),(5,11)])
 
     // Details: [dir:2]
     // ___________________
@@ -2357,19 +2365,19 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((10,6), TypeOfThreat::ThreeOF, vec![(10,8),(7,9),(11,5)])
+    // ((10,6), TypeOfThreat::ThreeOC, vec![(10,8),(7,9),(11,5)])
 
     // Details: [dir:2]
     // ___________________
     // ___________________
     // ___________________
     // ___________________
-    // ___________________
+    // ____________⊙______
     // ___________⊛_______
     // __________⊙________
     // _________⊕_________
     // _______⊖⊕⊕⊙________
-    // ___________________
+    // _______⊙___________
     // ___________________
     // ___________________
     // ___________________
@@ -2380,7 +2388,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((11,5), TypeOfThreat::ThreeOF, vec![(10,8),(10,6)])
+    // ((11,5), TypeOfThreat::ThreeOF, vec![(10,8),(10,6),(7,9),(12,4)])
 
     // Details: [dir:3]
     // ___________________
@@ -2403,19 +2411,19 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((9,6), TypeOfThreat::ThreeOF, vec![(10,8),(9,9),(9,5)])
+    // ((9,6), TypeOfThreat::ThreeOC, vec![(10,8),(9,9),(9,5)])
 
     // Details: [dir:3]
     // ___________________
     // ___________________
     // ___________________
     // ___________________
-    // ___________________
+    // _________⊙_________
     // _________⊛_________
     // _________⊙_________
     // _________⊕_________
     // _______⊖⊕⊕⊙________
-    // ___________________
+    // _________⊙_________
     // ___________________
     // ___________________
     // ___________________
@@ -2426,7 +2434,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((9,5), TypeOfThreat::ThreeOF, vec![(10,8),(9,6)])
+    // ((9,5), TypeOfThreat::ThreeOF, vec![(10,8),(9,6),(9,9),(9,4)])
 
     // Details: [dir:3]
     // ___________________
@@ -2449,7 +2457,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((9,9), TypeOfThreat::ThreeOF, vec![(10,8),(9,6),(9,10)])
+    // ((9,9), TypeOfThreat::ThreeOC, vec![(10,8),(9,6),(9,10)])
 
     // Details: [dir:3]
     // ___________________
@@ -2458,12 +2466,12 @@ mod tests {
     // ___________________
     // ___________________
     // ___________________
-    // ___________________
+    // _________⊙_________
     // _________⊕_________
     // _______⊖⊕⊕⊙________
     // _________⊙_________
     // _________⊛_________
-    // ___________________
+    // _________⊙_________
     // ___________________
     // ___________________
     // ___________________
@@ -2472,7 +2480,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((9,10), TypeOfThreat::ThreeOF, vec![(10,8),(9,9)])
+    // ((9,10), TypeOfThreat::ThreeOF, vec![(10,8),(9,9),(9,6),(9,11)])
     #[test]
     fn threat_connect2_catchis() {
         let black_pos = vec![(9, 8), (9, 7), (8, 8)];
@@ -2480,7 +2488,7 @@ mod tests {
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             (
                 (7, 9),
-                TypeOfThreat::ThreeOF,
+                TypeOfThreat::ThreeOC,
                 vec![(10, 8), (10, 6), (6, 10)],
             ),
             (
@@ -2490,7 +2498,7 @@ mod tests {
             ),
             (
                 (10, 6),
-                TypeOfThreat::ThreeOF,
+                TypeOfThreat::ThreeOC,
                 vec![(10, 8), (7, 9), (11, 5)],
             ),
             (
@@ -2498,7 +2506,7 @@ mod tests {
                 TypeOfThreat::ThreeOF,
                 vec![(10, 8), (10, 6), (7, 9), (12, 4)],
             ),
-            ((9, 6), TypeOfThreat::ThreeOF, vec![(10, 8), (9, 9), (9, 5)]),
+            ((9, 6), TypeOfThreat::ThreeOC, vec![(10, 8), (9, 9), (9, 5)]),
             (
                 (9, 5),
                 TypeOfThreat::ThreeOF,
@@ -2506,7 +2514,7 @@ mod tests {
             ),
             (
                 (9, 9),
-                TypeOfThreat::ThreeOF,
+                TypeOfThreat::ThreeOC,
                 vec![(10, 8), (9, 6), (9, 10)],
             ),
             (
@@ -2566,18 +2574,18 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((7,5), TypeOfThreat::ThreeOF, vec![(10,6),(10,8),(6,4)])
+    // ((7,5), TypeOfThreat::ThreeOC, vec![(10,6),(10,8),(6,4)])
 
     // Details: [dir:0]
     // ___________________
     // ___________________
     // ___________________
-    // ___________________
+    // _____⊙_____________
     // ______⊛____________
     // _______⊙___________
     // _______⊖⊕_⊙________
     // _________⊕_________
-    // _______⊖⊕⊕_________
+    // _______⊖⊕⊕⊙________
     // _______⊖⊕__________
     // ___________________
     // ___________________
@@ -2589,7 +2597,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((6,4), TypeOfThreat::ThreeOF, vec![(10,6),(7,5)])
+    // ((6,4), TypeOfThreat::ThreeOF, vec![(10,6),(7,5),(10,8),(5,3)])
 
     // Details: [dir:0]
     // ___________________
@@ -2612,7 +2620,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((10,8), TypeOfThreat::ThreeOF, vec![(10,6),(7,5),(11,9)])
+    // ((10,8), TypeOfThreat::ThreeOC, vec![(10,6),(7,5),(11,9)])
 
     // Details: [dir:0]
     // ___________________
@@ -2620,12 +2628,12 @@ mod tests {
     // ___________________
     // ___________________
     // ___________________
-    // ___________________
+    // _______⊙___________
     // _______⊖⊕_⊙________
     // _________⊕_________
     // _______⊖⊕⊕⊙________
     // _______⊖⊕__⊛_______
-    // ___________________
+    // ____________⊙______
     // ___________________
     // ___________________
     // ___________________
@@ -2635,7 +2643,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((11,9), TypeOfThreat::ThreeOF, vec![(10,6),(10,8)])
+    // ((11,9), TypeOfThreat::ThreeOF, vec![(10,6),(10,8),(7,5),(12,10)])
 
     // Details: [dir:3]
     // ___________________
@@ -2658,19 +2666,19 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((9,6), TypeOfThreat::ThreeOF, vec![(10,6),(10,8),(10,6),(9,9),(9,5)])
+    // ((9,6), TypeOfThreat::ThreeOC, vec![(10,6),(10,8),(9,9),(9,5)])
 
     // Details: [dir:3]
     // ___________________
     // ___________________
     // ___________________
     // ___________________
-    // ___________________
+    // _________⊙_________
     // _________⊛_________
     // _______⊖⊕⊙⊙________
     // _________⊕_________
     // _______⊖⊕⊕⊙________
-    // _______⊖⊕__________
+    // _______⊖⊕⊙_________
     // ___________________
     // ___________________
     // ___________________
@@ -2681,7 +2689,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((9,5), TypeOfThreat::ThreeOF, vec![(10,8),(10,6),(9,6)])
+    // ((9,5), TypeOfThreat::ThreeOF, vec![(10,8),(10,6),(9,6),(9,9),(9,4)])
 
     // Details: [dir:3]
     // ___________________
@@ -2704,7 +2712,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((9,9), TypeOfThreat::ThreeOF, vec![(10,9),(10,6),(10,8),(9,6),(9,10)])
+    // ((9,9), TypeOfThreat::ThreeOC, vec![(10,9),(10,6),(10,8),(9,6),(9,10)])
 
     // Details: [dir:3]
     // ___________________
@@ -2713,12 +2721,12 @@ mod tests {
     // ___________________
     // ___________________
     // ___________________
-    // _______⊖⊕_⊙________
+    // _______⊖⊕⊙⊙________
     // _________⊕_________
     // _______⊖⊕⊕⊙________
     // _______⊖⊕⊙_________
     // _________⊛_________
-    // __________⊙________
+    // _________⊙⊙________
     // ___________________
     // ___________________
     // ___________________
@@ -2727,7 +2735,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((9,10), TypeOfThreat::ThreeOF, vec![(10,11),(10,6),(10,8),(9,9)])
+    // ((9,10), TypeOfThreat::ThreeOF, vec![(10,11),(10,6),(10,8),(9,9),(9,6),(9,11)])
     #[test]
     fn threat_connect2_extremity1() {
         let black_pos = vec![(9, 8), (9, 7), (8, 9), (8, 6), (8, 8)];
@@ -2735,7 +2743,7 @@ mod tests {
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             (
                 (7, 5),
-                TypeOfThreat::ThreeOF,
+                TypeOfThreat::ThreeOC,
                 vec![(10, 6), (10, 8), (6, 4)],
             ),
             (
@@ -2745,7 +2753,7 @@ mod tests {
             ),
             (
                 (10, 8),
-                TypeOfThreat::ThreeOF,
+                TypeOfThreat::ThreeOC,
                 vec![(10, 6), (7, 5), (11, 9)],
             ),
             (
@@ -2755,7 +2763,7 @@ mod tests {
             ),
             (
                 (9, 6),
-                TypeOfThreat::ThreeOF,
+                TypeOfThreat::ThreeOC,
                 vec![(10, 6), (10, 8), (9, 9), (9, 5)],
             ),
             (
@@ -2765,7 +2773,7 @@ mod tests {
             ),
             (
                 (9, 9),
-                TypeOfThreat::ThreeOF,
+                TypeOfThreat::ThreeOC,
                 vec![(10, 9), (10, 6), (10, 8), (9, 6), (9, 10)],
             ),
             (
@@ -2825,19 +2833,19 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((9,6), TypeOfThreat::ThreeOF, vec![(9,9),(9,5)])
+    // ((9,6), TypeOfThreat::ThreeOC, vec![(9,9),(9,5)])
 
     // Details: [dir:3]
     // ___________________
     // ___________________
     // ___________________
     // ___________________
-    // ___________________
+    // _________⊙_________
     // _________⊛_________
     // _________⊙_________
     // _________⊕_________
     // _________⊕_________
-    // _______⊖⊕__________
+    // _______⊖⊕⊙_________
     // ___________________
     // ___________________
     // ___________________
@@ -2848,7 +2856,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((9,5), TypeOfThreat::ThreeOF, vec![(9,6)])
+    // ((9,5), TypeOfThreat::ThreeOF, vec![(9,6),(9,9),(9,4)])
 
     // Details: [dir:3]
     // ___________________
@@ -2871,7 +2879,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((9,9), TypeOfThreat::ThreeOF, vec![(10,9),(9,6),(9,10)])
+    // ((9,9), TypeOfThreat::ThreeOC, vec![(10,9),(9,6),(9,10)])
 
     // Details: [dir:3]
     // ___________________
@@ -2880,12 +2888,12 @@ mod tests {
     // ___________________
     // ___________________
     // ___________________
-    // ___________________
+    // _________⊙_________
     // _________⊕_________
     // _________⊕_________
     // _______⊖⊕⊙_________
     // _________⊛_________
-    // ___________________
+    // _________⊙_________
     // ___________________
     // ___________________
     // ___________________
@@ -2894,17 +2902,17 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((9,10), TypeOfThreat::ThreeOF, vec![(9,9)])
+    // ((9,10), TypeOfThreat::ThreeOF, vec![(9,9),(9,6),(9,11)])
     #[test]
     fn threat_connect2_extremity2() {
         let black_pos = vec![(9, 8), (9, 7), (8, 9)];
         let white_pos = vec![(7, 9)];
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
-            ((9, 6), TypeOfThreat::ThreeOF, vec![(9, 9), (9, 5)]),
+            ((9, 6), TypeOfThreat::ThreeOC, vec![(9, 9), (9, 5)]),
             ((9, 5), TypeOfThreat::ThreeOF, vec![(9, 6), (9, 9), (9, 4)]),
             (
                 (9, 9),
-                TypeOfThreat::ThreeOF,
+                TypeOfThreat::ThreeOC,
                 vec![(10, 9), (9, 6), (9, 10)],
             ),
             (
@@ -2964,7 +2972,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((9,6), TypeOfThreat::ThreeOF, vec![(9,9),(9,5)])
+    // ((9,6), TypeOfThreat::ThreeOC, vec![(9,9),(9,5)])
 
     // Details: [dir:3]
     // ___________________
@@ -3010,7 +3018,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((9,9), TypeOfThreat::ThreeOF, vec![(8,9),(9,6),(9,10)])
+    // ((9,9), TypeOfThreat::ThreeOC, vec![(8,9),(9,6),(9,10)])
 
     // Details: [dir:3]
     // ___________________
@@ -3039,9 +3047,9 @@ mod tests {
         let black_pos = vec![(9, 8), (9, 7), (10, 9)];
         let white_pos = vec![(11, 9)];
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
-            ((9, 6), TypeOfThreat::ThreeOF, vec![(9, 9), (9, 5)]),
+            ((9, 6), TypeOfThreat::ThreeOC, vec![(9, 9), (9, 5)]),
             ((9, 5), TypeOfThreat::ThreeOF, vec![(9, 6), (9, 9), (9, 4)]),
-            ((9, 9), TypeOfThreat::ThreeOF, vec![(8, 9), (9, 6), (9, 10)]),
+            ((9, 9), TypeOfThreat::ThreeOC, vec![(8, 9), (9, 6), (9, 10)]),
             (
                 (9, 10),
                 TypeOfThreat::ThreeOF,
@@ -3099,7 +3107,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((9,6), TypeOfThreat::ThreeOF, vec![(9,9),(9,5)])
+    // ((9,6), TypeOfThreat::ThreeOC, vec![(9,9),(9,5)])
 
     // Details: [dir:3]
     // ___________________
@@ -3145,7 +3153,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((9,9), TypeOfThreat::ThreeOF, vec![(7,9),(9,6),(9,10)])
+    // ((9,9), TypeOfThreat::ThreeOC, vec![(7,9),(9,6),(9,10)])
 
     // Details: [dir:3]
     // ___________________
@@ -3174,9 +3182,9 @@ mod tests {
         let black_pos = vec![(9, 8), (9, 7), (8, 9)];
         let white_pos = vec![(10, 9)];
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
-            ((9, 6), TypeOfThreat::ThreeOF, vec![(9, 9), (9, 5)]),
+            ((9, 6), TypeOfThreat::ThreeOC, vec![(9, 9), (9, 5)]),
             ((9, 5), TypeOfThreat::ThreeOF, vec![(9, 6), (9, 9), (9, 4)]),
-            ((9, 9), TypeOfThreat::ThreeOF, vec![(7, 9), (9, 6), (9, 10)]), // (7,9) missing currently
+            ((9, 9), TypeOfThreat::ThreeOC, vec![(7, 9), (9, 6), (9, 10)]), // (7,9) missing currently
             (
                 (9, 10),
                 TypeOfThreat::ThreeOF,
@@ -3234,7 +3242,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((9,6), TypeOfThreat::ThreeOF, vec![(9,9),(9,5)])
+    // ((9,6), TypeOfThreat::ThreeOC, vec![(9,9),(9,5)])
 
     // Details: [dir:3]
     // ___________________
@@ -3280,7 +3288,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((9,9), TypeOfThreat::ThreeOF, vec![(11,9),(9,6),(9,10)])
+    // ((9,9), TypeOfThreat::ThreeOC, vec![(11,9),(9,6),(9,10)])
 
     // Details: [dir:3]
     // ___________________
@@ -3309,13 +3317,13 @@ mod tests {
         let black_pos = vec![(9, 8), (9, 7), (10, 9)];
         let white_pos = vec![(8, 9)];
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
-            ((9, 6), TypeOfThreat::ThreeOF, vec![(9, 9), (9, 5)]),
+            ((9, 6), TypeOfThreat::ThreeOC, vec![(9, 9), (9, 5)]),
             ((9, 5), TypeOfThreat::ThreeOF, vec![(9, 6), (9, 9), (9, 4)]),
             (
                 (9, 9),
-                TypeOfThreat::ThreeOF,
+                TypeOfThreat::ThreeOC,
                 vec![(11, 9), (9, 6), (9, 10)],
-            ), // (11,9) missing currently
+            ),
             (
                 (9, 10),
                 TypeOfThreat::ThreeOF,
@@ -3373,7 +3381,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((9,6), TypeOfThreat::ThreeOF, vec![(9,9),(9,5)])
+    // ((9,6), TypeOfThreat::ThreeOC, vec![(9,9),(9,5)])
 
     // Details: [dir:3]
     // ___________________
@@ -3419,7 +3427,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((9,9), TypeOfThreat::ThreeOF, vec![(10,9),(9,6),(9,10)])
+    // ((9,9), TypeOfThreat::ThreeOC, vec![(10,9),(9,6),(9,10)])
 
     // Details: [dir:3]
     // ___________________
@@ -3448,11 +3456,11 @@ mod tests {
         let black_pos = vec![(9, 8), (9, 7), (8, 9)];
         let white_pos = vec![(7, 9)];
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
-            ((9, 6), TypeOfThreat::ThreeOF, vec![(9, 9), (9, 5)]),
+            ((9, 6), TypeOfThreat::ThreeOC, vec![(9, 9), (9, 5)]),
             ((9, 5), TypeOfThreat::ThreeOF, vec![(9, 6), (9, 9), (9, 4)]),
             (
                 (9, 9),
-                TypeOfThreat::ThreeOF,
+                TypeOfThreat::ThreeOC,
                 vec![(10, 9), (9, 6), (9, 10)],
             ),
             (
@@ -3512,7 +3520,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((9,6), TypeOfThreat::ThreeOF, vec![(9,9),(9,5)])
+    // ((9,6), TypeOfThreat::ThreeOC, vec![(9,9),(9,5)])
 
     // Details: [dir:3]
     // ___________________
@@ -3558,7 +3566,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((9,9), TypeOfThreat::ThreeOF, vec![(9,6),(9,10)])
+    // ((9,9), TypeOfThreat::ThreeOC, vec![(9,6),(9,10)])
 
     // Details: [dir:3]
     // ___________________
@@ -3587,9 +3595,9 @@ mod tests {
         let black_pos = vec![(9, 8), (9, 7), (8, 9)];
         let white_pos = vec![(10, 9), (7, 9)];
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
-            ((9, 6), TypeOfThreat::ThreeOF, vec![(9, 9), (9, 5)]),
+            ((9, 6), TypeOfThreat::ThreeOC, vec![(9, 9), (9, 5)]),
             ((9, 5), TypeOfThreat::ThreeOF, vec![(9, 6), (9, 9), (9, 4)]),
-            ((9, 9), TypeOfThreat::ThreeOF, vec![(9, 6), (9, 10)]),
+            ((9, 9), TypeOfThreat::ThreeOC, vec![(9, 6), (9, 10)]),
             (
                 (9, 10),
                 TypeOfThreat::ThreeOF,
@@ -3647,7 +3655,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((9,6), TypeOfThreat::ThreeOF, vec![(9,9),(9,5)])
+    // ((9,6), TypeOfThreat::ThreeOC, vec![(9,9),(9,5)])
 
     // Details: [dir:3]
     // ___________________
@@ -3699,7 +3707,7 @@ mod tests {
         let black_pos = vec![(9, 8), (9, 7), (9, 10), (9, 11)];
         let white_pos = vec![(10, 9), (7, 9)];
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
-            ((9, 6), TypeOfThreat::ThreeOF, vec![(9, 9), (9, 5)]),
+            ((9, 6), TypeOfThreat::ThreeOC, vec![(9, 9), (9, 5)]),
             ((9, 5), TypeOfThreat::ThreeOF, vec![(9, 6), (9, 9), (9, 4)]),
             ((9, 9), TypeOfThreat::FiveTake, vec![]),
         ];
@@ -3754,7 +3762,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((9,6), TypeOfThreat::ThreeOF, vec![(9,9),(9,5)])
+    // ((9,6), TypeOfThreat::ThreeOC, vec![(9,9),(9,5)])
 
     // Details: [dir:3]
     // ___________________
@@ -3806,7 +3814,7 @@ mod tests {
         let black_pos = vec![(9, 8), (9, 7), (9, 10), (9, 11), (8, 9)];
         let white_pos = vec![(10, 9)];
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
-            ((9, 6), TypeOfThreat::ThreeOF, vec![(9, 9), (9, 5)]),
+            ((9, 6), TypeOfThreat::ThreeOC, vec![(9, 9), (9, 5)]),
             ((9, 5), TypeOfThreat::ThreeOF, vec![(9, 6), (9, 9), (9, 4)]),
             ((9, 9), TypeOfThreat::FiveTake, vec![(7, 9)]),
         ];
@@ -3861,7 +3869,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((7,9), TypeOfThreat::ThreeOF, vec![(7,8),(10,6),(6,10)])
+    // ((7,9), TypeOfThreat::ThreeOC, vec![(7,8),(10,6),(6,10)])
 
     // Details: [dir:2]
     // ___________________
@@ -3907,7 +3915,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((10,6), TypeOfThreat::ThreeOF, vec![(7,8),(7,9),(11,5)])
+    // ((10,6), TypeOfThreat::ThreeOC, vec![(7,8),(7,9),(11,5)])
 
     // Details: [dir:2]
     // ___________________
@@ -3953,7 +3961,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((9,6), TypeOfThreat::ThreeOF, vec![(7,8),(9,9),(9,5)])
+    // ((9,6), TypeOfThreat::ThreeOC, vec![(7,8),(9,9),(9,5)])
 
     // Details: [dir:3]
     // ___________________
@@ -4007,7 +4015,7 @@ mod tests {
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             (
                 (7, 9),
-                TypeOfThreat::ThreeOF,
+                TypeOfThreat::ThreeOC,
                 vec![(7, 8), (10, 6), (6, 10)],
             ),
             (
@@ -4017,7 +4025,7 @@ mod tests {
             ),
             (
                 (10, 6),
-                TypeOfThreat::ThreeOF,
+                TypeOfThreat::ThreeOC,
                 vec![(7, 8), (7, 9), (11, 5)],
             ),
             (
@@ -4025,7 +4033,7 @@ mod tests {
                 TypeOfThreat::ThreeOF,
                 vec![(7, 8), (10, 6), (7, 9), (12, 4)],
             ),
-            ((9, 6), TypeOfThreat::ThreeOF, vec![(7, 8), (9, 9), (9, 5)]),
+            ((9, 6), TypeOfThreat::ThreeOC, vec![(7, 8), (9, 9), (9, 5)]),
             (
                 (9, 5),
                 TypeOfThreat::ThreeOF,
@@ -4084,7 +4092,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((9,6), TypeOfThreat::ThreeOF, vec![(7,8),(9,9),(9,5)])
+    // ((9,6), TypeOfThreat::ThreeOC, vec![(7,8),(9,9),(9,5)])
 
     // Details: [dir:3]
     // ___________________
@@ -4130,19 +4138,19 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((9,9), TypeOfThreat::FourO, vec![(7,8)])
+    // ((9,9), TypeOfThreat::FourOC, vec![(7,8)])
     #[test]
     fn threat_connect_2_catch_9_in_a_row_catch_2() {
         let black_pos = vec![(9, 8), (9, 7), (9, 10), (8, 8)];
         let white_pos = vec![(10, 8)];
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
-            ((9, 6), TypeOfThreat::ThreeOF, vec![(7, 8), (9, 9), (9, 5)]),
+            ((9, 6), TypeOfThreat::ThreeOC, vec![(7, 8), (9, 9), (9, 5)]),
             (
                 (9, 5),
                 TypeOfThreat::ThreeOF,
                 vec![(7, 8), (9, 6), (9, 9), (9, 4)],
             ),
-            ((9, 9), TypeOfThreat::FourO, vec![(7, 8)]),
+            ((9, 9), TypeOfThreat::FourOC, vec![(7, 8)]),
         ];
         assert!(test_threat_2(
             white_pos,
@@ -4195,13 +4203,13 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((9,9), TypeOfThreat::FourSO, vec![(7,8),(9,11)])
+    // ((9,9), TypeOfThreat::FourSOC, vec![(7,8),(9,11)])
     #[test]
     fn threat_connect_2_catch_9_in_a_row_catch_3() {
         let black_pos = vec![(9, 8), (9, 7), (9, 10), (8, 8)];
         let white_pos = vec![(10, 8), (9, 6)];
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> =
-            vec![((9, 9), TypeOfThreat::FourSO, vec![(7, 8), (9, 11)])];
+            vec![((9, 9), TypeOfThreat::FourSOC, vec![(7, 8), (9, 11)])];
         assert!(test_threat_2(
             white_pos,
             black_pos,
@@ -4253,7 +4261,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((9,9), TypeOfThreat::FourSO, vec![(7,8),(9,10)])
+    // ((9,9), TypeOfThreat::FourSOF, vec![(7,8),(9,10)])
 
     // Details: [dir:3]
     // ___________________
@@ -4276,14 +4284,14 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((9,10), TypeOfThreat::FourSO, vec![(7,8),(9,9)])
+    // ((9,10), TypeOfThreat::FourSOF, vec![(7,8),(9,9)])
     #[test]
     fn threat_connect_2_catch_9_in_a_row_catch_4() {
         let black_pos = vec![(9, 8), (9, 7), (9, 11), (8, 8)];
         let white_pos = vec![(10, 8), (9, 6)];
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
-            ((9, 9), TypeOfThreat::FourSO, vec![(7, 8), (9, 10)]),
-            ((9, 10), TypeOfThreat::FourSO, vec![(7, 8), (9, 9)]),
+            ((9, 9), TypeOfThreat::FourSOF, vec![(7, 8), (9, 10)]),
+            ((9, 10), TypeOfThreat::FourSOF, vec![(7, 8), (9, 9)]),
         ];
         assert!(test_threat_2(
             white_pos,
@@ -4359,7 +4367,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((9,12), TypeOfThreat::ThreeOF, vec![(9,9),(9,13)])
+    // ((9,12), TypeOfThreat::ThreeOC, vec![(9,9),(9,13)])
 
     // Details: [dir:3]
     // ___________________
@@ -4389,7 +4397,7 @@ mod tests {
         let white_pos = vec![(10, 8)];
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((9, 9), TypeOfThreat::FiveTake, vec![(7, 8)]),
-            ((9, 12), TypeOfThreat::ThreeOF, vec![(9, 9), (9, 13)]),
+            ((9, 12), TypeOfThreat::ThreeOC, vec![(9, 9), (9, 13)]),
             (
                 (9, 13),
                 TypeOfThreat::ThreeOF,
@@ -4447,7 +4455,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((3,6), TypeOfThreat::ThreeOF, vec![(0,8),(0,9),(4,5)])
+    // ((3,6), TypeOfThreat::ThreeOC, vec![(0,8),(0,9),(4,5)])
 
     // Details: [dir:2]
     // ___________________
@@ -4493,7 +4501,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((2,6), TypeOfThreat::ThreeOF, vec![(0,8),(2,9),(2,5)])
+    // ((2,6), TypeOfThreat::ThreeOC, vec![(0,8),(2,9),(2,5)])
 
     // Details: [dir:3]
     // ___________________
@@ -4545,13 +4553,13 @@ mod tests {
         let black_pos = vec![(2, 8), (2, 7), (2, 10), (2, 11), (2, 12), (2, 13), (1, 8)];
         let white_pos = vec![(3, 8)];
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
-            ((3, 6), TypeOfThreat::ThreeOF, vec![(0, 8), (0, 9), (4, 5)]),
+            ((3, 6), TypeOfThreat::ThreeOC, vec![(0, 8), (0, 9), (4, 5)]),
             (
                 (4, 5),
                 TypeOfThreat::ThreeOF,
                 vec![(0, 8), (3, 6), (0, 9), (5, 4)],
             ),
-            ((2, 6), TypeOfThreat::ThreeOF, vec![(0, 8), (2, 9), (2, 5)]),
+            ((2, 6), TypeOfThreat::ThreeOC, vec![(0, 8), (2, 9), (2, 5)]),
             (
                 (2, 5),
                 TypeOfThreat::ThreeOF,
@@ -4568,13 +4576,101 @@ mod tests {
         ))
     }
 
-    // Need Arthur's confirmation -> Arthur needs to check the length of the things he connects with
+    // Initial configuration:
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // __⊕________________
+    // _⊕⊕⊖_______________
+    // ___________________
+    // __⊕________________
+    // __⊕________________
+    // __⊕________________
+    // __⊕________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+
+    // Details: [dir:3]
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // __⊙________________
+    // __⊛________________
+    // __⊕________________
+    // ⊙⊕⊕⊖_______________
+    // __⊙________________
+    // __⊕________________
+    // __⊕________________
+    // __⊕________________
+    // __⊕________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((2,6), TypeOfThreat::ThreeOC, vec![(0,8),(2,9),(2,5)])
+
+    // Details: [dir:3]
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // __⊙________________
+    // __⊛________________
+    // __⊙________________
+    // __⊕________________
+    // ⊙⊕⊕⊖_______________
+    // __⊙________________
+    // __⊕________________
+    // __⊕________________
+    // __⊕________________
+    // __⊕________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((2,5), TypeOfThreat::ThreeOF, vec![(0,8),(2,6),(2,9),(2,4)])
+
+    // Details: [dir:3]
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // __⊕________________
+    // _⊕⊕⊖_______________
+    // __⊛________________
+    // __⊕________________
+    // __⊕________________
+    // __⊕________________
+    // __⊕________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((2,9), TypeOfThreat::ThreeTake, vec![])
     #[test]
     fn threat_connect_2_fake_catch_9_in_a_row_other_position_1() {
         let black_pos = vec![(2, 8), (2, 7), (2, 10), (2, 11), (2, 12), (2, 13), (1, 8)];
         let white_pos = vec![(3, 8)];
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
-            ((2, 6), TypeOfThreat::ThreeOF, vec![(0, 8), (2, 9), (2, 5)]),
+            ((2, 6), TypeOfThreat::ThreeOC, vec![(0, 8), (2, 9), (2, 5)]),
             (
                 (2, 5),
                 TypeOfThreat::ThreeOF,
@@ -4633,7 +4729,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((3,6), TypeOfThreat::ThreeOF, vec![(0,8),(0,9),(4,5)])
+    // ((3,6), TypeOfThreat::ThreeOC, vec![(0,8),(0,9),(4,5)])
 
     // Details: [dir:2]
     // ___________________
@@ -4662,7 +4758,7 @@ mod tests {
         let black_pos = vec![(2, 8), (2, 7), (2, 10), (2, 11), (2, 12), (2, 13), (1, 8)];
         let white_pos = vec![(3, 8)];
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
-            ((3, 6), TypeOfThreat::ThreeOF, vec![(0, 8), (0, 9), (4, 5)]),
+            ((3, 6), TypeOfThreat::ThreeOC, vec![(0, 8), (0, 9), (4, 5)]),
             (
                 (4, 5),
                 TypeOfThreat::ThreeOF,
@@ -4822,7 +4918,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((2,3), TypeOfThreat::ThreeOF, vec![(2,0),(2,4)])
+    // ((2,3), TypeOfThreat::ThreeOC, vec![(2,0),(2,4)])
 
     // Details: [dir:3]
     // _⊕⊙⊖_______________
@@ -4851,7 +4947,7 @@ mod tests {
         let black_pos = vec![(2, 2), (2, 1), (1, 0)];
         let white_pos = vec![(3, 0)];
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
-            ((2, 3), TypeOfThreat::ThreeOF, vec![(2, 0), (2, 4)]),
+            ((2, 3), TypeOfThreat::ThreeOC, vec![(2, 0), (2, 4)]),
             ((2, 4), TypeOfThreat::ThreeOF, vec![(2, 3), (2, 0), (2, 5)]),
         ];
         assert!(test_threat_2(
@@ -4863,13 +4959,102 @@ mod tests {
         ))
     }
 
+    // Initial configuration:
+    // ___⊕_______________
+    // ___________________
+    // ___⊕_______________
+    // ___⊕_______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+
+    // Details: [dir:3]
+    // ___⊕_______________
+    // ___⊛_______________
+    // ___⊕_______________
+    // ___⊕_______________
+    // ___⊙_______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((3,1), TypeOfThreat::FourSOC, vec![(3,4)])
+
+    // Details: [dir:3]
+    // ___⊕_______________
+    // ___⊙_______________
+    // ___⊕_______________
+    // ___⊕_______________
+    // ___⊛_______________
+    // ___⊙_______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((3,4), TypeOfThreat::ThreeOC, vec![(3,1),(3,5)])
+
+    // Details: [dir:3]
+    // ___⊕_______________
+    // ___⊙_______________
+    // ___⊕_______________
+    // ___⊕_______________
+    // ___⊙_______________
+    // ___⊛_______________
+    // ___⊙_______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((3,5), TypeOfThreat::ThreeOF, vec![(3,4),(3,1),(3,6)])
     #[test]
     fn threat_connect_2_fake_catch_close_top_2_s0_4() {
         let black_pos = vec![(3, 2), (3, 0), (3, 3)];
         let white_pos = vec![(3, 0)];
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
-            ((3, 1), TypeOfThreat::FourSO, vec![(3, 4)]),
-            ((3, 4), TypeOfThreat::ThreeOF, vec![(3, 1), (3, 5)]),
+            ((3, 1), TypeOfThreat::FourSOC, vec![(3, 4)]),
+            ((3, 4), TypeOfThreat::ThreeOC, vec![(3, 1), (3, 5)]),
             ((3, 5), TypeOfThreat::ThreeOF, vec![(3, 4), (3, 1), (3, 6)]),
         ];
         assert!(test_threat_2(
@@ -4923,30 +5108,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((2,1), TypeOfThreat::ThreeOF, vec![(2,4),(2,0)])
-
-    // Details: [dir:3]
-    // ⊙⊕⊛⊖_______________
-    // __⊙________________
-    // __⊕________________
-    // __⊕________________
-    // __⊙________________
-    // ___________________
-    // ___________________
-    // ___________________
-    // ___________________
-    // ___________________
-    // ___________________
-    // ___________________
-    // ___________________
-    // ___________________
-    // ___________________
-    // ___________________
-    // ___________________
-    // ___________________
-    // ___________________
-    // DEFENSIVE_MOVE:
-    // ((2,0), TypeOfThreat::ThreeOF, vec![(0,0),(2,1),(2,4)])
+    // ((2,1), TypeOfThreat::ThreeOC, vec![(2,4),(2,0)])
 
     // Details: [dir:3]
     // _⊕_⊖_______________
@@ -4969,7 +5131,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((2,4), TypeOfThreat::ThreeOF, vec![(2,1),(2,5)])
+    // ((2,4), TypeOfThreat::ThreeOC, vec![(2,1),(2,5)])
 
     // Details: [dir:3]
     // _⊕_⊖_______________
@@ -4998,8 +5160,8 @@ mod tests {
         let black_pos = vec![(2, 2), (2, 3), (1, 0)];
         let white_pos = vec![(3, 0)];
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
-            ((2, 1), TypeOfThreat::ThreeOF, vec![(2, 4), (2, 0)]),
-            ((2, 4), TypeOfThreat::ThreeOF, vec![(2, 1), (2, 5)]),
+            ((2, 1), TypeOfThreat::ThreeOC, vec![(2, 4), (2, 0)]),
+            ((2, 4), TypeOfThreat::ThreeOC, vec![(2, 1), (2, 5)]),
             ((2, 5), TypeOfThreat::ThreeOF, vec![(2, 4), (2, 1), (2, 6)]),
         ];
         assert!(test_threat_2(
@@ -5053,7 +5215,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((2,2), TypeOfThreat::ThreeOF, vec![(2,5),(2,1)])
+    // ((2,2), TypeOfThreat::ThreeOC, vec![(2,5),(2,1)])
 
     // Details: [dir:3]
     // __⊙________________
@@ -5099,7 +5261,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((2,5), TypeOfThreat::ThreeOF, vec![(2,2),(2,6)])
+    // ((2,5), TypeOfThreat::ThreeOC, vec![(2,2),(2,6)])
 
     // Details: [dir:3]
     // ___________________
@@ -5128,13 +5290,13 @@ mod tests {
         let black_pos = vec![(2, 4), (2, 3), (1, 1)];
         let white_pos = vec![(3, 1)];
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
-            ((2, 2), TypeOfThreat::ThreeOF, vec![(2, 5), (2, 1)]),
+            ((2, 2), TypeOfThreat::ThreeOC, vec![(2, 5), (2, 1)]),
             (
                 (2, 1),
                 TypeOfThreat::ThreeOF,
                 vec![(0, 1), (2, 2), (2, 5), (2, 0)],
             ),
-            ((2, 5), TypeOfThreat::ThreeOF, vec![(2, 2), (2, 6)]),
+            ((2, 5), TypeOfThreat::ThreeOC, vec![(2, 2), (2, 6)]),
             ((2, 6), TypeOfThreat::ThreeOF, vec![(2, 5), (2, 2), (2, 7)]),
         ];
         assert!(test_threat_2(
@@ -5188,7 +5350,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((2,3), TypeOfThreat::ThreeOF, vec![(2,0),(2,4)])
+    // ((2,3), TypeOfThreat::ThreeOC, vec![(2,0),(2,4)])
 
     // Details: [dir:3]
     // _⊕⊙⊖_______________
@@ -5217,7 +5379,7 @@ mod tests {
         let black_pos = vec![(2, 2), (2, 1), (1, 0)];
         let white_pos = vec![(3, 0)];
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
-            ((2, 3), TypeOfThreat::ThreeOF, vec![(2, 0), (2, 4)]),
+            ((2, 3), TypeOfThreat::ThreeOC, vec![(2, 0), (2, 4)]),
             ((2, 4), TypeOfThreat::ThreeOF, vec![(2, 3), (2, 0), (2, 5)]),
         ];
         assert!(test_threat_2(
@@ -5271,13 +5433,13 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((9,6), TypeOfThreat::FourSO, vec![(9,4)])
+    // ((9,6), TypeOfThreat::FourSOC, vec![(9,4)])
     #[test]
     fn threat_connect_2_space_1_align_1_blocked() {
         let black_pos = vec![(9, 5), (9, 7), (9, 8)];
         let white_pos = vec![(9, 9)];
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> =
-            vec![((9, 6), TypeOfThreat::FourSO, vec![(9, 4)])];
+            vec![((9, 6), TypeOfThreat::FourSOC, vec![(9, 4)])];
         assert!(test_threat_2(
             white_pos,
             black_pos,
@@ -5387,7 +5549,7 @@ mod tests {
                         }
                         println!();
                     }
-                    // ((9,4), TypeOfThreat::FourO, vec![(10,8)]),
+                    // ((9,4), TypeOfThreat::FourOF, vec![(10,8)]),
                     println!("// DEFENSIVE_MOVE:");
 
                     print!("// (({},{}), ", defensive_move.0, defensive_move.1);
@@ -5399,10 +5561,14 @@ mod tests {
                             TypeOfThreat::ThreeTake => "ThreeTake",
                             TypeOfThreat::TwoTake => "TwoTake",
                             TypeOfThreat::OneTake => "OneTake",
-                            TypeOfThreat::FourO => "FourO",
-                            TypeOfThreat::FourSO => "FourSO",
+                            TypeOfThreat::FourOC => "FourOC",
+                            TypeOfThreat::FourOF => "FourOF",
+                            TypeOfThreat::FourSOC => "FourSOC",
+                            TypeOfThreat::FourSOF => "FourSOF",
+                            TypeOfThreat::ThreeOC => "ThreeOC",
                             TypeOfThreat::ThreeOF => "ThreeOF",
                             TypeOfThreat::WIN => "WIN",
+                            TypeOfThreat::AlreadyWon => "WON",
                             TypeOfThreat::EMPTY => "EMPTY",
                         }
                     );
@@ -5432,10 +5598,14 @@ mod tests {
                         TypeOfThreat::ThreeTake => "ThreeTake",
                         TypeOfThreat::TwoTake => "TwoTake",
                         TypeOfThreat::OneTake => "OneTake",
-                        TypeOfThreat::FourO => "FourO",
-                        TypeOfThreat::FourSO => "FourSO",
+                        TypeOfThreat::FourOC => "FourOC",
+                        TypeOfThreat::FourOF => "FourOF",
+                        TypeOfThreat::FourSOC => "FourSOC",
+                        TypeOfThreat::FourSOF => "FourSOF",
+                        TypeOfThreat::ThreeOC => "ThreeOC",
                         TypeOfThreat::ThreeOF => "ThreeOF",
                         TypeOfThreat::WIN => "WIN",
+                        TypeOfThreat::AlreadyWon => "WON",
                         TypeOfThreat::EMPTY => "EMPTY",
                     }
                 );
@@ -5467,8 +5637,8 @@ mod tests {
         //             match type_of_threat {
         //                 TypeOfThreat::FIVE => println!("FIVE"),
         //                 TypeOfThreat::FiveTake => println!("FiveTake"),
-        //                 TypeOfThreat::FourO => println!("FourO"),
-        //                 TypeOfThreat::FourSO => println!("FourSO"),
+        //                 TypeOfThreat::FourOF => println!("FourOF"),
+        //                 TypeOfThreat::FourSOF => println!("FourSOF"),
         //                 TypeOfThreat::TAKE => println!("TAKE"),
         //                 TypeOfThreat::ThreeOF => println!("ThreeOF"),
         //             }
@@ -5522,7 +5692,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((4,2), TypeOfThreat::FourO, vec![])
+    // ((4,2), TypeOfThreat::FourOC, vec![])
 
     // Details: [dir:3]
     // ___________________
@@ -5545,7 +5715,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((4,1), TypeOfThreat::FourSO, vec![(4,2)])
+    // ((4,1), TypeOfThreat::FourSOF, vec![(4,2)])
 
     // Details: [dir:3]
     // ___________________
@@ -5568,16 +5738,16 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((4,6), TypeOfThreat::FourSO, vec![(4,2)])
+    // ((4,6), TypeOfThreat::FourSOC, vec![(4,2)])
     // _000_#
     #[test]
     fn threat_connect_3_space_1_blocked() {
         let black_pos = vec![(4, 3), (4, 4), (4, 5)];
         let white_pos = vec![(4, 7)];
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
-            ((4, 2), TypeOfThreat::FourO, vec![]),
-            ((4, 1), TypeOfThreat::FourSO, vec![(4, 2)]),
-            ((4, 6), TypeOfThreat::FourSO, vec![(4, 2)]),
+            ((4, 2), TypeOfThreat::FourOC, vec![]),
+            ((4, 1), TypeOfThreat::FourSOF, vec![(4, 2)]),
+            ((4, 6), TypeOfThreat::FourSOC, vec![(4, 2)]),
         ];
         assert!(test_threat_3(
             white_pos,
@@ -5630,7 +5800,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((4,0), TypeOfThreat::FourSO, vec![(4,4)])
+    // ((4,0), TypeOfThreat::FourSOC, vec![(4,4)])
 
     // Details: [dir:3]
     // ___________________
@@ -5653,7 +5823,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((4,4), TypeOfThreat::FourO, vec![])
+    // ((4,4), TypeOfThreat::FourOC, vec![])
 
     // Details: [dir:3]
     // ___________________
@@ -5676,16 +5846,16 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((4,5), TypeOfThreat::FourSO, vec![(4,4)])
+    // ((4,5), TypeOfThreat::FourSOF, vec![(4,4)])
     // _000_|
     #[test]
     fn threat_connect_3_space_1_edged() {
         let black_pos = vec![(4, 1), (4, 2), (4, 3)];
         let white_pos = vec![];
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
-            ((4, 0), TypeOfThreat::FourSO, vec![(4, 4)]),
-            ((4, 4), TypeOfThreat::FourO, vec![]),
-            ((4, 5), TypeOfThreat::FourSO, vec![(4, 4)]),
+            ((4, 0), TypeOfThreat::FourSOC, vec![(4, 4)]),
+            ((4, 4), TypeOfThreat::FourOC, vec![]),
+            ((4, 5), TypeOfThreat::FourSOF, vec![(4, 4)]),
         ];
         assert!(test_threat_3(
             white_pos,
@@ -5738,7 +5908,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((4,2), TypeOfThreat::FourO, vec![])
+    // ((4,2), TypeOfThreat::FourOC, vec![])
 
     // Details: [dir:3]
     // ___________________
@@ -5761,7 +5931,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((4,1), TypeOfThreat::FourSO, vec![(4,2)])
+    // ((4,1), TypeOfThreat::FourSOF, vec![(4,2)])
 
     // Details: [dir:3]
     // ___________________
@@ -5791,8 +5961,8 @@ mod tests {
         let black_pos = vec![(4, 3), (4, 4), (4, 5), (4, 7)];
         let white_pos = vec![];
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
-            ((4, 2), TypeOfThreat::FourO, vec![]),
-            ((4, 1), TypeOfThreat::FourSO, vec![(4, 2)]),
+            ((4, 2), TypeOfThreat::FourOC, vec![]),
+            ((4, 1), TypeOfThreat::FourSOF, vec![(4, 2)]),
             ((4, 6), TypeOfThreat::FiveTake, vec![]),
         ];
         assert!(test_threat_3(
@@ -5846,7 +6016,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((4,2), TypeOfThreat::FourO, vec![])
+    // ((4,2), TypeOfThreat::FourOC, vec![])
 
     // Details: [dir:3]
     // ___________________
@@ -5869,7 +6039,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((4,1), TypeOfThreat::FourSO, vec![(4,2)])
+    // ((4,1), TypeOfThreat::FourSOF, vec![(4,2)])
 
     // Details: [dir:3]
     // ___________________
@@ -5899,8 +6069,8 @@ mod tests {
         let black_pos = vec![(4, 3), (4, 4), (4, 5), (4, 7)];
         let white_pos = vec![(4, 8)];
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
-            ((4, 2), TypeOfThreat::FourO, vec![]),
-            ((4, 1), TypeOfThreat::FourSO, vec![(4, 2)]),
+            ((4, 2), TypeOfThreat::FourOC, vec![]),
+            ((4, 1), TypeOfThreat::FourSOF, vec![(4, 2)]),
             ((4, 6), TypeOfThreat::FiveTake, vec![]),
         ];
         assert!(test_threat_3(
@@ -5977,7 +6147,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((4,5), TypeOfThreat::FourO, vec![])
+    // ((4,5), TypeOfThreat::FourOC, vec![])
 
     // Details: [dir:3]
     // ____⊕______________
@@ -6000,7 +6170,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((4,6), TypeOfThreat::FourSO, vec![(4,5)])
+    // ((4,6), TypeOfThreat::FourSOF, vec![(4,5)])
     // _000_0|
     #[test]
     fn threat_connect_3_space_1_align_1_edged() {
@@ -6008,8 +6178,8 @@ mod tests {
         let white_pos = vec![];
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((4, 1), TypeOfThreat::FiveTake, vec![]),
-            ((4, 5), TypeOfThreat::FourO, vec![]),
-            ((4, 6), TypeOfThreat::FourSO, vec![(4, 5)]),
+            ((4, 5), TypeOfThreat::FourOC, vec![]),
+            ((4, 6), TypeOfThreat::FourSOF, vec![(4, 5)]),
         ];
         assert!(test_threat_3(
             white_pos,
@@ -6062,7 +6232,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((4,2), TypeOfThreat::FourO, vec![])
+    // ((4,2), TypeOfThreat::FourOC, vec![])
 
     // Details: [dir:3]
     // ___________________
@@ -6085,7 +6255,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((4,1), TypeOfThreat::FourSO, vec![(4,2)])
+    // ((4,1), TypeOfThreat::FourSOF, vec![(4,2)])
 
     // Details: [dir:3]
     // ___________________
@@ -6115,8 +6285,8 @@ mod tests {
         let black_pos = vec![(4, 3), (4, 4), (4, 5), (4, 7), (4, 8)];
         let white_pos = vec![];
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
-            ((4, 2), TypeOfThreat::FourO, vec![]),
-            ((4, 1), TypeOfThreat::FourSO, vec![(4, 2)]),
+            ((4, 2), TypeOfThreat::FourOC, vec![]),
+            ((4, 1), TypeOfThreat::FourSOF, vec![(4, 2)]),
             ((4, 6), TypeOfThreat::FourTake, vec![]),
         ];
         assert!(test_threat_3(
@@ -6170,7 +6340,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((4,2), TypeOfThreat::FourO, vec![])
+    // ((4,2), TypeOfThreat::FourOC, vec![])
 
     // Details: [dir:3]
     // ___________________
@@ -6193,7 +6363,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((4,1), TypeOfThreat::FourSO, vec![(4,2)])
+    // ((4,1), TypeOfThreat::FourSOF, vec![(4,2)])
 
     // Details: [dir:3]
     // ___________________
@@ -6223,8 +6393,8 @@ mod tests {
         let black_pos = vec![(4, 3), (4, 4), (4, 5), (4, 7), (4, 8)];
         let white_pos = vec![(4, 9)];
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
-            ((4, 2), TypeOfThreat::FourO, vec![]),
-            ((4, 1), TypeOfThreat::FourSO, vec![(4, 2)]),
+            ((4, 2), TypeOfThreat::FourOC, vec![]),
+            ((4, 1), TypeOfThreat::FourSOF, vec![(4, 2)]),
             ((4, 6), TypeOfThreat::FourTake, vec![]),
         ];
         assert!(test_threat_3(
@@ -6301,7 +6471,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((4,6), TypeOfThreat::FourO, vec![])
+    // ((4,6), TypeOfThreat::FourOC, vec![])
 
     // Details: [dir:3]
     // ____⊕______________
@@ -6324,7 +6494,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((4,7), TypeOfThreat::FourSO, vec![(4,6)])
+    // ((4,7), TypeOfThreat::FourSOF, vec![(4,6)])
     // _000_00|
     #[test]
     fn threat_connect_3_space_1_align_2_edged() {
@@ -6332,8 +6502,8 @@ mod tests {
         let white_pos = vec![];
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((4, 2), TypeOfThreat::FourTake, vec![]),
-            ((4, 6), TypeOfThreat::FourO, vec![]),
-            ((4, 7), TypeOfThreat::FourSO, vec![(4, 6)]),
+            ((4, 6), TypeOfThreat::FourOC, vec![]),
+            ((4, 7), TypeOfThreat::FourSOF, vec![(4, 6)]),
         ];
         assert!(test_threat_3(
             white_pos,
@@ -6386,7 +6556,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((4,2), TypeOfThreat::FourO, vec![])
+    // ((4,2), TypeOfThreat::FourOC, vec![])
 
     // Details: [dir:3]
     // ___________________
@@ -6409,7 +6579,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((4,1), TypeOfThreat::FourSO, vec![(4,2)])
+    // ((4,1), TypeOfThreat::FourSOF, vec![(4,2)])
 
     // Details: [dir:3]
     // ___________________
@@ -6439,8 +6609,8 @@ mod tests {
         let black_pos = vec![(4, 3), (4, 4), (4, 5), (4, 7), (4, 8), (4, 9)];
         let white_pos = vec![];
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
-            ((4, 2), TypeOfThreat::FourO, vec![]),
-            ((4, 1), TypeOfThreat::FourSO, vec![(4, 2)]),
+            ((4, 2), TypeOfThreat::FourOC, vec![]),
+            ((4, 1), TypeOfThreat::FourSOF, vec![(4, 2)]),
             ((4, 6), TypeOfThreat::ThreeTake, vec![]),
         ];
         assert!(test_threat_3(
@@ -6452,14 +6622,103 @@ mod tests {
         ))
     }
 
+    // Initial configuration:
+    // ___________________
+    // ___________________
+    // ___________________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊖______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+
+    // Details: [dir:3]
+    // ___________________
+    // ___________________
+    // ____⊛______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊖______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,2), TypeOfThreat::FourOC, vec![])
+
+    // Details: [dir:3]
+    // ___________________
+    // ____⊛______________
+    // ____⊙______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ___________________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊖______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,1), TypeOfThreat::FourSOF, vec![(4,2)])
+
+    // Details: [dir:3]
+    // ___________________
+    // ___________________
+    // ___________________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊛______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊕______________
+    // ____⊖______________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // ___________________
+    // DEFENSIVE_MOVE:
+    // ((4,6), TypeOfThreat::ThreeTake, vec![])
     // _000_000#
     #[test]
     fn threat_connect_3_space_1_align_3_blocked_simple() {
         let black_pos = vec![(4, 3), (4, 4), (4, 5), (4, 7), (4, 8), (4, 9)];
         let white_pos = vec![(4, 10)];
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
-            ((4, 2), TypeOfThreat::FourO, vec![]),
-            ((4, 1), TypeOfThreat::FourSO, vec![(4, 2)]),
+            ((4, 2), TypeOfThreat::FourOC, vec![]),
+            ((4, 1), TypeOfThreat::FourSOF, vec![(4, 2)]),
             ((4, 6), TypeOfThreat::ThreeTake, vec![]),
         ];
         assert!(test_threat_3(
@@ -6513,7 +6772,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((4,2), TypeOfThreat::FourO, vec![(3,5),(3,4),(3,2)])
+    // ((4,2), TypeOfThreat::FourOC, vec![(3,5),(3,4),(3,2)])
 
     // Details: [dir:3]
     // ___________________
@@ -6536,7 +6795,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((4,1), TypeOfThreat::FourSO, vec![(3,5),(3,4),(3,2),(4,2)])
+    // ((4,1), TypeOfThreat::FourSOF, vec![(3,5),(3,4),(3,2),(4,2)])
 
     // Details: [dir:3]
     // ___________________
@@ -6575,10 +6834,10 @@ mod tests {
         ];
         let white_pos = vec![(4, 10), (6, 4), (6, 5)];
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
-            ((4, 2), TypeOfThreat::FourO, vec![(3, 5), (3, 4), (3, 2)]),
+            ((4, 2), TypeOfThreat::FourOC, vec![(3, 5), (3, 4), (3, 2)]),
             (
                 (4, 1),
-                TypeOfThreat::FourSO,
+                TypeOfThreat::FourSOF,
                 vec![(3, 5), (3, 4), (3, 2), (4, 2)],
             ),
             ((4, 6), TypeOfThreat::ThreeTake, vec![(3, 7), (3, 5)]),
@@ -6657,7 +6916,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((4,7), TypeOfThreat::FourO, vec![])
+    // ((4,7), TypeOfThreat::FourOC, vec![])
 
     // Details: [dir:3]
     // ____⊕______________
@@ -6680,7 +6939,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((4,8), TypeOfThreat::FourSO, vec![(4,7)])
+    // ((4,8), TypeOfThreat::FourSOF, vec![(4,7)])
     // _000_000|
     #[test]
     fn threat_connect_3_space_1_align_3_edged() {
@@ -6688,8 +6947,8 @@ mod tests {
         let white_pos = vec![];
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((4, 3), TypeOfThreat::ThreeTake, vec![]),
-            ((4, 7), TypeOfThreat::FourO, vec![]),
-            ((4, 8), TypeOfThreat::FourSO, vec![(4, 7)]),
+            ((4, 7), TypeOfThreat::FourOC, vec![]),
+            ((4, 8), TypeOfThreat::FourSOF, vec![(4, 7)]),
         ];
         assert!(test_threat_3(
             white_pos,
@@ -6742,7 +7001,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((4,2), TypeOfThreat::FourO, vec![])
+    // ((4,2), TypeOfThreat::FourOC, vec![])
 
     // Details: [dir:3]
     // ___________________
@@ -6765,7 +7024,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((4,1), TypeOfThreat::FourSO, vec![(4,2)])
+    // ((4,1), TypeOfThreat::FourSOF, vec![(4,2)])
 
     // Details: [dir:3]
     // ___________________
@@ -6795,8 +7054,8 @@ mod tests {
         let black_pos = vec![(4, 3), (4, 4), (4, 5), (4, 7), (4, 8), (4, 9), (4, 10)];
         let white_pos = vec![];
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
-            ((4, 2), TypeOfThreat::FourO, vec![]),
-            ((4, 1), TypeOfThreat::FourSO, vec![(4, 2)]),
+            ((4, 2), TypeOfThreat::FourOC, vec![]),
+            ((4, 1), TypeOfThreat::FourSOF, vec![(4, 2)]),
             ((4, 6), TypeOfThreat::TwoTake, vec![]),
         ];
         assert!(test_threat_3(
@@ -6850,7 +7109,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((4,2), TypeOfThreat::FourO, vec![])
+    // ((4,2), TypeOfThreat::FourOC, vec![])
 
     // Details: [dir:3]
     // ___________________
@@ -6873,7 +7132,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((4,1), TypeOfThreat::FourSO, vec![(4,2)])
+    // ((4,1), TypeOfThreat::FourSOF, vec![(4,2)])
 
     // Details: [dir:3]
     // ___________________
@@ -6903,8 +7162,8 @@ mod tests {
         let black_pos = vec![(4, 3), (4, 4), (4, 5), (4, 7), (4, 8), (4, 9), (4, 10)];
         let white_pos = vec![(4, 11)];
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
-            ((4, 2), TypeOfThreat::FourO, vec![]),
-            ((4, 1), TypeOfThreat::FourSO, vec![(4, 2)]),
+            ((4, 2), TypeOfThreat::FourOC, vec![]),
+            ((4, 1), TypeOfThreat::FourSOF, vec![(4, 2)]),
             ((4, 6), TypeOfThreat::TwoTake, vec![]),
         ];
         assert!(test_threat_3(
@@ -6981,7 +7240,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((4,8), TypeOfThreat::FourO, vec![])
+    // ((4,8), TypeOfThreat::FourOC, vec![])
 
     // Details: [dir:3]
     // ____⊕______________
@@ -7004,16 +7263,15 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((4,9), TypeOfThreat::FourSO, vec![(4,8)])
-    // _000_0000|
+    // ((4,9), TypeOfThreat::FourSOF, vec![(4,8)])
     #[test]
     fn threat_connect_3_space_1_align_4_edged() {
         let black_pos = vec![(4, 0), (4, 1), (4, 2), (4, 3), (4, 5), (4, 6), (4, 7)];
         let white_pos = vec![];
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((4, 4), TypeOfThreat::TwoTake, vec![]),
-            ((4, 8), TypeOfThreat::FourO, vec![]),
-            ((4, 9), TypeOfThreat::FourSO, vec![(4, 8)]),
+            ((4, 8), TypeOfThreat::FourOC, vec![]),
+            ((4, 9), TypeOfThreat::FourSOF, vec![(4, 8)]),
         ];
         assert!(test_threat_3(
             white_pos,
@@ -7067,7 +7325,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((4,2), TypeOfThreat::FourO, vec![])
+    // ((4,2), TypeOfThreat::FourOC, vec![])
 
     // Details: [dir:3]
     // ___________________
@@ -7090,7 +7348,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((4,1), TypeOfThreat::FourSO, vec![(4,2)])
+    // ((4,1), TypeOfThreat::FourSOF, vec![(4,2)])
 
     // Details: [dir:3]
     // ___________________
@@ -7113,7 +7371,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((4,6), TypeOfThreat::FourO, vec![])
+    // ((4,6), TypeOfThreat::FourOC, vec![])
 
     // Details: [dir:3]
     // ___________________
@@ -7136,16 +7394,16 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((4,7), TypeOfThreat::FourSO, vec![(4,6)])
+    // ((4,7), TypeOfThreat::FourSOF, vec![(4,6)])
     #[test]
     fn threat_connect_3_space_2_free() {
         let black_pos = vec![(4, 3), (4, 4), (4, 5)];
         let white_pos = vec![];
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
-            ((4, 2), TypeOfThreat::FourO, vec![]),
-            ((4, 1), TypeOfThreat::FourSO, vec![(4, 2)]),
-            ((4, 6), TypeOfThreat::FourO, vec![]),
-            ((4, 7), TypeOfThreat::FourSO, vec![(4, 6)]),
+            ((4, 2), TypeOfThreat::FourOC, vec![]),
+            ((4, 1), TypeOfThreat::FourSOF, vec![(4, 2)]),
+            ((4, 6), TypeOfThreat::FourOC, vec![]),
+            ((4, 7), TypeOfThreat::FourSOF, vec![(4, 6)]),
         ];
         assert!(test_threat_3(
             white_pos,
@@ -7198,7 +7456,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((4,2), TypeOfThreat::FourO, vec![])
+    // ((4,2), TypeOfThreat::FourOC, vec![])
 
     // Details: [dir:3]
     // ___________________
@@ -7221,7 +7479,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((4,1), TypeOfThreat::FourSO, vec![(4,2)])
+    // ((4,1), TypeOfThreat::FourSOF, vec![(4,2)])
 
     // Details: [dir:3]
     // ___________________
@@ -7244,7 +7502,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((4,6), TypeOfThreat::FourO, vec![])
+    // ((4,6), TypeOfThreat::FourOC, vec![])
 
     // Details: [dir:3]
     // ___________________
@@ -7267,17 +7525,17 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((4,7), TypeOfThreat::FourSO, vec![(4,6)])
+    // ((4,7), TypeOfThreat::FourSOF, vec![(4,6)])
     // _000__#
     #[test]
     fn threat_connect_3_space_2_blocked_simple() {
         let black_pos = vec![(4, 3), (4, 4), (4, 5)];
         let white_pos = vec![(4, 8)];
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
-            ((4, 2), TypeOfThreat::FourO, vec![]),
-            ((4, 1), TypeOfThreat::FourSO, vec![(4, 2)]),
-            ((4, 6), TypeOfThreat::FourO, vec![]),
-            ((4, 7), TypeOfThreat::FourSO, vec![(4, 6)]),
+            ((4, 2), TypeOfThreat::FourOC, vec![]),
+            ((4, 1), TypeOfThreat::FourSOF, vec![(4, 2)]),
+            ((4, 6), TypeOfThreat::FourOC, vec![]),
+            ((4, 7), TypeOfThreat::FourSOF, vec![(4, 6)]),
         ];
         assert!(test_threat_3(
             white_pos,
@@ -7330,7 +7588,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((4,1), TypeOfThreat::FourO, vec![])
+    // ((4,1), TypeOfThreat::FourOC, vec![])
 
     // Details: [dir:3]
     // ____⊛______________
@@ -7353,7 +7611,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((4,0), TypeOfThreat::FourSO, vec![(4,1)])
+    // ((4,0), TypeOfThreat::FourSOF, vec![(4,1)])
 
     // Details: [dir:3]
     // ___________________
@@ -7376,7 +7634,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((4,5), TypeOfThreat::FourO, vec![])
+    // ((4,5), TypeOfThreat::FourOC, vec![])
 
     // Details: [dir:3]
     // ___________________
@@ -7399,17 +7657,17 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((4,6), TypeOfThreat::FourSO, vec![(4,5)])
+    // ((4,6), TypeOfThreat::FourSOF, vec![(4,5)])
     // _000__|
     #[test]
     fn threat_connect_3_space_2_edged() {
         let black_pos = vec![(4, 2), (4, 3), (4, 4)];
         let white_pos = vec![];
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
-            ((4, 1), TypeOfThreat::FourO, vec![]),
-            ((4, 0), TypeOfThreat::FourSO, vec![(4, 1)]),
-            ((4, 5), TypeOfThreat::FourO, vec![]),
-            ((4, 6), TypeOfThreat::FourSO, vec![(4, 5)]),
+            ((4, 1), TypeOfThreat::FourOC, vec![]),
+            ((4, 0), TypeOfThreat::FourSOF, vec![(4, 1)]),
+            ((4, 5), TypeOfThreat::FourOC, vec![]),
+            ((4, 6), TypeOfThreat::FourSOF, vec![(4, 5)]),
         ];
         assert!(test_threat_3(
             white_pos,
@@ -7462,7 +7720,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((4,2), TypeOfThreat::FourO, vec![])
+    // ((4,2), TypeOfThreat::FourOC, vec![])
 
     // Details: [dir:3]
     // ___________________
@@ -7485,7 +7743,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((4,1), TypeOfThreat::FourSO, vec![(4,2)])
+    // ((4,1), TypeOfThreat::FourSOF, vec![(4,2)])
 
     // Details: [dir:3]
     // ___________________
@@ -7508,7 +7766,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((4,6), TypeOfThreat::FourO, vec![])
+    // ((4,6), TypeOfThreat::FourOC, vec![])
 
     // Details: [dir:3]
     // ___________________
@@ -7531,17 +7789,17 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((4,7), TypeOfThreat::FourSO, vec![(4,6)])
+    // ((4,7), TypeOfThreat::FourSOF, vec![(4,6)])
     // _000__0_
     #[test]
     fn threat_connect_3_space_2_align_1() {
         let black_pos = vec![(4, 3), (4, 4), (4, 5), (4, 8)];
         let white_pos = vec![];
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
-            ((4, 2), TypeOfThreat::FourO, vec![]),
-            ((4, 1), TypeOfThreat::FourSO, vec![(4, 2)]),
-            ((4, 6), TypeOfThreat::FourO, vec![]),
-            ((4, 7), TypeOfThreat::FourSO, vec![(4, 6)]),
+            ((4, 2), TypeOfThreat::FourOC, vec![]),
+            ((4, 1), TypeOfThreat::FourSOF, vec![(4, 2)]),
+            ((4, 6), TypeOfThreat::FourOC, vec![]),
+            ((4, 7), TypeOfThreat::FourSOF, vec![(4, 6)]),
         ];
         assert!(test_threat_3(
             white_pos,
@@ -8302,7 +8560,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((4,6), TypeOfThreat::FourSO, vec![(4,7)])
+    // ((4,6), TypeOfThreat::FourSOC, vec![(4,7)])
 
     // Details: [dir:3]
     // ___________________
@@ -8325,15 +8583,15 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((4,7), TypeOfThreat::FourSO, vec![(4,6)])
+    // ((4,7), TypeOfThreat::FourSOF, vec![(4,6)])
     // #000___
     #[test]
     fn threat_connect_3_space_2_blocked_free() {
         let black_pos = vec![(4, 3), (4, 4), (4, 5)];
         let white_pos = vec![(4, 2)];
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
-            ((4, 6), TypeOfThreat::FourSO, vec![(4, 7)]),
-            ((4, 7), TypeOfThreat::FourSO, vec![(4, 6)]),
+            ((4, 6), TypeOfThreat::FourSOC, vec![(4, 7)]),
+            ((4, 7), TypeOfThreat::FourSOF, vec![(4, 6)]),
         ];
         assert!(test_threat_3(
             white_pos,
@@ -8386,7 +8644,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((4,6), TypeOfThreat::FourSO, vec![(4,7)])
+    // ((4,6), TypeOfThreat::FourSOC, vec![(4,7)])
 
     // Details: [dir:3]
     // ___________________
@@ -8409,15 +8667,15 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((4,7), TypeOfThreat::FourSO, vec![(4,6)])
+    // ((4,7), TypeOfThreat::FourSOF, vec![(4,6)])
     // #000__#
     #[test]
     fn threat_connect_3_space_2_blocked_blocked() {
         let black_pos = vec![(4, 3), (4, 4), (4, 5)];
         let white_pos = vec![(4, 2), (4, 8)];
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
-            ((4, 6), TypeOfThreat::FourSO, vec![(4, 7)]),
-            ((4, 7), TypeOfThreat::FourSO, vec![(4, 6)]),
+            ((4, 6), TypeOfThreat::FourSOC, vec![(4, 7)]),
+            ((4, 7), TypeOfThreat::FourSOF, vec![(4, 6)]),
         ];
         assert!(test_threat_3(
             white_pos,
@@ -8470,7 +8728,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((4,1), TypeOfThreat::FourSO, vec![(4,0)])
+    // ((4,1), TypeOfThreat::FourSOC, vec![(4,0)])
 
     // Details: [dir:3]
     // ____⊛______________
@@ -8493,15 +8751,15 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((4,0), TypeOfThreat::FourSO, vec![(4,1)])
+    // ((4,0), TypeOfThreat::FourSOF, vec![(4,1)])
     // #000__|
     #[test]
     fn threat_connect_3_space_2_blocked_edged() {
         let black_pos = vec![(4, 2), (4, 3), (4, 4)];
         let white_pos = vec![(4, 5)];
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
-            ((4, 1), TypeOfThreat::FourSO, vec![(4, 0)]),
-            ((4, 0), TypeOfThreat::FourSO, vec![(4, 1)]),
+            ((4, 1), TypeOfThreat::FourSOC, vec![(4, 0)]),
+            ((4, 0), TypeOfThreat::FourSOF, vec![(4, 1)]),
         ];
         assert!(test_threat_3(
             white_pos,
@@ -8554,7 +8812,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((4,5), TypeOfThreat::FourSO, vec![(4,6)])
+    // ((4,5), TypeOfThreat::FourSOC, vec![(4,6)])
 
     // Details: [dir:3]
     // ___________________
@@ -8577,15 +8835,15 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((4,6), TypeOfThreat::FourSO, vec![(4,5)])
+    // ((4,6), TypeOfThreat::FourSOF, vec![(4,5)])
     // #000__0?
     #[test]
     fn threat_connect_3_space_2_blocked_align_1() {
         let black_pos = vec![(4, 2), (4, 3), (4, 4), (4, 7)];
         let white_pos = vec![(4, 1)];
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
-            ((4, 5), TypeOfThreat::FourSO, vec![(4, 6)]),
-            ((4, 6), TypeOfThreat::FourSO, vec![(4, 5)]),
+            ((4, 5), TypeOfThreat::FourSOC, vec![(4, 6)]),
+            ((4, 6), TypeOfThreat::FourSOF, vec![(4, 5)]),
         ];
         assert!(test_threat_3(
             white_pos,
@@ -8676,10 +8934,14 @@ mod tests {
                             TypeOfThreat::ThreeTake => "ThreeTake",
                             TypeOfThreat::TwoTake => "TwoTake",
                             TypeOfThreat::OneTake => "OneTake",
-                            TypeOfThreat::FourO => "FourO",
-                            TypeOfThreat::FourSO => "FourSO",
+                            TypeOfThreat::FourOC => "FourOC",
+                            TypeOfThreat::FourOF => "FourOF",
+                            TypeOfThreat::FourSOC => "FourSOC",
+                            TypeOfThreat::FourSOF => "FourSOF",
+                            TypeOfThreat::ThreeOC => "ThreeOC",
                             TypeOfThreat::ThreeOF => "ThreeOF",
                             TypeOfThreat::WIN => "WIN",
+                            TypeOfThreat::AlreadyWon => "WON",
                             TypeOfThreat::EMPTY => "EMPTY",
                         }
                     );
@@ -8709,10 +8971,14 @@ mod tests {
                         TypeOfThreat::ThreeTake => "ThreeTake",
                         TypeOfThreat::TwoTake => "TwoTake",
                         TypeOfThreat::OneTake => "OneTake",
-                        TypeOfThreat::FourO => "FourO",
-                        TypeOfThreat::FourSO => "FourSO",
+                        TypeOfThreat::FourOC => "FourOC",
+                        TypeOfThreat::FourOF => "FourOF",
+                        TypeOfThreat::FourSOC => "FourSOC",
+                        TypeOfThreat::FourSOF => "FourSOF",
+                        TypeOfThreat::ThreeOC => "ThreeOC",
                         TypeOfThreat::ThreeOF => "ThreeOF",
                         TypeOfThreat::WIN => "WIN",
+                        TypeOfThreat::AlreadyWon => "WON",
                         TypeOfThreat::EMPTY => "EMPTY",
                     }
                 );
@@ -8774,7 +9040,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((9,4), TypeOfThreat::FourO, vec![])
+    // ((9,4), TypeOfThreat::FourOF, vec![])
 
     // Details: [dir:3]
     // ___________________
@@ -8797,7 +9063,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((9,9), TypeOfThreat::FourO, vec![])
+    // ((9,9), TypeOfThreat::FourOF, vec![])
     #[test]
     fn threat_connect_4_connect_4_normal() {
         let black_pos = vec![(9, 8), (9, 7), (9, 6), (9, 5)];
@@ -8857,7 +9123,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((9,4), TypeOfThreat::FourO, vec![(10,8)])
+    // ((9,4), TypeOfThreat::FourOF, vec![(10,8)])
 
     // Details: [dir:3]
     // ___________________
@@ -8880,7 +9146,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((9,9), TypeOfThreat::FourO, vec![(10,8)])
+    // ((9,9), TypeOfThreat::FourOF, vec![(10,8)])
     #[test]
     fn threat_connect_4_catchis() {
         let black_pos = vec![(9, 8), (9, 7), (9, 6), (9, 5), (8, 8)];
@@ -8940,7 +9206,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((9,4), TypeOfThreat::FourO, vec![(10,4),(10,6),(10,8)])
+    // ((9,4), TypeOfThreat::FourOF, vec![(10,4),(10,6),(10,8)])
 
     // Details: [dir:3]
     // ___________________
@@ -8963,7 +9229,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((9,9), TypeOfThreat::FourO, vec![(10,9),(10,8),(10,6)])
+    // ((9,9), TypeOfThreat::FourOF, vec![(10,9),(10,8),(10,6)])
     #[test]
     fn threat_connect_4_catch_extremity1() {
         let black_pos = vec![(9, 8), (9, 7), (9, 6), (9, 5), (8, 9), (8, 4), (8, 8)];
@@ -9031,7 +9297,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((9,4), TypeOfThreat::FourO, vec![])
+    // ((9,4), TypeOfThreat::FourOF, vec![])
 
     // Details: [dir:3]
     // ___________________
@@ -9054,7 +9320,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((9,9), TypeOfThreat::FourO, vec![(10,9)])
+    // ((9,9), TypeOfThreat::FourOF, vec![(10,9)])
     #[test]
     fn threat_connect_4_catch_extremity2() {
         let black_pos = vec![(9, 8), (9, 7), (9, 6), (9, 5), (8, 9)];
@@ -9114,7 +9380,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((9,4), TypeOfThreat::FourO, vec![])
+    // ((9,4), TypeOfThreat::FourOF, vec![])
 
     // Details: [dir:3]
     // ___________________
@@ -9137,7 +9403,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((9,9), TypeOfThreat::FourO, vec![(8,9)])
+    // ((9,9), TypeOfThreat::FourOF, vec![(8,9)])
     #[test]
     fn threat_connect_4_catch_extremity3() {
         let black_pos = vec![(9, 8), (9, 7), (9, 6), (9, 5), (10, 9)];
@@ -9197,7 +9463,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((9,4), TypeOfThreat::FourO, vec![])
+    // ((9,4), TypeOfThreat::FourOF, vec![])
 
     // Details: [dir:3]
     // ___________________
@@ -9220,7 +9486,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((9,9), TypeOfThreat::FourO, vec![(7,9)])
+    // ((9,9), TypeOfThreat::FourOF, vec![(7,9)])
     #[test]
     fn threat_connect_4_catch_extremity_hard1() {
         let black_pos = vec![(9, 8), (9, 7), (9, 6), (9, 5), (8, 9)];
@@ -9280,7 +9546,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((9,4), TypeOfThreat::FourO, vec![])
+    // ((9,4), TypeOfThreat::FourOF, vec![])
 
     // Details: [dir:3]
     // ___________________
@@ -9303,7 +9569,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((9,9), TypeOfThreat::FourO, vec![])
+    // ((9,9), TypeOfThreat::FourOF, vec![])
     #[test]
     fn threat_connect_4_not_catch_extremity() {
         let black_pos = vec![(9, 8), (9, 7), (9, 6), (9, 5), (8, 9)];
@@ -9363,7 +9629,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((9,4), TypeOfThreat::FourO, vec![])
+    // ((9,4), TypeOfThreat::FourOF, vec![])
 
     // Details: [dir:3]
     // ___________________
@@ -9386,7 +9652,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((9,9), TypeOfThreat::FourO, vec![])
+    // ((9,9), TypeOfThreat::FourOF, vec![])
     #[test]
     fn threat_connect_4_catch_9_in_a_row_first() {
         let black_pos = vec![
@@ -9455,7 +9721,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((9,4), TypeOfThreat::FourO, vec![])
+    // ((9,4), TypeOfThreat::FourOF, vec![])
 
     // Details: [dir:3]
     // ___________________
@@ -9478,7 +9744,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((9,9), TypeOfThreat::FourO, vec![(7,9)])
+    // ((9,9), TypeOfThreat::FourOF, vec![(7,9)])
     #[test]
     fn threat_connect_4_catch_9_in_a_row_catch() {
         let black_pos = vec![
@@ -9548,7 +9814,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((9,4), TypeOfThreat::FourO, vec![(7,8)])
+    // ((9,4), TypeOfThreat::FourOF, vec![(7,8)])
 
     // Details: [dir:3]
     // ___________________
@@ -9571,7 +9837,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((9,9), TypeOfThreat::FourO, vec![])
+    // ((9,9), TypeOfThreat::FourOF, vec![])
     #[test]
     fn threat_connect_4_fake_catch_9_in_a_row_catch_1() {
         let black_pos = vec![
@@ -9641,7 +9907,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((2,4), TypeOfThreat::FourO, vec![(0,8)])
+    // ((2,4), TypeOfThreat::FourOF, vec![(0,8)])
 
     // Details: [dir:3]
     // ___________________
@@ -9664,7 +9930,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((2,9), TypeOfThreat::FourO, vec![])
+    // ((2,9), TypeOfThreat::FourOF, vec![])
     #[test]
     fn threat_connect_4_fake_catch_9_in_a_row_catch_close_border() {
         let black_pos = vec![
@@ -9734,7 +10000,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((2,4), TypeOfThreat::FourO, vec![(0,8)])
+    // ((2,4), TypeOfThreat::FourOF, vec![(0,8)])
 
     // Details: [dir:3]
     // ___________________
@@ -9757,7 +10023,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((2,9), TypeOfThreat::FourO, vec![])
+    // ((2,9), TypeOfThreat::FourOF, vec![])
     #[test]
     fn threat_connect_4_fake_catch_9_in_a_row_other_position_0() {
         let black_pos = vec![
@@ -9827,7 +10093,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((2,4), TypeOfThreat::FourO, vec![(0,8)])
+    // ((2,4), TypeOfThreat::FourOF, vec![(0,8)])
 
     // Details: [dir:3]
     // ___________________
@@ -9850,7 +10116,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((2,9), TypeOfThreat::FourO, vec![])
+    // ((2,9), TypeOfThreat::FourOF, vec![])
     #[test]
     fn threat_connect_4_fake_catch_9_in_a_row_other_position_1() {
         let black_pos = vec![
@@ -9920,7 +10186,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((2,4), TypeOfThreat::FourO, vec![(0,8)])
+    // ((2,4), TypeOfThreat::FourOF, vec![(0,8)])
 
     // Details: [dir:3]
     // ___________________
@@ -9943,7 +10209,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((2,9), TypeOfThreat::FourO, vec![])
+    // ((2,9), TypeOfThreat::FourOF, vec![])
     #[test]
     fn threat_connect_4_fake_catch_9_in_a_row_other_position_2() {
         let black_pos = vec![
@@ -10013,7 +10279,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((2,9), TypeOfThreat::FourO, vec![])
+    // ((2,9), TypeOfThreat::FourOF, vec![])
 
     // Details: [dir:3]
     // ___________________
@@ -10036,7 +10302,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((2,14), TypeOfThreat::FourO, vec![])
+    // ((2,14), TypeOfThreat::FourOF, vec![])
     #[test]
     fn threat_connect_4_fake_catch_9_in_a_row_other_position_3() {
         let black_pos = vec![
@@ -10106,7 +10372,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((2,9), TypeOfThreat::FourO, vec![])
+    // ((2,9), TypeOfThreat::FourOF, vec![])
 
     // Details: [dir:3]
     // ___________________
@@ -10129,7 +10395,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((2,14), TypeOfThreat::FourO, vec![])
+    // ((2,14), TypeOfThreat::FourOF, vec![])
     #[test]
     fn threat_connect_4_fake_catch_9_in_a_row_other_position_4() {
         let black_pos = vec![
@@ -10199,7 +10465,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((2,9), TypeOfThreat::FourO, vec![])
+    // ((2,9), TypeOfThreat::FourOF, vec![])
 
     // Details: [dir:3]
     // ___________________
@@ -10222,7 +10488,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((2,14), TypeOfThreat::FourO, vec![])
+    // ((2,14), TypeOfThreat::FourOF, vec![])
     #[test]
     fn threat_connect_4_fake_catch_9_in_a_row_other_position_5() {
         let black_pos = vec![
@@ -10292,7 +10558,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((2,9), TypeOfThreat::FourO, vec![])
+    // ((2,9), TypeOfThreat::FourOF, vec![])
 
     // Details: [dir:3]
     // ___________________
@@ -10315,7 +10581,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((2,14), TypeOfThreat::FourO, vec![])
+    // ((2,14), TypeOfThreat::FourOF, vec![])
     #[test]
     fn threat_connect_4_fake_catch_9_in_a_row_other_position_6() {
         let black_pos = vec![
@@ -10385,7 +10651,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((1,4), TypeOfThreat::FourO, vec![])
+    // ((1,4), TypeOfThreat::FourOF, vec![])
 
     // Details: [dir:3]
     // ___________________
@@ -10408,7 +10674,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((1,9), TypeOfThreat::FourO, vec![])
+    // ((1,9), TypeOfThreat::FourOF, vec![])
     #[test]
     fn threat_connect_4_fake_catch_9_in_a_row_false_catch() {
         let black_pos = vec![
@@ -10478,7 +10744,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((0,4), TypeOfThreat::FourO, vec![])
+    // ((0,4), TypeOfThreat::FourOF, vec![])
 
     // Details: [dir:3]
     // ___________________
@@ -10501,7 +10767,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((0,9), TypeOfThreat::FourO, vec![])
+    // ((0,9), TypeOfThreat::FourOF, vec![])
     #[test]
     fn threat_connect_4_fake_catch_9_in_a_row_left_border() {
         let black_pos = vec![
@@ -10570,7 +10836,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((2,0), TypeOfThreat::FourO, vec![(0,4)])
+    // ((2,0), TypeOfThreat::FourOF, vec![(0,4)])
 
     // Details: [dir:3]
     // ___________________
@@ -10593,7 +10859,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((2,5), TypeOfThreat::FourO, vec![])
+    // ((2,5), TypeOfThreat::FourOF, vec![])
     #[test]
     fn threat_connect_4_fake_catch_9_in_a_row_other_close_top_0() {
         let black_pos = vec![
@@ -10663,7 +10929,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((2,0), TypeOfThreat::FourO, vec![(0,0)])
+    // ((2,0), TypeOfThreat::FourOF, vec![(0,0)])
 
     // Details: [dir:3]
     // _⊕_⊖_______________
@@ -10686,7 +10952,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((2,5), TypeOfThreat::FourO, vec![])
+    // ((2,5), TypeOfThreat::FourOF, vec![])
     #[test]
     fn threat_connect_4_fake_catch_close_top_1() {
         let black_pos = vec![(2, 4), (2, 3), (2, 2), (2, 1), (1, 0)];
@@ -10746,7 +11012,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((2,0), TypeOfThreat::FourO, vec![])
+    // ((2,0), TypeOfThreat::FourOF, vec![])
 
     // Details: [dir:3]
     // _⊕_________________
@@ -10769,7 +11035,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((2,5), TypeOfThreat::FourO, vec![])
+    // ((2,5), TypeOfThreat::FourOF, vec![])
     #[test]
     fn threat_connect_4_fake_catch_9_in_a_row_other_close_top_2() {
         let black_pos = vec![(2, 4), (2, 3), (2, 2), (2, 1), (1, 0)];
@@ -10829,7 +11095,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((2,4), TypeOfThreat::FourSO, vec![])
+    // ((2,4), TypeOfThreat::FourSOF, vec![])
     #[test]
     fn threat_connect_4_fake_catch_9_in_a_row_other_close_top_3() {
         let black_pos = vec![(2, 6), (2, 5), (2, 3), (2, 2), (2, 1), (2, 0), (1, 0)];
@@ -10945,7 +11211,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((2,6), TypeOfThreat::FourSO, vec![])
+    // ((2,6), TypeOfThreat::FourSOF, vec![])
     #[test]
     fn threat_connect_4_fake_catch_4_in_a_row_so() {
         let black_pos = vec![(2, 5), (2, 4), (2, 3), (2, 2), (1, 2)];
@@ -11003,7 +11269,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((4,4), TypeOfThreat::FourSO, vec![])
+    // ((4,4), TypeOfThreat::FourSOF, vec![])
     #[test]
     fn threat_connect_4_diagonal_left_0() {
         let black_pos = vec![(0, 0), (3, 3), (1, 1), (2, 2)];
@@ -11061,7 +11327,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((2,9), TypeOfThreat::FourO, vec![(0,9)])
+    // ((2,9), TypeOfThreat::FourOF, vec![(0,9)])
 
     // Details: [dir:3]
     // ___________________
@@ -11084,7 +11350,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((2,14), TypeOfThreat::FourO, vec![])
+    // ((2,14), TypeOfThreat::FourOF, vec![])
     #[test]
     fn threat_connect_4_9_in_row_with_catch() {
         let black_pos = vec![
@@ -11154,7 +11420,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((2,4), TypeOfThreat::FourO, vec![(0,7),(0,6),(0,8),(0,10)])
+    // ((2,4), TypeOfThreat::FourOF, vec![(0,7),(0,6),(0,8),(0,10)])
 
     // Details: [dir:3]
     // ___________________
@@ -11177,7 +11443,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((2,9), TypeOfThreat::FourO, vec![(0,9),(0,6),(0,8),(0,10)])
+    // ((2,9), TypeOfThreat::FourOF, vec![(0,9),(0,6),(0,8),(0,10)])
     #[test]
     fn threat_connect_4_9_in_row_with_2_possibe_catchs() {
         let black_pos = vec![
@@ -11256,14 +11522,14 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((4,4), TypeOfThreat::FourSO, vec![(1,5)])
+    // ((4,4), TypeOfThreat::FourSOF, vec![(1,5)])
     #[test]
     fn threat_connect_4_diagonal_left_catch1() {
         let black_pos = vec![(0, 0), (3, 3), (1, 1), (2, 2), (2, 4)];
         let white_pos = vec![(4, 2)];
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((4, 4), TypeOfThreat::FiveTake, vec![(1, 5)]),
-            // ((5,5), TypeOfThreat::FourO, vec![])
+            // ((5,5), TypeOfThreat::FourOF, vec![])
         ];
         assert!(test_threat_4(
             white_pos,
@@ -11316,14 +11582,14 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((4,4), TypeOfThreat::FourSO, vec![(5,1)])
+    // ((4,4), TypeOfThreat::FourSOF, vec![(5,1)])
     #[test]
     fn threat_connect_4_diagonal_left_catch_bloup1() {
         let black_pos = vec![(0, 0), (3, 3), (1, 1), (2, 2), (4, 2)];
         let white_pos = vec![(2, 4)];
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((4, 4), TypeOfThreat::FiveTake, vec![(5, 1)]),
-            // ((5,5), TypeOfThreat::FourO, vec![])
+            // ((5,5), TypeOfThreat::FourOF, vec![])
         ];
         assert!(test_threat_4(
             white_pos,
@@ -11410,14 +11676,14 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((0,0), TypeOfThreat::FourSO, vec![(5,1)])
+    // ((0,0), TypeOfThreat::FourSOF, vec![(5,1)])
     #[test]
     fn threat_connect_4_diagonal_left_catch_bloup_close_bottom() {
         let black_pos = vec![(3, 3), (1, 1), (2, 2), (4, 4), (4, 2)];
         let white_pos = vec![(2, 4), (5, 5)];
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((0, 0), TypeOfThreat::FiveTake, vec![(5, 1)]),
-            // ((5,5), TypeOfThreat::FourO, vec![])
+            // ((5,5), TypeOfThreat::FourOF, vec![])
         ];
         assert!(test_threat_4(
             white_pos,
@@ -11470,7 +11736,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((2,0), TypeOfThreat::FourSO, vec![(0,0)])
+    // ((2,0), TypeOfThreat::FourSOF, vec![(0,0)])
     #[test]
     fn threat_connect_4_fake_catch_close_top_2_so_0() {
         let black_pos = vec![(2, 4), (2, 3), (2, 2), (2, 1), (1, 0)];
@@ -11528,14 +11794,14 @@ mod tests {
     // _⊕_________________
     // ⊕__________________
     // DEFENSIVE_MOVE:
-    // ((4,14), TypeOfThreat::FourSO, vec![])
+    // ((4,14), TypeOfThreat::FourSOF, vec![])
     #[test]
     fn threat_connect_4_diagonal_bottom_left_so() {
         let black_pos = vec![(0, 18), (1, 17), (2, 16), (3, 15)];
         let white_pos = vec![];
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
             ((4, 14), TypeOfThreat::FiveTake, vec![]),
-            // ((2,5), TypeOfThreat::FourO, vec![])
+            // ((2,5), TypeOfThreat::FourOF, vec![])
         ];
         assert!(test_threat_4(
             white_pos,
@@ -11588,7 +11854,7 @@ mod tests {
     // _________________⊕_
     // __________________⊕
     // DEFENSIVE_MOVE:
-    // ((14,14), TypeOfThreat::FourSO, vec![])
+    // ((14,14), TypeOfThreat::FourSOF, vec![])
     #[test]
     fn threat_connect_4_diagonal_bottom_right_so() {
         let black_pos = vec![(18, 18), (17, 17), (16, 16), (15, 15)];
@@ -11646,7 +11912,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((14,4), TypeOfThreat::FourSO, vec![])
+    // ((14,4), TypeOfThreat::FourSOF, vec![])
     #[test]
     fn threat_connect_4_diagonal_up_right_so() {
         let black_pos = vec![(18, 0), (17, 1), (16, 2), (15, 3)];
@@ -11738,7 +12004,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((0,0), TypeOfThreat::FourSO, vec![])
+    // ((0,0), TypeOfThreat::FourSOF, vec![])
     #[test]
     fn threat_connect_4_diagonal_multiple_4_in_a_row_0() {
         let black_pos = vec![(3, 3), (1, 1), (2, 2), (4, 4), (4, 2), (2, 4), (5, 1)];
@@ -11796,7 +12062,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((0,0), TypeOfThreat::FourSO, vec![])
+    // ((0,0), TypeOfThreat::FourSOF, vec![])
 
     // Details: [dir:2]
     // ___________________
@@ -11819,7 +12085,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((1,5), TypeOfThreat::FourO, vec![])
+    // ((1,5), TypeOfThreat::FourOF, vec![])
 
     // Details: [dir:2]
     // ______⊛____________
@@ -11842,7 +12108,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((6,0), TypeOfThreat::FourO, vec![])
+    // ((6,0), TypeOfThreat::FourOF, vec![])
     #[test]
     fn threat_connect_4_diagonal_multiple_4_in_a_row_1() {
         let black_pos = vec![(3, 3), (1, 1), (2, 2), (4, 4), (4, 2), (2, 4), (5, 1)];
@@ -11903,7 +12169,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((0,0), TypeOfThreat::FourSO, vec![])
+    // ((0,0), TypeOfThreat::FourSOF, vec![])
 
     // Details: [dir:2]
     // ______⊕____________
@@ -11926,7 +12192,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((2,4), TypeOfThreat::FourSO, vec![])
+    // ((2,4), TypeOfThreat::FourSOF, vec![])
     #[test]
     fn threat_connect_4_diagonal_multiple_4_in_a_row_2() {
         let black_pos = vec![(3, 3), (1, 1), (2, 2), (4, 4), (4, 2), (5, 1), (6, 0)];
@@ -12020,7 +12286,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((1,5), TypeOfThreat::FourSO, vec![])
+    // ((1,5), TypeOfThreat::FourSOF, vec![])
     #[test]
     fn threat_connect_4_diagonal_multiple_4_in_a_row_4() {
         let black_pos = vec![(3, 3), (1, 1), (2, 2), (4, 4), (4, 2), (5, 1), (2, 4)];
@@ -12112,7 +12378,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((3,3), TypeOfThreat::FourO, vec![(8,6)])
+    // ((3,3), TypeOfThreat::FourOF, vec![(8,6)])
 
     // Details: [dir:0]
     // ___________________
@@ -12135,7 +12401,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((8,8), TypeOfThreat::FourO, vec![(8,6)])
+    // ((8,8), TypeOfThreat::FourOF, vec![(8,6)])
     #[test]
     fn threat_connect_4_diagonal_multiple_4_in_a_row_6() {
         let black_pos = vec![
@@ -12205,7 +12471,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((3,3), TypeOfThreat::FourO, vec![(8,6)])
+    // ((3,3), TypeOfThreat::FourOF, vec![(8,6)])
 
     // Details: [dir:0]
     // ___________________
@@ -12228,7 +12494,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((8,8), TypeOfThreat::FourO, vec![(8,6)])
+    // ((8,8), TypeOfThreat::FourOF, vec![(8,6)])
 
     // Details: [dir:2]
     // ___________________
@@ -12251,7 +12517,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((5,7), TypeOfThreat::FourO, vec![(8,2)])
+    // ((5,7), TypeOfThreat::FourOF, vec![(8,2)])
 
     // Details: [dir:2]
     // ___________________
@@ -12274,7 +12540,7 @@ mod tests {
     // ___________________
     // ___________________
     // DEFENSIVE_MOVE:
-    // ((10,2), TypeOfThreat::FourO, vec![(8,2)])
+    // ((10,2), TypeOfThreat::FourOF, vec![(8,2)])
     #[test]
     fn threat_connect_4_diagonal_multiple_4_in_a_row_7() {
         let black_pos = vec![

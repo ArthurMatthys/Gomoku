@@ -72,12 +72,12 @@ pub fn evaluate_board(
     score_tab
 }
 
-pub const INSTANT_WIN: i64 = 00010000000000;
-const TWO_STEP_WIN: i64 = 000100000;
-const FOUR_STEP_WIN: i64 = 000010000;
-const SIX_STEP_WIN: i64 = 000001000;
-const FIVE_CAN_TAKE: i64 = 0010000000;
-const SCORE_TAKE: i64 = 000010000;
+pub const INSTANT_WIN: i64 = 00010000000;
+const ALIGN_2: i64 = 10;
+const ALIGN_3: i64 = 100;
+const ALIGN_4: i64 = 1000;
+const SCORE_TAKE: i64 = 10;
+const FIVE_CAN_TAKE: i64 = 0010000;
 const SCORE_CAN_TAKE: i64 = 000000100;
 pub const MULTIPLIER: i64 = 10;
 
@@ -106,14 +106,14 @@ fn score_to_points(
             if nb_catch > 2 {
                 return INSTANT_WIN * ((*depth + 1) as i64 * 2);
             } else if nb_catch == 2 {
-                total += TWO_STEP_WIN;
+                total += ALIGN_4;
             }
             //        a => {let b = (a * 2) as u32;
             //            total += SCORE_TAKE.pow(b.pow(nb_catch as u32 * 2));
             //
             //        }
         }
-        a => total += SCORE_TAKE * (a as i64 * SCORE_CAN_TAKE) * ((nb_catch + 1) as u32) as i64,
+        a => total += SCORE_TAKE * (a as i64 * SCORE_CAN_TAKE) as i64,
         // a => total += 0,
     }
     if nb_5 > 0 {
@@ -121,17 +121,17 @@ fn score_to_points(
     }
     total += (nb_5_take / 5) as i64 * FIVE_CAN_TAKE;
 
-    total += (nb_4_o / 4) as i64 * TWO_STEP_WIN;
-    total += (nb_4_so / 4) as i64 * TWO_STEP_WIN / 2;
-    total -= (nb_4_c / 4) as i64 * TWO_STEP_WIN / 4;
+    total += (nb_4_o / 4) as i64 * ALIGN_4;
+    total += (nb_4_so / 4) as i64 * ALIGN_4 / 2;
+    total -= (nb_4_c / 4) as i64 * ALIGN_4 / 4;
 
-    total += (nb_3_o / 3) as i64 * FOUR_STEP_WIN;
-    total += (nb_3_so / 3) as i64 * FOUR_STEP_WIN / 2;
-    total -= (nb_3_c / 3) as i64 * FOUR_STEP_WIN / 4;
+    total += (nb_3_o / 3) as i64 * ALIGN_3;
+    total += (nb_3_so / 3) as i64 * ALIGN_3 / 2;
+    total -= (nb_3_c / 3) as i64 * ALIGN_3 / 4;
 
-    //total += (nb_2_o / 2) as i64 * SIX_STEP_WIN;
-    //total += (nb_2_so / 2) as i64 * SIX_STEP_WIN / 2;
-    //total -= (nb_2_c / 2) as i64 * SIX_STEP_WIN / 4;
+    total += (nb_2_o / 2) as i64 * ALIGN_2;
+    total += (nb_2_so / 2) as i64 * ALIGN_2 / 2;
+    total -= (nb_2_c / 2) as i64 * ALIGN_2 / 4;
 
     total * ((*depth + 1) as i64 * 10)
 }
@@ -362,7 +362,7 @@ fn get_alignements(
                         _ => unreachable!(),
                     };
                 }
-                (5..=10, _, _) => {
+                (5..=9, _, _) => {
                     if handle_5(dir, x, y, status_pawn) {
                         actual_tuple.2 += 1;
                     } else {
@@ -377,6 +377,15 @@ fn get_alignements(
                                 Some(false) => print!("⊕"),
                                 None => print!("_"),
                             }
+                        }
+                        println!();
+                    }
+                    for i in 0..19 {
+                        for j in 0..19 {
+                            for dir in 0..4 {
+                                print!("{:2}", score_board[j][i][dir].0);
+                            }
+                            print!("||");
                         }
                         println!();
                     }

@@ -28,10 +28,10 @@ use ia::zobrist;
 //use ia::heuristic;
 mod checks;
 
-#[global_allocator]
-static GLOBAL: jemallocator::Jemalloc = jemallocator::Jemalloc;
+//#[global_allocator]
+//static GLOBAL: jemallocator::Jemalloc = jemallocator::Jemalloc;
 
-const DEPTH_MAX: i8 = 4;
+const DEPTH_MAX: i8 = 5;
 
 //macro_rules! string_of_index {
 //    ($line:expr, $col:expr) => {{
