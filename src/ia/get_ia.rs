@@ -316,83 +316,6 @@ fn iterative_deepening_mtdf(
     ret
 }
 
-fn negamax(
-    board: &mut [[Option<bool>; SIZE_BOARD]; SIZE_BOARD],
-    score_board: &mut [[[(u8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD],
-    current_depth: i8,
-    actual: Option<bool>,
-    actual_catch: &mut isize,
-    opp_catch: &mut isize,
-    color: i8,
-) -> (i64, Option<(usize, usize)>) {
-    if *opp_catch >= 5 {
-        return (
-            -color as i64 * heuristic::INSTANT_WIN * (current_depth as i64 + 1),
-            None,
-        );
-    } else if find_winning_align(board, score_board, actual) {
-        return (
-            color as i64 * heuristic::INSTANT_WIN * (current_depth as i64 + 1),
-            None,
-        );
-    }
-    if current_depth == 0 {
-        let mut pseudo_depth = 0;
-        let mut weight = 0;
-        if color == 1 {
-            weight = heuristic::first_heuristic_hint(
-                board,
-                score_board,
-                actual,
-                actual_catch,
-                opp_catch,
-                &mut pseudo_depth,
-            );
-        } else {
-            weight = heuristic::first_heuristic_hint(
-                board,
-                score_board,
-                get_opp!(actual),
-                actual_catch,
-                opp_catch,
-                &mut pseudo_depth,
-            );
-        }
-        return (color as i64 * weight, None);
-    } else {
-        let available_positions = get_space(board, score_board, actual, *actual_catch);
-        let mut max = MIN_INFINITY;
-        let mut ret_coord = None;
-        for (x, y, _) in available_positions.iter() {
-            if board[*x][*y] != None {
-                println!("wtf");
-                unreachable!();
-            }
-
-            let removed = change_board_hint(board, score_board, *x, *y, actual);
-            *actual_catch += removed.len() as isize;
-
-            let (score, _) = negamax(
-                board,
-                score_board,
-                current_depth - 1,
-                get_opp!(actual),
-                opp_catch,
-                actual_catch,
-                -color,
-            );
-            let negamax_value = -score;
-            if negamax_value >= max {
-                max = negamax_value;
-                ret_coord = Some((*x, *y));
-            }
-            *actual_catch -= removed.len() as isize;
-            remove_last_pawn_hint(board, score_board, *x, *y, actual, removed);
-        }
-        return (max, ret_coord);
-    }
-}
-
 fn ia(
     game: &mut game::Game,
     (table, mut hash): (&[[[u64; 2]; SIZE_BOARD]; SIZE_BOARD], u64),
@@ -405,69 +328,42 @@ fn ia(
     let pawn = game.player_to_pawn();
     let mut tt = zobrist::initialize_transposition_table();
 
-    let (_, ret) = negamax(
+    if let Some((x, y)) = null_move_heuristic(
         &mut board,
         &mut score_board,
-        *depth_max,
+        pawn,
+        &mut opponent_catch,
+        &mut player_catch,
+    ) {
+        println!("Answer null move ({},{})", x, y);
+        return (x, y);
+    }
+    if let Some((x, y)) = find_continuous_threats(
+        &mut board,
+        &mut score_board,
         pawn,
         &mut player_catch,
         &mut opponent_catch,
-        1,
-    );
-    if let Some((x, y)) = ret {
+        &mut DEPTH_THREATS,
+        &mut 0,
+        true,
+    ) {
+        println!("find threat ({},{})", x, y);
         return (x, y);
-    } else {
-        println!("should not happen");
-        unreachable!();
     }
-    // get_best_move(
-    //     &mut board,
-    //     table,
-    //     &mut hash,
-    //     &mut tt,
-    //     pawn,
-    //     &mut player_catch,
-    //     &mut opponent_catch,
-    //     None,
-    //     &mut MIN_INFINITY,
-    //     &mut MAX_INFINITY,
-    //
-    //    if let Some((x, y)) = null_move_heuristic(
-    //        &mut board,
-    //        &mut score_board,
-    //        pawn,
-    //        &mut opponent_catch,
-    //        &mut player_catch,
-    //    ) {
-    //        println!("Answer null move ({},{})", x, y);
-    //        return (x, y);
-    //    }
-    //    if let Some((x, y)) = find_continuous_threats(
-    //        &mut board,
-    //        &mut score_board,
-    //        pawn,
-    //        &mut player_catch,
-    //        &mut opponent_catch,
-    //        &mut DEPTH_THREATS,
-    //        &mut 0,
-    //        true,
-    //    ) {
-    //        println!("find threat ({},{})", x, y);
-    //        return (x, y);
-    //    }
-    //    iterative_deepening_mtdf(
-    //        &mut board,
-    //        &mut score_board,
-    //        table,
-    //        &mut hash,
-    //        &mut tt,
-    //        pawn,
-    //        &mut player_catch,
-    //        &mut opponent_catch,
-    //        &mut MAX_INFINITY,
-    //        depth_max,
-    //        game,
-    //    )
+    iterative_deepening_mtdf(
+        &mut board,
+        &mut score_board,
+        table,
+        &mut hash,
+        &mut tt,
+        pawn,
+        &mut player_catch,
+        &mut opponent_catch,
+        &mut MAX_INFINITY,
+        depth_max,
+        game,
+    )
 }
 
 pub fn get_ia(

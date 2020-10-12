@@ -827,6 +827,16 @@ macro_rules! explore_align_light {
     };
 }
 
+//TODO
+fn best_of_board(
+    board: &mut [[Option<bool>; SIZE_BOARD]; SIZE_BOARD],
+    score_board: &mut [[[(u8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD],
+    player_actual: Option<bool>,
+    lst_moove: Vec<Option<(usize, usize)>>,
+) -> Option<(usize, usize)> {
+    None
+}
+
 pub fn null_move_heuristic(
     board: &mut [[Option<bool>; SIZE_BOARD]; SIZE_BOARD],
     score_board: &mut [[[(u8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD],
