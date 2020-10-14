@@ -12,6 +12,7 @@ use super::handle_board::{
 use super::heuristic;
 use super::zobrist;
 use rand::seq::SliceRandom;
+use std::time;
 // use super::super::player;
 
 const MIN_INFINITY: i64 = i64::min_value() + 1;
@@ -273,6 +274,7 @@ fn iterative_deepening_mtdf(
     beta: &mut i64,
     depth_max: &i8,
     game: &mut game::Game,
+    start_time: &time::Instant
 ) -> (usize, usize) {
     let mut ret = (0, 0);
     let mut f = match actual {
@@ -280,6 +282,7 @@ fn iterative_deepening_mtdf(
         Some(false) => game.firstguess.1,
         None => unreachable!(),
     };
+    let limit_duration = time::Duration::from_millis(480);
 
     // println!("before- f: {}", f);
     // for d in [2, 3, 5].iter() {
@@ -290,6 +293,10 @@ fn iterative_deepening_mtdf(
 
         // for d in (1..DEPTH_MAX).step_by(2) {
         //    println!("debug: {}|{}|{}|{}|{}|{}|", *alpha, *beta, actual_catch2, opp_catch2, d, *zhash);
+        let end = time::Instant::now();
+        if end.duration_since(*start_time) >= limit_duration {
+            break;
+        }
         let (score, r#move) = mtdf(
             board,
             table,
@@ -320,6 +327,7 @@ fn ia(
     game: &mut game::Game,
     (table, mut hash): (&[[[u64; 2]; SIZE_BOARD]; SIZE_BOARD], u64),
     depth_max: &i8,
+    start_time: &time::Instant
 ) -> (usize, usize) {
     let mut player_catch = game.get_actual_player().nb_of_catch;
     let mut opponent_catch = game.get_opponent().nb_of_catch;
@@ -363,6 +371,7 @@ fn ia(
         &mut MAX_INFINITY,
         depth_max,
         game,
+        start_time
     )
 }
 
@@ -370,6 +379,7 @@ pub fn get_ia(
     game: &mut game::Game,
     ztable: &[[[u64; 2]; SIZE_BOARD]; SIZE_BOARD],
     depth_max: &i8,
+    start_time: &time::Instant
 ) -> (usize, usize) {
     let hash: u64 = zobrist::board_to_zhash(&game.board, ztable);
     let mut rng = rand::thread_rng();
@@ -385,11 +395,11 @@ pub fn get_ia(
                 game::TypeOfParty::Longpro => {
                     ((9 + dir_line * 4) as usize, (9 + dir_col * 4) as usize)
                 }
-                game::TypeOfParty::Standard => ia(game, (ztable, hash), depth_max),
+                game::TypeOfParty::Standard => ia(game, (ztable, hash), depth_max, start_time),
             }
         }
         _ => {
-            let ret = ia(game, (ztable, hash), depth_max);
+            let ret = ia(game, (ztable, hash), depth_max, start_time);
             ret
         }
     }

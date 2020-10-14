@@ -179,7 +179,7 @@ pub fn main() {
     'running: loop {
         if game.actual_player_is_ai().expect("Wrong type of player") {
             let start = Instant::now();
-            let (line, col) = get_ia::get_ia(&mut game, &ztable, &DEPTH_MAX);
+            let (line, col) = get_ia::get_ia(&mut game, &ztable, &DEPTH_MAX, &start);
             let end = Instant::now();
             game.set_player_time(end.duration_since(start));
             game.change_board_from_input(line, col);
@@ -216,7 +216,8 @@ pub fn main() {
                     keycode: Some(Keycode::H),
                     ..
                 } => {
-                    let (line, col) = get_ia::get_ia(&mut game, &ztable, &4);
+                    let start = Instant::now();
+                    let (line, col) = get_ia::get_ia(&mut game, &ztable, &4, &start);
                     game.set_best_move(line, col);
                 }
                 Event::KeyDown {
