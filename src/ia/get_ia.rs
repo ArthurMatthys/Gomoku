@@ -18,6 +18,7 @@ use std::time;
 const MIN_INFINITY: i64 = i64::min_value() + 1;
 const MAX_INFINITY: i64 = i64::max_value();
 const DEPTH_THREATS: i8 = 10;
+const LIMIT_DURATION: time::Duration = time::Duration::from_millis(470);
 
 macro_rules! get_opp {
     ($e:expr) => {
@@ -62,10 +63,11 @@ fn ab_negamax(
     beta: &mut i64,
     color: &mut i8,
     depth_max: &i8,
+    counter_tree: &mut u64
 ) -> (i64, Option<(usize, usize)>) {
     let mut tte = zobrist::retrieve_tt_from_hash(tt, zhash);
     let alpha_orig = *alpha;
-
+    *counter_tree += 1;
     if tte.is_valid && tte.depth == *depth_max - *current_depth {
         if tte.r#type == zobrist::TypeOfEl::Exact {
             return (tte.value, tte.r#move);
@@ -124,6 +126,7 @@ fn ab_negamax(
                     &mut (-*alpha),
                     &mut (-*color),
                     depth_max,
+                    counter_tree
                 );
                 let x = -recursed_score;
 
@@ -167,6 +170,7 @@ fn ab_negamax(
                 &mut (-*alpha),
                 &mut (-*color),
                 depth_max,
+                counter_tree
             );
 
             let x = -recursed_score;
@@ -220,6 +224,8 @@ fn mtdf(
     depth_max: &i8,
     firstguess: i64,
     score_board: &mut [[[(u8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD],
+    counter_tree: &mut u64,
+    start_time: &time::Instant
 ) -> (i64, (usize, usize)) {
     let mut g = firstguess;
     let mut ret = (0, (0, 0));
@@ -250,8 +256,12 @@ fn mtdf(
             beta,
             &mut 1,
             depth_max,
+            counter_tree
         );
         ret = (score, r#move.unwrap());
+        if time::Instant::now().duration_since(*start_time) >= LIMIT_DURATION {
+            break;
+        }
         g = score;
         if g < *beta {
             upperbnd = g;
@@ -282,7 +292,7 @@ fn iterative_deepening_mtdf(
         Some(false) => game.firstguess.1,
         None => unreachable!(),
     };
-    let limit_duration = time::Duration::from_millis(480);
+    // let limit_duration = time::Duration::from_millis(480);
 
     // println!("before- f: {}", f);
     // for d in [2, 3, 5].iter() {
@@ -293,8 +303,9 @@ fn iterative_deepening_mtdf(
 
         // for d in (1..DEPTH_MAX).step_by(2) {
         //    println!("debug: {}|{}|{}|{}|{}|{}|", *alpha, *beta, actual_catch2, opp_catch2, d, *zhash);
-        let end = time::Instant::now();
-        if end.duration_since(*start_time) >= limit_duration {
+        let mut counter_tree:u64 = 0;
+        let stime_mtdf = time::Instant::now();
+        if stime_mtdf.duration_since(*start_time) >= LIMIT_DURATION {
             break;
         }
         let (score, r#move) = mtdf(
@@ -309,7 +320,11 @@ fn iterative_deepening_mtdf(
             &d,
             f,
             score_board,
+            &mut counter_tree,
+            start_time
         );
+        let ndtime_mtdf = time::Instant::now();
+        println!("Depth: [{}] | Nb. moves: [{}] | Nb. moves/s: [{}]", d, counter_tree, counter_tree as f64 / ndtime_mtdf.duration_since(stime_mtdf).as_secs_f64().floor());
         ret = r#move;
         f = score;
         // println!("debug2: {}|{}|{}|{}|{}|{}|", *alpha, *beta, actual_catch2, opp_catch2, d, *zhash);
@@ -441,6 +456,8 @@ mod tests {
             }
             println!();
         }
+        let mut counter_tree:u64 = 0;
+        let stime_mtdf = time::Instant::now();
         let (_, (x, y)) = mtdf(
             &mut board,
             &ztable,
@@ -453,6 +470,8 @@ mod tests {
             depth_max,
             0,
             &mut score_board,
+            &mut counter_tree,
+            &stime_mtdf
         );
         println!("// Result IA ({},{}) :", x, y);
         for i in 0..19 {
