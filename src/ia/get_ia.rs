@@ -18,7 +18,7 @@ use std::time;
 const MIN_INFINITY: i64 = i64::min_value() + 1;
 const MAX_INFINITY: i64 = i64::max_value();
 const DEPTH_THREATS: i8 = 10;
-const LIMIT_DURATION: time::Duration = time::Duration::from_millis(470);
+const LIMIT_DURATION: time::Duration = time::Duration::from_millis(480);
 
 macro_rules! get_opp {
     ($e:expr) => {
@@ -63,14 +63,18 @@ fn ab_negamax(
     beta: &mut i64,
     color: &mut i8,
     depth_max: &i8,
-    counter_tree: &mut u64
-) -> (i64, Option<(usize, usize)>) {
+    counter_tree: &mut u64,
+    start_time: &time::Instant
+) -> Option<(i64, Option<(usize, usize)>)> {
+    if time::Instant::now().duration_since(*start_time) >= LIMIT_DURATION {
+        return None;
+    }
     let mut tte = zobrist::retrieve_tt_from_hash(tt, zhash);
     let alpha_orig = *alpha;
     *counter_tree += 1;
     if tte.is_valid && tte.depth == *depth_max - *current_depth {
         if tte.r#type == zobrist::TypeOfEl::Exact {
-            return (tte.value, tte.r#move);
+            return Some((tte.value, tte.r#move));
         } else if tte.r#type == zobrist::TypeOfEl::Lowerbound {
             *alpha = i64::max(*alpha, tte.value);
         } else if tte.r#type == zobrist::TypeOfEl::Upperbound {
@@ -78,14 +82,14 @@ fn ab_negamax(
         }
 
         if *alpha >= *beta {
-            return (tte.value, tte.r#move);
+            return Some((tte.value, tte.r#move));
         }
     }
 
     if *opp_catch >= 5 {
-        return (-heuristic::INSTANT_WIN * (*current_depth as i64 + 1), None);
+        return Some((-heuristic::INSTANT_WIN * (*current_depth as i64 + 1), None));
     } else if find_winning_align(board, score_board, actual) {
-        return (heuristic::INSTANT_WIN * (*current_depth as i64 + 1), None);
+        return Some((heuristic::INSTANT_WIN * (*current_depth as i64 + 1), None));
     }
     if *current_depth == *depth_max {
         let weight = heuristic::first_heuristic_hint(
@@ -96,7 +100,7 @@ fn ab_negamax(
             opp_catch,
             &mut (*depth_max - *current_depth),
         );
-        return (weight, None);
+        return Some((weight, None));
     }
 
     // Otherwise bubble up values from below
@@ -112,7 +116,7 @@ fn ab_negamax(
                 *actual_catch += removed.len() as isize;
 
                 // Recurse
-                let (recursed_score, _) = ab_negamax(
+                let value = ab_negamax(
                     board,
                     table,
                     score_board,
@@ -126,18 +130,25 @@ fn ab_negamax(
                     &mut (-*alpha),
                     &mut (-*color),
                     depth_max,
-                    counter_tree
+                    counter_tree,
+                    start_time
                 );
-                let x = -recursed_score;
 
-                *actual_catch -= removed.len() as isize;
-                remove_last_pawn(board, score_board, line, col, actual, removed, table, zhash);
-
-                if x >= *beta {
-                    // println!("rentré_cutoff");
-                    best_score = x;
-                    best_move = tte.r#move;
-                    trig = true;
+                match value {
+                    None => return None,
+                    Some((recursed_score, _)) => {
+                        let x = -recursed_score;
+        
+                        *actual_catch -= removed.len() as isize;
+                        remove_last_pawn(board, score_board, line, col, actual, removed, table, zhash);
+        
+                        if x >= *beta {
+                            // println!("rentré_cutoff");
+                            best_score = x;
+                            best_move = tte.r#move;
+                            trig = true;
+                        }
+                    }
                 }
                 // else {
                 //     best_score = MIN_INFINITY;
@@ -156,7 +167,7 @@ fn ab_negamax(
             *actual_catch += removed.len() as isize;
 
             // Recurse
-            let (recursed_score, _) = ab_negamax(
+            let value = ab_negamax(
                 board,
                 table,
                 score_board,
@@ -170,27 +181,33 @@ fn ab_negamax(
                 &mut (-*alpha),
                 &mut (-*color),
                 depth_max,
-                counter_tree
+                counter_tree,
+                start_time
             );
 
-            let x = -recursed_score;
-            if x > best_score {
-                best_score = x;
-                best_move = Some((line, col));
-            }
-            if x > *alpha {
-                *alpha = x;
-                best_move = Some((line, col));
-            }
-
-            *actual_catch -= removed.len() as isize;
-            remove_last_pawn(board, score_board, line, col, actual, removed, table, zhash);
-
-            if *alpha >= *beta {
-                best_score = *alpha;
-                best_move = Some((line, col));
-                break;
-                // return (*alpha, best_move);
+            match value {
+                None => return None,
+                Some((recursed_score, _)) => {
+                    let x = -recursed_score;
+                    if x > best_score {
+                        best_score = x;
+                        best_move = Some((line, col));
+                    }
+                    if x > *alpha {
+                        *alpha = x;
+                        best_move = Some((line, col));
+                    }
+        
+                    *actual_catch -= removed.len() as isize;
+                    remove_last_pawn(board, score_board, line, col, actual, removed, table, zhash);
+        
+                    if *alpha >= *beta {
+                        best_score = *alpha;
+                        best_move = Some((line, col));
+                        break;
+                        // return (*alpha, best_move);
+                    }
+                }
             }
         }
     }
@@ -209,7 +226,7 @@ fn ab_negamax(
     tte.depth = *depth_max - *current_depth;
     zobrist::store_tt_entry(tt, zhash, tte);
 
-    (best_score, best_move)
+    Some((best_score, best_move))
 }
 
 fn mtdf(
@@ -241,8 +258,12 @@ fn mtdf(
         } else {
             *beta = g;
         }
+        // if time::Instant::now().duration_since(*start_time) >= LIMIT_DURATION {
+        //     println!("Mtd-f: break before");
+        //     return None;
+        // }
         // *beta = i64::max(g, lowerbnd + 1);
-        let (score, r#move): (i64, Option<(usize, usize)>) = ab_negamax(
+        let values: Option<(i64, Option<(usize, usize)>)> = ab_negamax(
             board,
             table,
             score_board,
@@ -256,18 +277,25 @@ fn mtdf(
             beta,
             &mut 1,
             depth_max,
-            counter_tree
+            counter_tree,
+            start_time
         );
-        ret = (score, r#move.unwrap());
-        if time::Instant::now().duration_since(*start_time) >= LIMIT_DURATION {
-            return None;
+        match values {
+            None => return None,
+            Some((score, r#move)) => {
+                ret = (score, r#move.unwrap());
+                g = score;
+                if g < *beta {
+                    upperbnd = g;
+                } else {
+                    lowerbnd = g;
+                }
+            }
         }
-        g = score;
-        if g < *beta {
-            upperbnd = g;
-        } else {
-            lowerbnd = g;
-        }
+        // if time::Instant::now().duration_since(*start_time) >= LIMIT_DURATION {
+        //     println!("Mtd-f: break after");
+        //     return None;
+        // }
     }
     Some(ret)
 }
@@ -463,7 +491,7 @@ mod tests {
         }
         let mut counter_tree:u64 = 0;
         let stime_mtdf = time::Instant::now();
-        let (_, (x, y)) = mtdf(
+        let result = mtdf(
             &mut board,
             &ztable,
             &mut hash,
@@ -478,25 +506,30 @@ mod tests {
             &mut counter_tree,
             &stime_mtdf
         );
-        println!("// Result IA ({},{}) :", x, y);
-        for i in 0..19 {
-            print!("// ");
-            for j in 0..19 {
-                if i == y && j == x && actual == Some(false) {
-                    print!("⊛");
-                } else if i == y && j == x && actual == Some(true) {
-                    print!("⊙");
-                } else {
-                    match board[j][i] {
-                        Some(true) => print!("⊖"),
-                        Some(false) => print!("⊕"),
-                        None => print!("_"),
+        match result {
+            None => false,
+            Some((_, (x, y))) => {
+                println!("// Result IA ({},{}) :", x, y);
+                for i in 0..19 {
+                    print!("// ");
+                    for j in 0..19 {
+                        if i == y && j == x && actual == Some(false) {
+                            print!("⊛");
+                        } else if i == y && j == x && actual == Some(true) {
+                            print!("⊙");
+                        } else {
+                            match board[j][i] {
+                                Some(true) => print!("⊖"),
+                                Some(false) => print!("⊕"),
+                                None => print!("_"),
+                            }
+                        }
                     }
+                    println!();
                 }
+                expected_result == (x, y)
             }
-            println!();
         }
-        expected_result == (x, y)
     }
 
     //    #[test]
