@@ -226,7 +226,7 @@ fn mtdf(
     score_board: &mut [[[(u8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD],
     counter_tree: &mut u64,
     start_time: &time::Instant
-) -> (i64, (usize, usize)) {
+) -> Option<(i64, (usize, usize))> {
     let mut g = firstguess;
     let mut ret = (0, (0, 0));
     let mut upperbnd = MAX_INFINITY;
@@ -260,7 +260,7 @@ fn mtdf(
         );
         ret = (score, r#move.unwrap());
         if time::Instant::now().duration_since(*start_time) >= LIMIT_DURATION {
-            break;
+            return None;
         }
         g = score;
         if g < *beta {
@@ -269,7 +269,7 @@ fn mtdf(
             lowerbnd = g;
         }
     }
-    ret
+    Some(ret)
 }
 
 fn iterative_deepening_mtdf(
@@ -308,7 +308,7 @@ fn iterative_deepening_mtdf(
         if stime_mtdf.duration_since(*start_time) >= LIMIT_DURATION {
             break;
         }
-        let (score, r#move) = mtdf(
+        let tmp_ret = mtdf(
             board,
             table,
             zhash,
@@ -323,10 +323,15 @@ fn iterative_deepening_mtdf(
             &mut counter_tree,
             start_time
         );
-        let ndtime_mtdf = time::Instant::now();
-        println!("Depth: [{}] | Nb. moves: [{}] | Nb. moves/s: [{}]", d, counter_tree, (counter_tree as f64 / ndtime_mtdf.duration_since(stime_mtdf).as_secs_f64()).floor());
-        ret = r#move;
-        f = score;
+        match tmp_ret {
+            None => break,
+            Some((score, r#move)) => {   
+                let ndtime_mtdf = time::Instant::now();
+                println!("Depth: [{}] | Nb. moves: [{}] | Nb. moves/s: [{}]", d, counter_tree, (counter_tree as f64 / ndtime_mtdf.duration_since(stime_mtdf).as_secs_f64()).floor());
+                ret = r#move;
+                f = score;
+            }
+        }
         // println!("debug2: {}|{}|{}|{}|{}|{}|", *alpha, *beta, actual_catch2, opp_catch2, d, *zhash);
     }
     match actual {
