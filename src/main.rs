@@ -28,8 +28,8 @@ use ia::zobrist;
 //use ia::heuristic;
 mod checks;
 
-//#[global_allocator]
-//static GLOBAL: jemallocator::Jemalloc = jemallocator::Jemalloc;
+// #[global_allocator]
+// static GLOBAL: jemallocator::Jemalloc = jemallocator::Jemalloc;
 
 const DEPTH_MAX: i8 = 10;
 
@@ -119,14 +119,14 @@ fn parse_args_and_fill_structs() -> (usize, game::TypeOfParty) {
         .about("Implementation of Gomoku as a school's project")
         .arg(
             Arg::with_name("MODE")
-                .about("What mode to run the program in")
+                .help("What mode to run the program in")
                 .index(1)
                 .possible_values(&["long-pro", "pro", "standard"])
                 .required(true),
         )
         .arg(
             Arg::with_name("NUMBER-OF-PLAYER")
-                .about("Number of Human Players in the game")
+                .help("Number of Human Players in the game")
                 .index(2)
                 .possible_values(&["0", "1", "2"])
                 .required(true),

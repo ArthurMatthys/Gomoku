@@ -87,9 +87,9 @@ fn ab_negamax(
     }
 
     if *opp_catch >= 5 {
-        return Some((-heuristic::INSTANT_WIN * (*current_depth as i64 + 1), None));
+        return Some((-heuristic::INSTANT_WIN * ((*depth_max - *current_depth) as i64 + 1), None));
     } else if find_winning_align(board, score_board, actual) {
-        return Some((heuristic::INSTANT_WIN * (*current_depth as i64 + 1), None));
+        return Some((heuristic::INSTANT_WIN * ((*depth_max - *current_depth) as i64 + 1), None));
     }
     if *current_depth == *depth_max {
         let weight = heuristic::first_heuristic_hint(

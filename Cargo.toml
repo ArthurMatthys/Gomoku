@@ -10,7 +10,7 @@ edition = "2018"
 
 sdl2 = "0.34.0"
 rand = "0.7.3"
-clap = { git = "https://github.com/clap-rs/clap/" }
+clap = "2.27.1"
 array_tool = "1.0.3"
 #jemallocator = "0.3.2"
 
