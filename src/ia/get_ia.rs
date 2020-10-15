@@ -324,7 +324,7 @@ fn iterative_deepening_mtdf(
             start_time
         );
         let ndtime_mtdf = time::Instant::now();
-        println!("Depth: [{}] | Nb. moves: [{}] | Nb. moves/s: [{}]", d, counter_tree, counter_tree as f64 / ndtime_mtdf.duration_since(stime_mtdf).as_secs_f64().floor());
+        println!("Depth: [{}] | Nb. moves: [{}] | Nb. moves/s: [{}]", d, counter_tree, (counter_tree as f64 / ndtime_mtdf.duration_since(stime_mtdf).as_secs_f64()).floor());
         ret = r#move;
         f = score;
         // println!("debug2: {}|{}|{}|{}|{}|{}|", *alpha, *beta, actual_catch2, opp_catch2, d, *zhash);
