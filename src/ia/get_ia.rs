@@ -13,6 +13,7 @@ use super::heuristic;
 use super::zobrist;
 use rand::seq::SliceRandom;
 use std::time;
+use std::cmp;
 // use super::super::player;
 
 const MIN_INFINITY: i64 = i64::min_value() + 1;
@@ -161,10 +162,15 @@ fn ab_negamax(
     if !trig {
         // Collect moves
         let available_positions = get_space(board, score_board, actual, *actual_catch);
-
-        for (line, col, _) in available_positions {
+        let mut tmp_curr_depth = *current_depth + 1;
+        let calc_depth = cmp::min(((*depth_max - *current_depth) / 2) + *current_depth, *depth_max);
+        for (index, &(line, col, _)) in available_positions.iter().enumerate() {
             let removed = change_board(board, score_board, line, col, actual, table, zhash);
             *actual_catch += removed.len() as isize;
+
+            if index == 5 {
+                tmp_curr_depth = calc_depth;
+            }
 
             // Recurse
             let value = ab_negamax(
@@ -173,7 +179,8 @@ fn ab_negamax(
                 score_board,
                 zhash,
                 tt,
-                &mut (*current_depth + 1),
+                // &mut (*current_depth + 1),
+                &mut tmp_curr_depth,
                 get_opp!(actual),
                 opp_catch,
                 actual_catch,
