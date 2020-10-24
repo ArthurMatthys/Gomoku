@@ -12,7 +12,7 @@ sdl2 = "0.34.0"
 rand = "0.7.3"
 clap = "2.27.1"
 array_tool = "1.0.3"
-#jemallocator = "0.3.2"
+jemallocator = "0.3.2"
 
 [features]
 default = ["sdl2/image", "sdl2/ttf"]

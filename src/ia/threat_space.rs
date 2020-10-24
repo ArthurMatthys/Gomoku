@@ -1267,14 +1267,14 @@ pub fn threat_search_space(
                                     dir,
                                 ),
                                 2 => continue,
-                                //2 => connect_2(
+                                // 2 => connect_2(
                                 //    board,
                                 //    score_board,
                                 //    &mut record,
                                 //    actual_player,
                                 //    (line, col),
                                 //    dir,
-                                //),
+                                // ),
                                 1 => continue,
                                 _ => {
                                     for i in 0..19 {
@@ -1452,11 +1452,11 @@ mod tests {
             [[[(0, Some(false), Some(false)); 4]; SIZE_BOARD]; SIZE_BOARD];
         white_pos.iter().for_each(|&(x, y)| {
             test_board[x][y] = Some(true);
-            change_score_board_add(&mut test_board, &mut score_tab, x as isize, y as isize);
+            change_score_board_add(&mut test_board, &mut score_tab, x as isize, y as isize, Some(true));
         });
         black_pos.iter().for_each(|&(x, y)| {
             test_board[x][y] = Some(false);
-            change_score_board_add(&mut test_board, &mut score_tab, x as isize, y as isize);
+            change_score_board_add(&mut test_board, &mut score_tab, x as isize, y as isize, Some(false));
         });
         for i in 0..19 {
             for j in 0..19 {
@@ -4151,6 +4151,28 @@ mod tests {
                 vec![(7, 8), (9, 6), (9, 9), (9, 4)],
             ),
             ((9, 9), TypeOfThreat::FourOC, vec![(7, 8)]),
+        ];
+        assert!(test_threat_2(
+            white_pos,
+            black_pos,
+            (9, 8),
+            Some(false),
+            expected_result
+        ))
+    }
+
+    #[test]
+    fn threat_connect_2_free_inside() {
+        let black_pos = vec![(9, 8), (9, 10)];
+        let white_pos = vec![(10, 8)];
+        let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
+            ((9, 6), TypeOfThreat::ThreeOC, vec![(7, 8), (9, 9), (9, 5)]),
+            // (
+            //     (9, 5),
+            //     TypeOfThreat::ThreeOF,
+            //     vec![(7, 8), (9, 6), (9, 9), (9, 4)],
+            // ),
+            // ((9, 9), TypeOfThreat::FourOC, vec![(7, 8)]),
         ];
         assert!(test_threat_2(
             white_pos,

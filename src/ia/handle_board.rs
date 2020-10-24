@@ -844,13 +844,31 @@ pub fn null_move_heuristic(
     player_actual_catch: &mut isize,
     player_opposite_catch: &mut isize,
 ) -> Option<(usize, usize)> {
-    let actual_threat = threat_search_space(board, score_board, player_actual, player_actual_catch);
-    let opp_threat = threat_search_space(
+    let mut actual_threat = threat_search_space(board, score_board, player_actual, player_actual_catch);
+    let mut opp_threat = threat_search_space(
         board,
         score_board,
         get_opp!(player_actual),
         player_opposite_catch,
     );
+    opp_threat = opp_threat.into_iter()
+              .filter(|((x, y), _, _)| {
+                    !check_double_three_hint(
+                        board,
+                        player_actual,
+                        *x as isize,
+                        *y as isize,
+                    )
+                }).collect::<Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)>>();
+    actual_threat = actual_threat.into_iter()
+        .filter(|((x, y), _, _)| {
+                !check_double_three_hint(
+                    board,
+                    player_actual,
+                    *x as isize,
+                    *y as isize,
+                )
+            }).collect::<Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)>>();
     if opp_threat.len() == 0 || opp_threat[0].1 < TypeOfThreat::FourOF {
         return None;
     } else if opp_threat[0].1 == TypeOfThreat::AlreadyWon {
@@ -1352,11 +1370,11 @@ mod tests {
             [[[(0, Some(false), Some(false)); 4]; SIZE_BOARD]; SIZE_BOARD];
         white_pos.iter().for_each(|&(x, y)| {
             test_board[x][y] = Some(true);
-            change_score_board_add(&mut test_board, &mut score_tab, x as isize, y as isize);
+            change_score_board_add(&mut test_board, &mut score_tab, x as isize, y as isize, Some(true));
         });
         black_pos.iter().for_each(|&(x, y)| {
             test_board[x][y] = Some(false);
-            change_score_board_add(&mut test_board, &mut score_tab, x as isize, y as isize);
+            change_score_board_add(&mut test_board, &mut score_tab, x as isize, y as isize,  Some(false));
         });
         for i in 0..19 {
             for j in 0..19 {

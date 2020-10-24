@@ -447,11 +447,11 @@ mod tests {
             [[[(0, Some(false), Some(false)); 4]; SIZE_BOARD]; SIZE_BOARD];
         white_pos.iter().for_each(|&(x, y)| {
             test_board[x][y] = Some(true);
-            change_score_board_add(&mut test_board, &mut score_tab, x as isize, y as isize);
+            change_score_board_add(&mut test_board, &mut score_tab, x as isize, y as isize, Some(true));
         });
         black_pos.iter().for_each(|&(x, y)| {
             test_board[x][y] = Some(false);
-            change_score_board_add(&mut test_board, &mut score_tab, x as isize, y as isize);
+            change_score_board_add(&mut test_board, &mut score_tab, x as isize, y as isize, Some(false));
         });
         for i in 0..19 {
             for j in 0..19 {
