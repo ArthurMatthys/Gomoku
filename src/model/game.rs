@@ -354,23 +354,22 @@ impl Game {
     }
 
     pub fn clear_last_move(&mut self) -> () {
-        let mut new_history = vec![];
         if let Some((line, col)) = self.history.pop() {
             let mut nbr = 0;
             self.board[line][col] = None;
-            for (x, ((line_y, col_y), (line_z, col_z))) in self.history_capture.iter() {
+            for (x, ((line_y, col_y), (line_z, col_z))) in self.history_capture.iter().rev() {
                 if *x == (line, col) {
                     self.board[*line_y][*col_y] = self.player_to_pawn();
                     self.board[*line_z][*col_z] = self.player_to_pawn();
                     nbr += 1;
                 } else {
-                    new_history.push((*x, ((*line_y, *col_y), (*line_z, *col_z))));
+                    break ;
                 }
             }
             for _ in 0..nbr {
                 self.minus_capture();
             }
-            self.history_capture = new_history;
+            let _ = self.history_capture.split_off(self.history_capture.len() - nbr);
             self.set_changed();
             self.next_player();
         }
