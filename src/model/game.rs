@@ -8,6 +8,7 @@ use super::super::checks::capture;
 use super::super::checks::double_three;
 use super::super::checks::valid_pos;
 use super::super::ia::heuristic;
+use super::super::ia::handle_board;
 use std::time::Duration;
 
 use super::super::render::board;
@@ -342,7 +343,7 @@ impl Game {
             Some(_) => (),
             None => {
                 self.change_board_value(new_y - 1, new_x - 1);
-                self.next_player()
+                self.next_player();
             }
         }
     }

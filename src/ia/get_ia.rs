@@ -6,7 +6,7 @@ use super::super::model::game;
 use super::super::render::board::SIZE_BOARD;
 use super::handle_board::{
     board_state_win, change_board, change_board_hint, find_continuous_threats, get_space,
-    null_move_heuristic, remove_last_pawn, remove_last_pawn_hint,
+    null_move_heuristic, remove_last_pawn, remove_last_pawn_hint, print_board
 };
 // use super::super::model::player;
 use super::heuristic;
@@ -67,7 +67,10 @@ fn ab_negamax(
     counter_tree: &mut u64,
     start_time: &time::Instant
 ) -> Option<(i64, Option<(usize, usize)>)> {
+    // println!("entered: {}", counter_tree);
     if time::Instant::now().duration_since(*start_time) >= LIMIT_DURATION {
+        // println!("cutoff: {}", counter_tree);
+        // println!("DAAAAAMMMNN: {}", current_depth);
         return None;
     }
     let mut tte = zobrist::retrieve_tt_from_hash(tt, zhash);
@@ -136,7 +139,12 @@ fn ab_negamax(
                 );
 
                 match value {
-                    None => return None,
+                    // None => return None,
+                    None => { 
+                        *actual_catch -= removed.len() as isize;
+                        remove_last_pawn(board, score_board, line, col, actual, removed, table, zhash);
+                        return None
+                    },
                     Some((recursed_score, _)) => {
                         let x = -recursed_score;
         
@@ -162,15 +170,20 @@ fn ab_negamax(
     if !trig {
         // Collect moves
         let available_positions = get_space(board, score_board, actual, *actual_catch);
+        // println!("\nCounter-tree: {}|d:{}", counter_tree,current_depth);
+        // available_positions.iter().for_each(|&(x,y,z)|{
+        //     print!("[({}:{})|{}]", x,  y, z);
+        // });
+        // println!("");
         let mut tmp_curr_depth = *current_depth + 1;
-        let calc_depth = cmp::min(((*depth_max - *current_depth) / 2) + *current_depth, *depth_max);
+        // let calc_depth = cmp::min(((*depth_max - *current_depth) / 2) + *current_depth, *depth_max);
         for (index, &(line, col, _)) in available_positions.iter().enumerate() {
             let removed = change_board(board, score_board, line, col, actual, table, zhash);
             *actual_catch += removed.len() as isize;
 
-            if index == 5 {
-                tmp_curr_depth = calc_depth;
-            }
+            // if index == 5 {
+            //     tmp_curr_depth = calc_depth;
+            // }
 
             // Recurse
             let value = ab_negamax(
@@ -193,7 +206,15 @@ fn ab_negamax(
             );
 
             match value {
-                None => return None,
+                None => { 
+                    *actual_catch -= removed.len() as isize;
+                    remove_last_pawn(board, score_board, line, col, actual, removed, table, zhash);
+                    // if *current_depth == 1 || *current_depth == 0  || *current_depth == 2 {
+                        // continue ;
+                    // } else {
+                        return None
+                    // }
+                },
                 Some((recursed_score, _)) => {
                     let x = -recursed_score;
                     if x > best_score {
@@ -288,7 +309,8 @@ fn mtdf(
             start_time
         );
         match values {
-            None => return None,
+            // None => { println!("DEBUUGG: d:{}", depth_max); return None },
+            None => { return None },
             Some((score, r#move)) => {
                 ret = (score, r#move.unwrap());
                 g = score;
@@ -322,6 +344,10 @@ pub fn iterative_deepening_mtdf(
     start_time: &time::Instant,
     null_move: bool
 ) -> (i64,(usize, usize)) {
+    // println!("========================");
+    // println!("Entering Iterative MTDF");
+    // print_board(board);
+    // println!();
     let mut ret = (MIN_INFINITY,(0, 0));
     let mut f = 0;
     // let mut f = match actual {
@@ -360,9 +386,13 @@ pub fn iterative_deepening_mtdf(
             &mut counter_tree,
             start_time
         );
+        // println!("middle_mtdf");
+        // print_board(board);
+        // println!();
         match tmp_ret {
             None => break,
             Some((score, r#move)) => {   
+                // println!("move_iterative_deepening_mtdf: [score:{}|{}/{}]",score, r#move.0,r#move.1);
                 let ndtime_mtdf = time::Instant::now();
                 if !null_move {
                     println!("Depth: [{}] | Nb. moves: [{}] | Nb. moves/s: [{}]", d, counter_tree, (counter_tree as f64 / ndtime_mtdf.duration_since(stime_mtdf).as_secs_f64()).floor());
@@ -388,13 +418,19 @@ fn ia(
     depth_max: &i8,
     start_time: &time::Instant
 ) -> (usize, usize) {
+    // let end = time::Instant::now();
+    // println!("enter_ia: {}",end.duration_since(*start_time).as_secs_f64());
     let mut player_catch = game.get_actual_player().nb_of_catch;
     let mut opponent_catch = game.get_opponent().nb_of_catch;
     let mut board = game.board;
     let mut score_board = heuristic::evaluate_board(&mut board);
     let pawn = game.player_to_pawn();
     let mut tt = zobrist::initialize_transposition_table();
-
+    // let end = time::Instant::now();
+    // println!("after_initialization: {}",end.duration_since(*start_time).as_secs_f64());
+    
+    // let end = time::Instant::now();
+    // println!("before_null: {}",end.duration_since(*start_time).as_secs_f64());
     if let Some((x, y)) = null_move_heuristic(
         &mut board,
         &mut score_board,
@@ -408,6 +444,10 @@ fn ia(
         println!("Answer null move ({},{})", x, y);
         return (x, y);
     }
+    // let end = time::Instant::now();
+    // println!("after_null: {}",end.duration_since(*start_time).as_secs_f64());
+    // let end = time::Instant::now();
+    // println!("before continuous: {}",end.duration_since(*start_time).as_secs_f64());
     if let Some((x, y)) = find_continuous_threats(
         &mut board,
         &mut score_board,
@@ -421,6 +461,11 @@ fn ia(
         println!("find threat ({},{})", x, y);
         return (x, y);
     }
+    // let end = time::Instant::now();
+    // println!("after_continuous: {}",end.duration_since(*start_time).as_secs_f64());
+    // let end = time::Instant::now();
+    // println!("before mtdf: {}",end.duration_since(*start_time).as_secs_f64());
+    // println!("NEW COUP");
     iterative_deepening_mtdf(
         &mut board,
         &mut score_board,

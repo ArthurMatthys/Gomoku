@@ -72,7 +72,7 @@ macro_rules! get_opp {
 //    }
 //}
 
-fn print_board(board: &mut [[Option<bool>; SIZE_BOARD]; SIZE_BOARD]) {
+pub fn print_board(board: &mut [[Option<bool>; SIZE_BOARD]; SIZE_BOARD]) {
     for i in 0..19 {
         print!("// ");
         for j in 0..19 {
