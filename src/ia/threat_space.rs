@@ -1266,15 +1266,15 @@ pub fn threat_search_space(
                                     (line, col),
                                     dir,
                                 ),
-                                2 => continue,
-                                // 2 => connect_2(
-                                //    board,
-                                //    score_board,
-                                //    &mut record,
-                                //    actual_player,
-                                //    (line, col),
-                                //    dir,
-                                // ),
+                                // 2 => continue,
+                                2 => connect_2(
+                                   board,
+                                   score_board,
+                                   &mut record,
+                                   actual_player,
+                                   (line, col),
+                                   dir,
+                                ),
                                 1 => continue,
                                 _ => {
                                     for i in 0..19 {

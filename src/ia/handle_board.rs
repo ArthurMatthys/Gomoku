@@ -2,15 +2,19 @@ use super::super::checks::after_turn_check::DIRECTIONS;
 use super::super::checks::capture::DIRS;
 use super::super::checks::double_three::check_double_three_hint;
 use super::super::render::board::SIZE_BOARD;
-
+use std::time;
 use super::heuristic;
+use super::get_ia;
 use super::threat_space::capture_coordinates_vec;
 use super::threat_space::threat_search_space;
 use super::threat_space::TypeOfThreat;
 use super::zobrist;
+use super::super::model::game;
 
 const SCORE_ALIGN: i64 = 100;
 const SCORE_TAKE: i64 = 100;
+const MIN_INFINITY: i64 = i64::min_value() + 1;
+const MAX_INFINITY: i64 = i64::max_value();
 
 macro_rules! valid_coord {
     ($x: expr, $y: expr) => {
@@ -828,13 +832,62 @@ macro_rules! explore_align_light {
 }
 
 //TODO
+// fn best_of_board(
+//     board: &mut [[Option<bool>; SIZE_BOARD]; SIZE_BOARD],
+//     score_board: &mut [[[(u8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD],
+//     player_actual: Option<bool>,
+//     lst_moove: Vec<Option<(usize, usize)>>,
+// ) -> Option<(usize, usize)> {
+//     None
+// }
+
 fn best_of_board(
     board: &mut [[Option<bool>; SIZE_BOARD]; SIZE_BOARD],
     score_board: &mut [[[(u8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD],
     player_actual: Option<bool>,
-    lst_moove: Vec<Option<(usize, usize)>>,
+    player_actual_catch: &mut isize,
+    player_opposite_catch: &mut isize,
+    lst_moove: Vec<((usize, usize), TypeOfThreat, std::vec::Vec<(usize, usize)>)>,
+    (table, mut hash): &(&[[[u64; 2]; SIZE_BOARD]; SIZE_BOARD], u64),
+    game: &mut game::Game,
+    start_time: &time::Instant
 ) -> Option<(usize, usize)> {
-    None
+    let mut tt = zobrist::initialize_transposition_table();
+    let mut best_move = (MAX_INFINITY, TypeOfThreat::ThreeOF, (0,0));
+
+    lst_moove.iter().for_each(|&((line,col),threat,_)| {
+        if threat >= best_move.1 {
+            let removed = change_board(board, score_board, line, col, player_actual, table, &mut hash);
+            *player_actual_catch += removed.len() as isize;
+
+            let tmp_move = get_ia::iterative_deepening_mtdf(
+                board,
+                score_board,
+                table,
+                &mut hash,
+                &mut tt,
+                get_opp!(player_actual),
+                player_opposite_catch,
+                player_actual_catch,
+                &mut MAX_INFINITY,
+                &2,
+                game,
+                start_time,
+                true
+            );
+
+            best_move = match (best_move, tmp_move) {
+                (x,y) if x.0 <= y.0 => { x },
+                (x,y) if x.0 > y.0 => { (y.0, threat, (line,col)) },
+                (_,_) => unreachable!()
+            };
+
+            *player_actual_catch -= removed.len() as isize;
+            remove_last_pawn(board, score_board, line, col, player_actual, removed, table, &mut hash);
+        }
+    });
+
+    Some(best_move.2)
 }
 
 pub fn null_move_heuristic(
@@ -843,6 +896,9 @@ pub fn null_move_heuristic(
     player_actual: Option<bool>,
     player_actual_catch: &mut isize,
     player_opposite_catch: &mut isize,
+    (table, mut hash): &(&[[[u64; 2]; SIZE_BOARD]; SIZE_BOARD], u64),
+    start_time: &time::Instant,
+    game: &mut game::Game,
 ) -> Option<(usize, usize)> {
     let mut actual_threat = threat_search_space(board, score_board, player_actual, player_actual_catch);
     let mut opp_threat = threat_search_space(
@@ -909,12 +965,32 @@ pub fn null_move_heuristic(
         }
         return None;
     } else if actual_threat.len() == 0 {
-        return Some(opp_threat[0].0);
+        return best_of_board(
+            board,
+            score_board,
+            player_actual,
+            player_actual_catch,
+            player_opposite_catch,
+            opp_threat,
+            &(table, hash),
+            game,
+            start_time
+        );
     } else {
         if actual_threat[0].1 >= opp_threat[0].1 {
             return None;
         } else if opp_threat[0].1 >= TypeOfThreat::FourOF {
-            return Some(opp_threat[0].0);
+            return best_of_board(
+                board,
+                score_board,
+                player_actual,
+                player_actual_catch,
+                player_opposite_catch,
+                opp_threat,
+                &(table, hash),
+                game,
+                start_time
+            );
         } else {
             return None;
         }

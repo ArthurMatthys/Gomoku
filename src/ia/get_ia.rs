@@ -307,7 +307,7 @@ fn mtdf(
     Some(ret)
 }
 
-fn iterative_deepening_mtdf(
+pub fn iterative_deepening_mtdf(
     board: &mut [[Option<bool>; SIZE_BOARD]; SIZE_BOARD],
     score_board: &mut [[[(u8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD],
     table: &[[[u64; 2]; SIZE_BOARD]; SIZE_BOARD],
@@ -319,14 +319,16 @@ fn iterative_deepening_mtdf(
     beta: &mut i64,
     depth_max: &i8,
     game: &mut game::Game,
-    start_time: &time::Instant
-) -> (usize, usize) {
-    let mut ret = (0, 0);
-    let mut f = match actual {
-        Some(true) => game.firstguess.0,
-        Some(false) => game.firstguess.1,
-        None => unreachable!(),
-    };
+    start_time: &time::Instant,
+    null_move: bool
+) -> (i64,(usize, usize)) {
+    let mut ret = (MIN_INFINITY,(0, 0));
+    let mut f = 0;
+    // let mut f = match actual {
+    //     Some(true) => game.firstguess.0,
+    //     Some(false) => game.firstguess.1,
+    //     None => unreachable!(),
+    // };
     // let limit_duration = time::Duration::from_millis(480);
 
     // println!("before- f: {}", f);
@@ -362,18 +364,20 @@ fn iterative_deepening_mtdf(
             None => break,
             Some((score, r#move)) => {   
                 let ndtime_mtdf = time::Instant::now();
-                println!("Depth: [{}] | Nb. moves: [{}] | Nb. moves/s: [{}]", d, counter_tree, (counter_tree as f64 / ndtime_mtdf.duration_since(stime_mtdf).as_secs_f64()).floor());
-                ret = r#move;
+                if !null_move {
+                    println!("Depth: [{}] | Nb. moves: [{}] | Nb. moves/s: [{}]", d, counter_tree, (counter_tree as f64 / ndtime_mtdf.duration_since(stime_mtdf).as_secs_f64()).floor());
+                }
+                ret = (score,r#move);
                 f = score;
             }
         }
         // println!("debug2: {}|{}|{}|{}|{}|{}|", *alpha, *beta, actual_catch2, opp_catch2, d, *zhash);
     }
-    match actual {
-        Some(true) => game.firstguess.0 = f,
-        Some(false) => game.firstguess.1 = f,
-        None => unreachable!(),
-    };
+    // match actual {
+    //     Some(true) => game.firstguess.0 = f,
+    //     Some(false) => game.firstguess.1 = f,
+    //     None => unreachable!(),
+    // };
     // println!("after- f: {}", f);
     ret
 }
@@ -397,6 +401,9 @@ fn ia(
         pawn,
         &mut opponent_catch,
         &mut player_catch,
+        &(table, hash),
+        start_time,
+        game
     ) {
         println!("Answer null move ({},{})", x, y);
         return (x, y);
@@ -426,8 +433,9 @@ fn ia(
         &mut MAX_INFINITY,
         depth_max,
         game,
-        start_time
-    )
+        start_time,
+        false
+    ).1
 }
 
 pub fn get_ia(
