@@ -946,13 +946,22 @@ pub fn null_move_heuristic(
                                 (new_y + dy * (step + 1)) as usize,
                             ));
                         }
-                        let captures = capture_coordinates_vec(
+                        let mut captures = capture_coordinates_vec(
                             score_board,
                             board,
                             get_opp!(player_actual),
                             to_take,
                             dir,
                         );
+                        captures = captures.into_iter()
+                            .filter(|(x, y)| {
+                                    !check_double_three_hint(
+                                        board,
+                                        player_actual,
+                                        *x as isize,
+                                        *y as isize,
+                                    )
+                                }).collect::<Vec<(usize, usize)>>();
                         //TODO ^ add filter double three
                         if captures.len() > 0 {
                             return Some(captures[0]);
