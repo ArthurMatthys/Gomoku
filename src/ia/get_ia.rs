@@ -181,9 +181,9 @@ fn ab_negamax(
             let removed = change_board(board, score_board, line, col, actual, table, zhash);
             *actual_catch += removed.len() as isize;
 
-            // if index == 5 {
-            //     tmp_curr_depth = calc_depth;
-            // }
+            if index == 5 {
+                tmp_curr_depth = cmp::min(*current_depth + 3, *depth_max);
+            }
 
             // Recurse
             let value = ab_negamax(
