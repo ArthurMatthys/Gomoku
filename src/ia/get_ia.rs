@@ -2,246 +2,499 @@
 // use rand::distributions::{Distribution, Uniform};
 // use rand::thread_rng;
 use super::super::checks::capture;
-use super::super::checks::search_space;
 use super::super::model::game;
+use super::super::render::board::SIZE_BOARD;
+use super::handle_board::{
+    board_state_win, change_board, change_board_hint, find_continuous_threats, get_space,
+    null_move_heuristic, remove_last_pawn, remove_last_pawn_hint, print_board
+};
 // use super::super::model::player;
 use super::heuristic;
 use super::zobrist;
-use super::zobrist::Move;
-use super::zobrist::TypeOfEl;
 use rand::seq::SliceRandom;
+use std::time;
+use std::cmp;
 // use super::super::player;
 
-const DEPTH_MAX: i8 = 3;
+const MIN_INFINITY: i64 = i64::min_value() + 1;
+const MAX_INFINITY: i64 = i64::max_value();
+const DEPTH_THREATS: i8 = 10;
+const LIMIT_DURATION: time::Duration = time::Duration::from_millis(480);
 
-// alpha beta memory
-fn alpha_beta_w_memory(
-    game: &mut game::Game,
-    table: &[[[u64; 2]; 19]; 19],
-    zhash: &mut u64,
-    tt: &mut Vec<zobrist::TT>,
-    depth: &mut i8,
-    alpha: &mut i64,
-    beta: &mut i64,
-) -> (i64, Option<(usize, usize)>) {
-    let mut value: i64;
-    let mut best_value: i64;
-    let mut best_mov = Move::Leaf;
-    let tte = zobrist::retrieve_tt_from_hash(tt, zhash);
+macro_rules! get_opp {
+    ($e:expr) => {
+        match $e {
+            Some(a) => Some(!a),
+            _ => unreachable!(),
+        }
+    };
+}
 
-    //    println!("call alphabeta prof {}", depth);
-    // If I can retrieve interesting data from TT
-    // On testera avec ==
-    if tte.r#type != zobrist::TypeOfEl::Empty && tte.depth >= *depth {
-        if tte.r#type == zobrist::TypeOfEl::Exact {
-            match tte.r#move {
-                // let mov2 = tte.r#move.unwrap_unsafe();
-                // return (tte.value,Some(mov2));
-                Move::Some((i, j)) => return (tte.value, Some((i, j))),
-                Move::Leaf => return (tte.value, None),
-                _ => unreachable!(),
+fn find_winning_align(
+    board: &mut [[Option<bool>; SIZE_BOARD]; SIZE_BOARD],
+    score_board: &mut [[[(u8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD],
+    actual: Option<bool>,
+) -> bool {
+    for line in 0..SIZE_BOARD {
+        for col in 0..SIZE_BOARD {
+            if board[line][col] == actual {
+                for dir in 0..4 {
+                    if score_board[line][col][dir].0 >= 5 {
+                        return true;
+                    }
+                }
             }
         }
+    }
+    false
+}
 
-        if tte.r#type == zobrist::TypeOfEl::Lowerbound && tte.value > *alpha {
-            *alpha = tte.value; // update lowerbound value (alpha)
-        } else if tte.r#type == zobrist::TypeOfEl::Upperbound && tte.value < *beta {
-            *beta = tte.value; // update upperbound value (beta)
+// negamax_try
+fn ab_negamax(
+    board: &mut [[Option<bool>; SIZE_BOARD]; SIZE_BOARD],
+    table: &[[[u64; 2]; SIZE_BOARD]; SIZE_BOARD],
+    score_board: &mut [[[(u8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD],
+    zhash: &mut u64,
+    tt: &mut Vec<zobrist::TT>,
+    current_depth: &mut i8,
+    actual: Option<bool>,
+    actual_catch: &mut isize,
+    opp_catch: &mut isize,
+    alpha: &mut i64,
+    beta: &mut i64,
+    color: &mut i8,
+    depth_max: &i8,
+    counter_tree: &mut u64,
+    start_time: &time::Instant
+) -> Option<(i64, Option<(usize, usize)>)> {
+    // println!("entered: {}", counter_tree);
+    if time::Instant::now().duration_since(*start_time) >= LIMIT_DURATION {
+        // println!("cutoff: {}", counter_tree);
+        // println!("DAAAAAMMMNN: {}", current_depth);
+        return None;
+    }
+    let mut tte = zobrist::retrieve_tt_from_hash(tt, zhash);
+    let alpha_orig = *alpha;
+    *counter_tree += 1;
+    if tte.is_valid && tte.depth == *depth_max - *current_depth {
+        if tte.r#type == zobrist::TypeOfEl::Exact {
+            return Some((tte.value, tte.r#move));
+        } else if tte.r#type == zobrist::TypeOfEl::Lowerbound {
+            *alpha = i64::max(*alpha, tte.value);
+        } else if tte.r#type == zobrist::TypeOfEl::Upperbound {
+            *beta = i64::min(*beta, tte.value);
         }
 
         if *alpha >= *beta {
-            match tte.r#move {
-                // let mov2 = tte.r#move.unwrap_unsafe();
-                // return (tte.value,Some(mov2));
-                Move::Some((i, j)) => return (tte.value, Some((i, j))),
-                Move::Leaf => return (tte.value, None),
-                _ => unreachable!(),
-            } // Directly cut branch
+            return Some((tte.value, tte.r#move));
         }
     }
 
-    // Process Leaf or end of game
-    if *depth == 0 || game.check_win_hint() {
-        // value = evaluate(board);
-        // Line below --> debug
-        value = heuristic::first_heuristic(
-            game.board,
-            game.get_actual_player(),
-            game.get_opponent(),
-            depth,
+    if *opp_catch >= 5 {
+        return Some((-heuristic::INSTANT_WIN * ((*depth_max - *current_depth) as i64 + 1), None));
+    } else if find_winning_align(board, score_board, actual) {
+        return Some((heuristic::INSTANT_WIN * ((*depth_max - *current_depth) as i64 + 1), None));
+    }
+    if *current_depth == *depth_max {
+        let weight = heuristic::first_heuristic_hint(
+            board,
+            score_board,
+            actual,
+            actual_catch,
+            opp_catch,
+            &mut (*depth_max - *current_depth),
         );
-        //println!("value : {}", value);
-        // Stocke-t-on ou non ici ??
-        if value <= *alpha {
-            // a lowerbound value
-            zobrist::store_tt_entry(tt, zhash, &value, TypeOfEl::Lowerbound, depth, Move::Leaf);
-        } else if value >= *beta {
-            // an upperbound value
-            zobrist::store_tt_entry(tt, zhash, &value, TypeOfEl::Upperbound, depth, Move::Leaf);
-        } else {
-            // a true minimax value
-            zobrist::store_tt_entry(tt, zhash, &value, TypeOfEl::Exact, depth, Move::Leaf);
-        }
-        return (value, None);
+        return Some((weight, None));
     }
 
-    // First check already known move (reordering)
-    if tte.r#type != zobrist::TypeOfEl::Empty && tte.r#move != zobrist::Move::Leaf {
-        // Place pawn
-        match tte.r#move {
-            Move::Some((i, j)) => game.ia_change_board_from_input_hint(i, j, &table, zhash),
-            _ => unreachable!(),
-        }
-        // Collect value of this branch
-        let (tmp_best, _) = alpha_beta_w_memory(
-            game,
-            table,
-            zhash,
-            tt,
-            &mut (*depth - 1),
-            &mut (-*beta),
-            &mut (-*alpha),
-        );
-        best_value = -tmp_best;
-        // Remove pawn
-        game.ia_clear_last_move_hint(table, zhash);
-        best_mov = tte.r#move;
-    } else {
-        best_value = i64::min_value() + 1; // ????? DANGEROUS CAST ?????
-    }
+    // Otherwise bubble up values from below
+    let mut best_move: Option<(usize, usize)> = None;
+    let mut best_score = MIN_INFINITY;
+    let mut trig = false;
 
-    if best_value < *beta {
-        //
-        let available_positions = search_space::search_space(game);
-        for i in 0..available_positions.len() {
-            if Move::Some(available_positions[i]) != tte.r#move {
-                // println!("zhash_before-change: {}| depth: {}", zhash, depth);
-                game.ia_change_board_from_input_hint(
-                    available_positions[i].0,
-                    available_positions[i].1,
-                    &table,
-                    zhash,
-                );
-                // println!("zhash_after-change: {}| depth: {}", zhash, depth);
-                let (val, _) = alpha_beta_w_memory(
-                    game,
+    if tte.is_valid && tte.depth >= *depth_max - *current_depth {
+        // println!("rentré");
+        if let Some((line, col)) = tte.r#move {
+            if board[line][col] == None {
+                let removed = change_board(board, score_board, line, col, actual, table, zhash);
+                *actual_catch += removed.len() as isize;
+
+                // Recurse
+                let value = ab_negamax(
+                    board,
                     table,
+                    score_board,
                     zhash,
                     tt,
-                    &mut (*depth - 1),
+                    &mut (*current_depth + 1),
+                    get_opp!(actual),
+                    opp_catch,
+                    actual_catch,
                     &mut (-*beta),
                     &mut (-*alpha),
+                    &mut (-*color),
+                    depth_max,
+                    counter_tree,
+                    start_time
                 );
-                value = -val;
-                game.ia_clear_last_move_hint(table, zhash);
-                // println!("zhash_after-recursive: {}| depth: {}", zhash, depth);
-                if value > best_value {
-                    best_value = value;
-                    best_mov = Move::Some(available_positions[i]);
+
+                match value {
+                    // None => return None,
+                    None => { 
+                        *actual_catch -= removed.len() as isize;
+                        remove_last_pawn(board, score_board, line, col, actual, removed, table, zhash);
+                        return None
+                    },
+                    Some((recursed_score, _)) => {
+                        let x = -recursed_score;
+        
+                        *actual_catch -= removed.len() as isize;
+                        remove_last_pawn(board, score_board, line, col, actual, removed, table, zhash);
+        
+                        if x >= *beta {
+                            // println!("rentré_cutoff");
+                            best_score = x;
+                            best_move = tte.r#move;
+                            trig = true;
+                        }
+                    }
                 }
-                if best_value > *alpha {
-                    *alpha = best_value;
-                }
-                if best_value >= *beta {
-                    break;
+                // else {
+                //     best_score = MIN_INFINITY;
+                //     best_move = None;
+                // }
+            }
+        }
+    }
+
+    if !trig {
+        // Collect moves
+        let available_positions = get_space(board, score_board, actual, *actual_catch);
+        // println!("\nCounter-tree: {}|d:{}", counter_tree,current_depth);
+        // available_positions.iter().for_each(|&(x,y,z)|{
+        //     print!("[({}:{})|{}]", x,  y, z);
+        // });
+        // println!("");
+        let mut tmp_curr_depth = *current_depth + 1;
+        // let calc_depth = cmp::min(((*depth_max - *current_depth) / 2) + *current_depth, *depth_max);
+        for (index, &(line, col, _)) in available_positions.iter().enumerate() {
+            let removed = change_board(board, score_board, line, col, actual, table, zhash);
+            *actual_catch += removed.len() as isize;
+
+            if index == 5 {
+                tmp_curr_depth = cmp::min(*current_depth + 3, *depth_max);
+            }
+
+            // Recurse
+            let value = ab_negamax(
+                board,
+                table,
+                score_board,
+                zhash,
+                tt,
+                // &mut (*current_depth + 1),
+                &mut tmp_curr_depth,
+                get_opp!(actual),
+                opp_catch,
+                actual_catch,
+                &mut (-*beta),
+                &mut (-*alpha),
+                &mut (-*color),
+                depth_max,
+                counter_tree,
+                start_time
+            );
+
+            match value {
+                None => { 
+                    *actual_catch -= removed.len() as isize;
+                    remove_last_pawn(board, score_board, line, col, actual, removed, table, zhash);
+                    // if *current_depth == 1 || *current_depth == 0  || *current_depth == 2 {
+                        // continue ;
+                    // } else {
+                        return None
+                    // }
+                },
+                Some((recursed_score, _)) => {
+                    let x = -recursed_score;
+                    if x > best_score {
+                        best_score = x;
+                        best_move = Some((line, col));
+                    }
+                    if x > *alpha {
+                        *alpha = x;
+                        best_move = Some((line, col));
+                    }
+        
+                    *actual_catch -= removed.len() as isize;
+                    remove_last_pawn(board, score_board, line, col, actual, removed, table, zhash);
+        
+                    if *alpha >= *beta {
+                        best_score = *alpha;
+                        best_move = Some((line, col));
+                        break;
+                        // return (*alpha, best_move);
+                    }
                 }
             }
         }
     }
 
-    if best_value <= *alpha {
-        // a lowerbound value
-        zobrist::store_tt_entry(
-            tt,
-            zhash,
-            &best_value,
-            TypeOfEl::Lowerbound,
-            depth,
-            best_mov,
-        );
-    } else if best_value >= *beta {
-        // an upperbound value
-        zobrist::store_tt_entry(
-            tt,
-            zhash,
-            &best_value,
-            TypeOfEl::Upperbound,
-            depth,
-            best_mov,
-        );
+    if best_score <= alpha_orig {
+        tte.r#type = zobrist::TypeOfEl::Upperbound;
+    } else if best_score >= *beta {
+        tte.r#type = zobrist::TypeOfEl::Lowerbound;
     } else {
-        // a true minimax value
-        zobrist::store_tt_entry(tt, zhash, &best_value, TypeOfEl::Exact, depth, best_mov);
+        tte.r#type = zobrist::TypeOfEl::Exact;
     }
-    match best_mov {
-        Move::Some((i, j)) => return (best_value, Some((i, j))),
-        Move::Leaf => return (best_value, None), // Full board case
-        Move::Unitialized => unreachable!(),
-    }
-    // (best_value, best_mov)
+    tte.is_valid = true;
+    tte.key = *zhash;
+    tte.value = best_score;
+    tte.r#move = best_move;
+    tte.depth = *depth_max - *current_depth;
+    zobrist::store_tt_entry(tt, zhash, tte);
+
+    Some((best_score, best_move))
 }
 
-// function mtdf(root, f, d) is
-//     g := f
-//     upperBound := +∞
-//     lowerBound := −∞
+fn mtdf(
+    board: &mut [[Option<bool>; SIZE_BOARD]; SIZE_BOARD],
+    table: &[[[u64; 2]; SIZE_BOARD]; SIZE_BOARD],
+    zhash: &mut u64,
+    tt: &mut Vec<zobrist::TT>,
+    actual: Option<bool>,
+    actual_catch: &mut isize,
+    opp_catch: &mut isize,
+    beta: &mut i64,
+    depth_max: &i8,
+    firstguess: i64,
+    score_board: &mut [[[(u8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD],
+    counter_tree: &mut u64,
+    start_time: &time::Instant
+) -> Option<(i64, (usize, usize))> {
+    let mut g = firstguess;
+    let mut ret = (0, (0, 0));
+    let mut upperbnd = MAX_INFINITY;
+    let mut lowerbnd = MIN_INFINITY;
 
-//     while lowerBound < upperBound do
-//         β := max(g, lowerBound + 1)
-//         g := AlphaBetaWithMemory(root, β − 1, β, d)
-//         if g < β then
-//             upperBound := g
-//         else
-//             lowerBound := g
+    while lowerbnd < upperbnd {
+        // let mut score_board2 = heuristic::evaluate_board(board);
+        let mut actual_catch2 = *actual_catch;
+        let mut opp_catch2 = *opp_catch;
+        if g == lowerbnd {
+            *beta = g + 1;
+        } else {
+            *beta = g;
+        }
+        // if time::Instant::now().duration_since(*start_time) >= LIMIT_DURATION {
+        //     println!("Mtd-f: break before");
+        //     return None;
+        // }
+        // *beta = i64::max(g, lowerbnd + 1);
+        let values: Option<(i64, Option<(usize, usize)>)> = ab_negamax(
+            board,
+            table,
+            score_board,
+            zhash,
+            tt,
+            &mut 0,
+            actual,
+            &mut actual_catch2,
+            &mut opp_catch2,
+            &mut (*beta - 1),
+            beta,
+            &mut 1,
+            depth_max,
+            counter_tree,
+            start_time
+        );
+        match values {
+            // None => { println!("DEBUUGG: d:{}", depth_max); return None },
+            None => { return None },
+            Some((score, r#move)) => {
+                ret = (score, r#move.unwrap());
+                g = score;
+                if g < *beta {
+                    upperbnd = g;
+                } else {
+                    lowerbnd = g;
+                }
+            }
+        }
+        // if time::Instant::now().duration_since(*start_time) >= LIMIT_DURATION {
+        //     println!("Mtd-f: break after");
+        //     return None;
+        // }
+    }
+    Some(ret)
+}
 
-//     return g
+pub fn iterative_deepening_mtdf(
+    board: &mut [[Option<bool>; SIZE_BOARD]; SIZE_BOARD],
+    score_board: &mut [[[(u8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD],
+    table: &[[[u64; 2]; SIZE_BOARD]; SIZE_BOARD],
+    zhash: &mut u64,
+    tt: &mut Vec<zobrist::TT>,
+    actual: Option<bool>,
+    actual_catch: &mut isize,
+    opp_catch: &mut isize,
+    beta: &mut i64,
+    depth_max: &i8,
+    game: &mut game::Game,
+    start_time: &time::Instant,
+    null_move: bool
+) -> (i64,(usize, usize)) {
+    // println!("========================");
+    // println!("Entering Iterative MTDF");
+    // print_board(board);
+    // println!();
+    let mut ret = (MIN_INFINITY,(0, 0));
+    let mut f = 0;
+    // let mut f = match actual {
+    //     Some(true) => game.firstguess.0,
+    //     Some(false) => game.firstguess.1,
+    //     None => unreachable!(),
+    // };
+    // let limit_duration = time::Duration::from_millis(480);
 
-// Aim of the function :
-// Heart of AI, parse all available position close to a piece
-// and apply the mtd-f algorithm on it with depth of 10
-fn ia(game: &mut game::Game, (table, mut hash): ([[[u64; 2]; 19]; 19], u64)) -> (usize, usize) {
-    let mut _player = game.get_actual_player();
-    let mut _oppenent = game.get_opponent();
-    // let mut best_position: (usize, usize) = (0,0);
-    // let mut best_score = 0;
-    let mut depth_max = DEPTH_MAX;
+    // println!("before- f: {}", f);
+    // for d in [2, 3, 5].iter() {
+    for d in (2..(depth_max + 1)).step_by(2) {
+        let mut beta2 = *beta;
+        let mut actual_catch2 = *actual_catch;
+        let mut opp_catch2 = *opp_catch;
+
+        // for d in (1..DEPTH_MAX).step_by(2) {
+        //    println!("debug: {}|{}|{}|{}|{}|{}|", *alpha, *beta, actual_catch2, opp_catch2, d, *zhash);
+        let mut counter_tree:u64 = 0;
+        let stime_mtdf = time::Instant::now();
+        if stime_mtdf.duration_since(*start_time) >= LIMIT_DURATION {
+            break;
+        }
+        let tmp_ret = mtdf(
+            board,
+            table,
+            zhash,
+            tt,
+            actual,
+            &mut actual_catch2,
+            &mut opp_catch2,
+            &mut beta2,
+            &d,
+            f,
+            score_board,
+            &mut counter_tree,
+            start_time
+        );
+        // println!("middle_mtdf");
+        // print_board(board);
+        // println!();
+        match tmp_ret {
+            None => break,
+            Some((score, r#move)) => {   
+                // println!("move_iterative_deepening_mtdf: [score:{}|{}/{}]",score, r#move.0,r#move.1);
+                let ndtime_mtdf = time::Instant::now();
+                if !null_move {
+                    println!("Depth: [{}] | Nb. moves: [{}] | Nb. moves/s: [{}]", d, counter_tree, (counter_tree as f64 / ndtime_mtdf.duration_since(stime_mtdf).as_secs_f64()).floor());
+                }
+                ret = (score,r#move);
+                f = score;
+            }
+        }
+        // println!("debug2: {}|{}|{}|{}|{}|{}|", *alpha, *beta, actual_catch2, opp_catch2, d, *zhash);
+    }
+    // match actual {
+    //     Some(true) => game.firstguess.0 = f,
+    //     Some(false) => game.firstguess.1 = f,
+    //     None => unreachable!(),
+    // };
+    // println!("after- f: {}", f);
+    ret
+}
+
+fn ia(
+    game: &mut game::Game,
+    (table, mut hash): (&[[[u64; 2]; SIZE_BOARD]; SIZE_BOARD], u64),
+    depth_max: &i8,
+    start_time: &time::Instant
+) -> (usize, usize) {
+    // let end = time::Instant::now();
+    // println!("enter_ia: {}",end.duration_since(*start_time).as_secs_f64());
+    let mut player_catch = game.get_actual_player().nb_of_catch;
+    let mut opponent_catch = game.get_opponent().nb_of_catch;
+    let mut board = game.board;
+    let mut score_board = heuristic::evaluate_board(&mut board);
+    let pawn = game.player_to_pawn();
     let mut tt = zobrist::initialize_transposition_table();
-    // let available_positions = search_space::search_space(game);
-
-    // available_positions.iter().for_each(| &(i,j) | {
-    //     // Place pawn on board && zobrit
-    //     game.ia_change_board_from_input_hint(i, j, &table, &mut hash);
-    //     match mtdf(game, player, opponent, (&table, &mut hash), 9) {
-    //         x if x < best_score => (),
-    //         x if x >= best_score => { best_score = x ; best_position = (i,j) },
-    //     }
-    //     // Remove pawn on board && zobrit
-    //     game.ia_clear_last_move(&table, &mut hash);
-    // });
-    match alpha_beta_w_memory(
-        game,
-        &table,
+    // let end = time::Instant::now();
+    // println!("after_initialization: {}",end.duration_since(*start_time).as_secs_f64());
+    
+    // let end = time::Instant::now();
+    // println!("before_null: {}",end.duration_since(*start_time).as_secs_f64());
+    if let Some((x, y)) = null_move_heuristic(
+        &mut board,
+        &mut score_board,
+        pawn,
+        &mut opponent_catch,
+        &mut player_catch,
+        &(table, hash),
+        start_time,
+        game
+    ) {
+        println!("Answer null move ({},{})", x, y);
+        return (x, y);
+    }
+    // let end = time::Instant::now();
+    // println!("after_null: {}",end.duration_since(*start_time).as_secs_f64());
+    // let end = time::Instant::now();
+    // println!("before continuous: {}",end.duration_since(*start_time).as_secs_f64());
+    if let Some((x, y)) = find_continuous_threats(
+        &mut board,
+        &mut score_board,
+        pawn,
+        &mut player_catch,
+        &mut opponent_catch,
+        &mut DEPTH_THREATS,
+        &mut 0,
+        true,
+    ) {
+        println!("find threat ({},{})", x, y);
+        return (x, y);
+    }
+    // let end = time::Instant::now();
+    // println!("after_continuous: {}",end.duration_since(*start_time).as_secs_f64());
+    // let end = time::Instant::now();
+    // println!("before mtdf: {}",end.duration_since(*start_time).as_secs_f64());
+    // println!("NEW COUP");
+    iterative_deepening_mtdf(
+        &mut board,
+        &mut score_board,
+        table,
         &mut hash,
         &mut tt,
-        &mut depth_max,
-        &mut (i64::min_value() + 1),
-        &mut (i64::max_value()),
-    ) {
-        (_, Some(best_position)) => best_position,
-        (_, None) => unreachable!(),
-    }
+        pawn,
+        &mut player_catch,
+        &mut opponent_catch,
+        &mut MAX_INFINITY,
+        depth_max,
+        game,
+        start_time,
+        false
+    ).1
 }
 
-// Need to take history into account, found some issue with double_three
-pub fn get_ia(game: &mut game::Game) -> (usize, usize) {
-    // Initialize Zobrit hash
-    let (table, hash): ([[[u64; 2]; 19]; 19], u64) = zobrist::board_to_zhash(&game.board);
+pub fn get_ia(
+    game: &mut game::Game,
+    ztable: &[[[u64; 2]; SIZE_BOARD]; SIZE_BOARD],
+    depth_max: &i8,
+    start_time: &time::Instant
+) -> (usize, usize) {
+    let hash: u64 = zobrist::board_to_zhash(&game.board, ztable);
     let mut rng = rand::thread_rng();
 
     match game.history.len() {
         0 => (9, 9),
         2 => {
-            // println!("{}", "passé dans 1");
             let (dir_line, dir_col) = capture::DIRS
                 .choose(&mut rng)
                 .expect("Error in random extraction");
@@ -250,9 +503,140 @@ pub fn get_ia(game: &mut game::Game) -> (usize, usize) {
                 game::TypeOfParty::Longpro => {
                     ((9 + dir_line * 4) as usize, (9 + dir_col * 4) as usize)
                 }
-                game::TypeOfParty::Standard => ia(game, (table, hash)),
+                game::TypeOfParty::Standard => ia(game, (ztable, hash), depth_max, start_time),
             }
         }
-        _ => ia(game, (table, hash)),
+        _ => {
+            let ret = ia(game, (ztable, hash), depth_max, start_time);
+            ret
+        }
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn test_ia(
+        white_pos: Vec<(usize, usize)>,
+        black_pos: Vec<(usize, usize)>,
+        actual: Option<bool>,
+        actual_catch: &mut isize,
+        opp_catch: &mut isize,
+        depth_max: &i8,
+        expected_result: (usize, usize),
+    ) -> bool {
+        let mut board = [[None; SIZE_BOARD]; SIZE_BOARD];
+        white_pos
+            .iter()
+            .for_each(|&(x, y)| board[x][y] = Some(true));
+        black_pos
+            .iter()
+            .for_each(|&(x, y)| board[x][y] = Some(false));
+        let mut score_board = heuristic::evaluate_board(&mut board);
+        let mut tt = zobrist::initialize_transposition_table();
+        let ztable = zobrist::init_zboard();
+        let mut hash = zobrist::board_to_zhash(&mut board, &ztable);
+        println!("// Initial configuration:");
+        for i in 0..19 {
+            print!("// ");
+            for j in 0..19 {
+                match board[j][i] {
+                    Some(true) => print!("⊖"),
+                    Some(false) => print!("⊕"),
+                    None => print!("_"),
+                }
+            }
+            println!();
+        }
+        let mut counter_tree:u64 = 0;
+        let stime_mtdf = time::Instant::now();
+        let result = mtdf(
+            &mut board,
+            &ztable,
+            &mut hash,
+            &mut tt,
+            actual,
+            actual_catch,
+            opp_catch,
+            &mut MAX_INFINITY,
+            depth_max,
+            0,
+            &mut score_board,
+            &mut counter_tree,
+            &stime_mtdf
+        );
+        match result {
+            None => false,
+            Some((_, (x, y))) => {
+                println!("// Result IA ({},{}) :", x, y);
+                for i in 0..19 {
+                    print!("// ");
+                    for j in 0..19 {
+                        if i == y && j == x && actual == Some(false) {
+                            print!("⊛");
+                        } else if i == y && j == x && actual == Some(true) {
+                            print!("⊙");
+                        } else {
+                            match board[j][i] {
+                                Some(true) => print!("⊖"),
+                                Some(false) => print!("⊕"),
+                                None => print!("_"),
+                            }
+                        }
+                    }
+                    println!();
+                }
+                expected_result == (x, y)
+            }
+        }
+    }
+
+    //    #[test]
+    //    fn test_ia_board_00() {
+    //        let black_pos = vec![
+    //            (6, 8),
+    //            (10, 8),
+    //            (7, 9),
+    //            (9, 9),
+    //            (6, 10),
+    //            (8, 10),
+    //            (10, 10),
+    //            (5, 11),
+    //            (7, 11),
+    //            (10, 11),
+    //            (7, 12),
+    //            (10, 12),
+    //            (10, 13),
+    //        ];
+    //        let white_pos = vec![
+    //            (5, 7),
+    //            (7, 7),
+    //            (9, 7),
+    //            (11, 7),
+    //            (8, 6),
+    //            (9, 8),
+    //            (8, 9),
+    //            (7, 10),
+    //            (10, 9),
+    //            (9, 11),
+    //            (11, 11),
+    //            (4, 12),
+    //            (10, 14),
+    //        ];
+    //        let actual = Some(true);
+    //        let mut actual_catch = 1isize;
+    //        let mut opp_catch = 1isize;
+    //        let depth_max = 5i8;
+    //        let expected_result = (0, 0);
+    //        assert!(test_ia(
+    //            black_pos,
+    //            white_pos,
+    //            actual,
+    //            &mut actual_catch,
+    //            &mut opp_catch,
+    //            &depth_max,
+    //            expected_result,
+    //        ));
+    //    }
 }

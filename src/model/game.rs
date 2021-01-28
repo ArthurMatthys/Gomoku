@@ -3,14 +3,14 @@ extern crate sdl2;
 
 use sdl2::render::Canvas;
 
-use std::time::Duration;
-
 use super::super::checks::after_turn_check;
 use super::super::checks::capture;
 use super::super::checks::double_three;
 use super::super::checks::valid_pos;
+use super::super::ia::heuristic;
+use super::super::ia::handle_board;
+use std::time::Duration;
 
-use super::super::ia::zobrist;
 use super::super::render::board;
 
 use super::player;
@@ -132,11 +132,14 @@ pub struct Game {
     pub board: [[Option<bool>; board::SIZE_BOARD]; board::SIZE_BOARD],
     pub forbidden: Vec<(usize, usize)>,
     pub capture: Vec<(usize, usize)>,
+    pub best_move: Vec<(usize, usize)>,
 
     pub type_of_party: TypeOfParty,
     pub has_changed: bool,
     pub result: Option<bool>,
     pub instant_win: bool,
+    pub winner: Option<bool>,
+    pub firstguess: (i64, i64),
 }
 
 impl Game {
@@ -182,7 +185,10 @@ impl Game {
                 result: None,
                 forbidden: vec![],
                 capture: vec![],
+                best_move: vec![],
                 instant_win: false,
+                winner: None,
+                firstguess: (0, 0),
             },
             events,
         ))
@@ -254,10 +260,11 @@ impl Game {
     //Modify board when user click
     pub fn change_board_from_input(&mut self, line: usize, col: usize) {
         if !valid_pos::valid_pos(self, line, col) {
+            println!("here also you loose");
             return;
         }
         match self.board[line][col] {
-            Some(_) => (),
+            Some(_) => println!("You loose"),
             None => {
                 self.change_board_value(line, col);
                 self.next_player()
@@ -276,50 +283,51 @@ impl Game {
     }
 
     // Modify board when IA processing implementation including zhash changes
-    pub fn ia_change_board_from_input_hint(
-        &mut self,
-        line: usize,
-        col: usize,
-        table: &[[[u64; 2]; 19]; 19],
-        zhash: &mut u64,
-    ) -> () {
-        if !valid_pos::valid_pos(self, line, col) {
-            return;
-        }
-        match self.board[line][col] {
-            Some(_) => (),
-            None => {
-                self.ia_change_board_value(line, col, table, zhash);
-                self.next_player()
-            }
-        }
-    }
-
-    // Modify board when IA processing implementation including zhash changes,
-    // Capture included
-    fn ia_change_board_value(
-        &mut self,
-        line: usize,
-        col: usize,
-        table: &[[[u64; 2]; 19]; 19],
-        zhash: &mut u64,
-    ) -> () {
-        self.board[line][col] = self.player_to_pawn();
-        zobrist::add_pawn_zhash(table, zhash, (line, col, self.player_turn as usize));
-        self.history.push((line, col));
-        if let Some(ret) = capture::check_capture(self) {
-            let opponent = match self.player_turn {
-                0 => 1,
-                1 => 0,
-                _ => unreachable!(),
-            };
-
-            ret.iter().for_each(|&x| {
-                self.clear_board_index(x, line, col);
-                zobrist::capture_zhash(table, zhash, opponent, x);
-            });
-        }
-    }
+    //    pub fn ia_change_board_from_input_hint(
+    //        &mut self,
+    //        line: usize,
+    //        col: usize,
+    //        table: &[[[u64; 2]; 19]; 19],
+    //        zhash: &mut u64,
+    //    ) -> () {
+    //        match self.board[line][col] {
+    //            Some(_) => {
+    //                print!("{}/{}", line, col);
+    //                sleep(Duration::new(1, 0));
+    //                unreachable!()
+    //            }
+    //            None => {
+    //                self.ia_change_board_value(line, col, table, zhash);
+    //                self.next_player()
+    //            }
+    //        }
+    //    }
+    //
+    //    // Modify board when IA processing implementation including zhash changes,
+    //    // Capture included
+    //    fn ia_change_board_value(
+    //        &mut self,
+    //        line: usize,
+    //        col: usize,
+    //        table: &[[[u64; 2]; 19]; 19],
+    //        zhash: &mut u64,
+    //    ) -> () {
+    //        self.board[line][col] = self.player_to_pawn();
+    //        zobrist::add_pawn_zhash(table, zhash, (line, col, self.player_turn as usize));
+    //        self.history.push((line, col));
+    //        if let Some(ret) = capture::check_capture(self) {
+    //            let opponent = match self.player_turn {
+    //                0 => 1,
+    //                1 => 0,
+    //                _ => unreachable!(),
+    //            };
+    //
+    //            ret.iter().for_each(|&x| {
+    //                self.clear_board_index(x, line, col);
+    //                zobrist::capture_zhash(table, zhash, opponent, x);
+    //            });
+    //        }
+    //    }
 
     pub fn change_board_from_click(&mut self, x: i32, y: i32) {
         let new_x = x as usize / board::SQUARE_SIZE;
@@ -335,7 +343,7 @@ impl Game {
             Some(_) => (),
             None => {
                 self.change_board_value(new_y - 1, new_x - 1);
-                self.next_player()
+                self.next_player();
             }
         }
     }
@@ -347,74 +355,73 @@ impl Game {
     }
 
     pub fn clear_last_move(&mut self) -> () {
-        let mut new_history = vec![];
         if let Some((line, col)) = self.history.pop() {
             let mut nbr = 0;
             self.board[line][col] = None;
-            for (x, ((line_y, col_y), (line_z, col_z))) in self.history_capture.iter() {
+            for (x, ((line_y, col_y), (line_z, col_z))) in self.history_capture.iter().rev() {
                 if *x == (line, col) {
                     self.board[*line_y][*col_y] = self.player_to_pawn();
                     self.board[*line_z][*col_z] = self.player_to_pawn();
                     nbr += 1;
                 } else {
-                    new_history.push((*x, ((*line_y, *col_y), (*line_z, *col_z))));
+                    break ;
                 }
             }
             for _ in 0..nbr {
                 self.minus_capture();
             }
-            self.history_capture = new_history;
+            let _ = self.history_capture.split_off(self.history_capture.len() - nbr);
             self.set_changed();
             self.next_player();
         }
     }
 
-    pub fn ia_clear_last_move_hint(&mut self, table: &[[[u64; 2]; 19]; 19], zhash: &mut u64) -> () {
-        let mut new_history = vec![];
-        if let Some((line, col)) = self.history.pop() {
-            let mut nbr = 0;
-            self.board[line][col] = None;
-            // remove opponent's pawn from zhash
-            zobrist::add_pawn_zhash(
-                table,
-                zhash,
-                (
-                    line,
-                    col,
-                    match self.player_turn {
-                        0 => 1,
-                        1 => 0,
-                        _ => unreachable!(),
-                    },
-                ),
-            );
-            for (x, ((line_y, col_y), (line_z, col_z))) in self.history_capture.iter() {
-                if *x == (line, col) {
-                    self.board[*line_y][*col_y] = self.player_to_pawn();
-                    self.board[*line_z][*col_z] = self.player_to_pawn();
-                    // Remove my pawn from zhash
-                    zobrist::add_pawn_zhash(
-                        table,
-                        zhash,
-                        (*line_y, *col_y, self.player_turn as usize),
-                    );
-                    zobrist::add_pawn_zhash(
-                        table,
-                        zhash,
-                        (*line_z, *col_z, self.player_turn as usize),
-                    );
-                    nbr += 1;
-                } else {
-                    new_history.push((*x, ((*line_y, *col_y), (*line_z, *col_z))));
-                }
-            }
-            for _ in 0..nbr {
-                self.minus_capture();
-            }
-            self.history_capture = new_history;
-            self.next_player();
-        }
-    }
+    //    pub fn ia_clear_last_move_hint(&mut self, table: &[[[u64; 2]; 19]; 19], zhash: &mut u64) -> () {
+    //        let mut new_history = vec![];
+    //        if let Some((line, col)) = self.history.pop() {
+    //            let mut nbr = 0;
+    //            self.board[line][col] = None;
+    //            // remove opponent's pawn from zhash
+    //            zobrist::add_pawn_zhash(
+    //                table,
+    //                zhash,
+    //                (
+    //                    line,
+    //                    col,
+    //                    match self.player_turn {
+    //                        0 => 1,
+    //                        1 => 0,
+    //                        _ => unreachable!(),
+    //                    },
+    //                ),
+    //            );
+    //            for (x, ((line_y, col_y), (line_z, col_z))) in self.history_capture.iter() {
+    //                if *x == (line, col) {
+    //                    self.board[*line_y][*col_y] = self.player_to_pawn();
+    //                    self.board[*line_z][*col_z] = self.player_to_pawn();
+    //                    // Remove my pawn from zhash
+    //                    zobrist::add_pawn_zhash(
+    //                        table,
+    //                        zhash,
+    //                        (*line_y, *col_y, self.player_turn as usize),
+    //                    );
+    //                    zobrist::add_pawn_zhash(
+    //                        table,
+    //                        zhash,
+    //                        (*line_z, *col_z, self.player_turn as usize),
+    //                    );
+    //                    nbr += 1;
+    //                } else {
+    //                    new_history.push((*x, ((*line_y, *col_y), (*line_z, *col_z))));
+    //                }
+    //            }
+    //            for _ in 0..nbr {
+    //                self.minus_capture();
+    //            }
+    //            self.history_capture = new_history;
+    //            self.next_player();
+    //        }
+    //    }
 
     fn add_history_capture(
         &mut self,
@@ -455,6 +462,10 @@ impl Game {
         self.capture = vec![];
     }
 
+    pub fn clear_best_move(&mut self) -> () {
+        self.best_move = vec![];
+    }
+
     fn add_impossible_index(&mut self, point: (usize, usize)) -> () {
         self.forbidden.push(point);
     }
@@ -469,10 +480,20 @@ impl Game {
         self.capture.push(point);
     }
 
+    fn add_best_move_index(&mut self, point: (usize, usize)) -> () {
+        self.best_move.push(point);
+    }
+
     fn add_capture_vec_index(&mut self, points: Vec<(usize, usize)>) -> () {
         points
             .iter()
             .for_each(|&point| self.add_capture_index(point));
+    }
+
+    fn add_best_move_vec_index(&mut self, points: Vec<(usize, usize)>) -> () {
+        points
+            .iter()
+            .for_each(|&point| self.add_best_move_index(point));
     }
 
     pub fn set_forbidden_pos(&mut self) -> () {
@@ -501,6 +522,14 @@ impl Game {
         self.has_changed = true;
     }
 
+    pub fn set_best_move(&mut self, x: usize, y: usize) -> () {
+        self.clear_best_move();
+        let mut new_vec = Vec::with_capacity(2);
+        new_vec.push((x, y));
+        self.add_best_move_vec_index(new_vec);
+        self.has_changed = true;
+    }
+
     pub fn is_forbidden_from_index(&self, line: usize, col: usize) -> bool {
         self.forbidden.iter().any(|&point| point == (line, col))
     }
@@ -513,8 +542,13 @@ impl Game {
         self.capture.iter().any(|&point| point == (x, y))
     }
 
+    pub fn is_best_move_from_coord(&self, x: usize, y: usize) -> bool {
+        self.best_move.iter().any(|&point| point == (x, y))
+    }
+
     pub fn set_changed(&mut self) -> () {
         self.set_forbidden_pos();
+        self.clear_best_move();
         self.clear_capture();
         self.has_changed = true;
     }
@@ -589,32 +623,33 @@ impl Game {
             if self.players.0.nb_of_catch >= 5 || self.players.1.nb_of_catch >= 5 {
                 self.result = None;
                 self.instant_win = true;
+                self.next_player();
+                self.winner = self.player_to_pawn();
                 true
             } else if let Some(winner) = self.result {
-                let x = self.history.pop();
-                self.next_player();
-                if Some(winner) == self.player_to_pawn() {
-                    if let Some(_) = after_turn_check::check_winner(self) {
-                        self.next_player();
-                        self.instant_win = true;
-                        true
-                    } else {
-                        self.next_player();
-                        if let Some(new_push) = x {
-                            self.history.push(new_push);
+                if self.result != self.player_to_pawn() {
+                    let score_board = heuristic::evaluate_board(&mut self.board);
+                    for x in 0..19 {
+                        for y in 0..19 {
+                            if Some(!winner) == self.board[x][y] {
+                                for dir in 0..4 {
+                                    if score_board[x][y][dir].0 >= 5 {
+                                        self.instant_win = true;
+                                        self.winner = self.player_to_pawn();
+                                        return true;
+                                    }
+                                }
+                            }
                         }
-                        false
                     }
+                    self.result = None;
+                    self.check_win()
                 } else {
-                    if let Some(new_push) = x {
-                        self.history.push(new_push);
-                    }
-                    self.next_player();
                     false
                 }
             } else if let Some(indexes) = after_turn_check::check_winner(self) {
                 self.result = self.player_to_pawn();
-                if let Some(_) = capture::can_capture(self, indexes) {
+                if capture::can_capture(self, indexes) {
                     false
                 } else {
                     let player = self.get_actual_player();
@@ -623,6 +658,10 @@ impl Game {
                     } else {
                         self.result = None;
                         self.instant_win = true;
+                        self.winner = match self.player_to_pawn() {
+                            Some(a) => Some(!a),
+                            _ => unreachable!(),
+                        };
                         true
                     }
                 }
@@ -631,79 +670,43 @@ impl Game {
             }
         }
     }
-    pub fn check_win_hint(&mut self) -> bool {
-        if !self.has_changed {
-            false
-        } else {
-            if self.players.0.nb_of_catch >= 5 || self.players.1.nb_of_catch >= 5 {
-                self.result = None;
-                true
-            } else if let Some(winner) = self.result {
-                let x = self.history.pop();
-                self.next_player();
-                if Some(winner) == self.player_to_pawn() {
-                    if let Some(_) = after_turn_check::check_winner(self) {
-                        self.next_player();
-                        true
-                    } else {
-                        self.next_player();
-                        if let Some(new_push) = x {
-                            self.history.push(new_push);
-                        }
-                        false
-                    }
-                } else {
-                    if let Some(new_push) = x {
-                        self.history.push(new_push);
-                    }
-                    self.next_player();
-                    false
-                }
-            } else if let Some(indexes) = after_turn_check::check_winner(self) {
-                self.result = self.player_to_pawn();
-                if let Some(_) = capture::can_capture(self, indexes) {
-                    false
-                } else {
-                    let player = self.get_actual_player();
-                    if player.nb_of_catch == 4 {
-                        false
-                    } else {
-                        self.result = None;
-                        true
-                    }
-                }
-            } else {
-                false
-            }
-        }
-    }
+
+    //    pub fn check_win_hint(&mut self) -> bool {
+    //        if self.players.0.nb_of_catch >= 5 || self.players.1.nb_of_catch >= 5 {
+    //            true
+    //        } else if let Some(_) = after_turn_check::check_winner(self) {
+    //            true
+    //        } else {
+    //            false
+    //        }
+    //    }
+    //}
+    //impl Game {
+    //    pub fn check_win(&mut self) -> bool {
+    //        if !self.has_changed {
+    //            false
+    //        } else {
+    //            if self.players.0.nb_of_catch >= 5 || self.players.1.nb_of_catch >= 5 {
+    //                self.result = Some(true;
+    //                true
+    //            } else if let Some(indexes) = after_turn_check::check_winner(self) {
+    //                if let Some(captures) = capture::can_capture(self, indexes) {
+    //                    self.add_impossible_vec_index(valid_pos::all_except(captures));
+    //                    false
+    //                } else {
+    //                    let player = self.get_actual_player();
+    //                    if player.nb_of_catch == 4 {
+    //                        let captures = capture::find_capture(self);
+    //                        self.add_impossible_vec_index(valid_pos::all_except(captures));
+    //                        false
+    //                    } else {
+    //                        self.result = true;
+    //                        true
+    //                    }
+    //                }
+    //            } else {
+    //                false
+    //            }
+    //        }
+    //    }
 }
-//impl Game {
-//    pub fn check_win(&mut self) -> bool {
-//        if !self.has_changed {
-//            false
-//        } else {
-//            if self.players.0.nb_of_catch >= 5 || self.players.1.nb_of_catch >= 5 {
-//                self.result = Some(true;
-//                true
-//            } else if let Some(indexes) = after_turn_check::check_winner(self) {
-//                if let Some(captures) = capture::can_capture(self, indexes) {
-//                    self.add_impossible_vec_index(valid_pos::all_except(captures));
-//                    false
-//                } else {
-//                    let player = self.get_actual_player();
-//                    if player.nb_of_catch == 4 {
-//                        let captures = capture::find_capture(self);
-//                        self.add_impossible_vec_index(valid_pos::all_except(captures));
-//                        false
-//                    } else {
-//                        self.result = true;
-//                        true
-//                    }
-//                }
-//            } else {
-//                false
-//            }
-//        }
-//    }
-//}

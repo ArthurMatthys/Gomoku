@@ -19,7 +19,6 @@ pub enum TypeOfPlayer {
 pub struct Player {
     pub player_type: TypeOfPlayer,
     pub nb_of_catch: isize,
-    pub bool_type: Option<bool>,
     pub name: &'static str,
     pub time_spent: Duration,
 }
@@ -30,7 +29,6 @@ impl Player {
         Player {
             player_type: TypeOfPlayer::Unset,
             nb_of_catch: 0,
-            bool_type: None,
             name: "",
             time_spent: Duration::new(0, 0),
         }
@@ -40,11 +38,9 @@ impl Player {
     pub fn set_infos(
         &mut self,
         player_type: TypeOfPlayer,
-        bool_type: Option<bool>,
         name: &'static str,
     ) -> () {
         self.player_type = player_type;
-        self.bool_type = bool_type;
         self.name = name
     }
 
@@ -92,20 +88,20 @@ pub fn initialize_players(nb_player: usize) -> (Player, Player) {
     let mut player2: Player = Player::new();
     match nb_player {
         0 => {
-            player1.set_infos(TypeOfPlayer::Robot, Some(true), "Robot1");
-            player2.set_infos(TypeOfPlayer::Robot, Some(false), "Robot2");
+            player1.set_infos(TypeOfPlayer::Robot, "Robot1");
+            player2.set_infos(TypeOfPlayer::Robot, "Robot2");
         }
         1 => {
-            player1.set_infos(TypeOfPlayer::Human, Some(true), "Human1");
-            player2.set_infos(TypeOfPlayer::Robot, Some(false), "Robot1");
+            player1.set_infos(TypeOfPlayer::Human, "Human1");
+            player2.set_infos(TypeOfPlayer::Robot, "Robot1");
         }
         2 => {
-            player1.set_infos(TypeOfPlayer::Human, Some(true), "Human1");
-            player2.set_infos(TypeOfPlayer::Human, Some(false), "Human2");
+            player1.set_infos(TypeOfPlayer::Human, "Human1");
+            player2.set_infos(TypeOfPlayer::Human, "Human2");
         }
         _ => {
-            player1.set_infos(TypeOfPlayer::Unset, Some(true), "Unset1");
-            player2.set_infos(TypeOfPlayer::Unset, Some(false), "Unset2");
+            player1.set_infos(TypeOfPlayer::Unset, "Unset1");
+            player2.set_infos(TypeOfPlayer::Unset, "Unset2");
         }
     };
     let mut rng = rand::thread_rng();

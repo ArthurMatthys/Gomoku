@@ -9,8 +9,8 @@ use sdl2::event::Event;
 use sdl2::image::LoadTexture;
 use sdl2::keyboard::Keycode;
 use sdl2::render::{Texture, TextureCreator};
-
 use std::thread::sleep;
+
 use std::time::Duration;
 use std::time::Instant;
 
@@ -24,9 +24,23 @@ use render::window;
 
 mod ia;
 use ia::get_ia;
-use ia::heuristic;
-
+use ia::zobrist;
+//use ia::heuristic;
 mod checks;
+
+#[global_allocator]
+static GLOBAL: jemallocator::Jemalloc = jemallocator::Jemalloc;
+
+const DEPTH_MAX: i8 = 10;
+
+//macro_rules! string_of_index {
+//    ($line:expr, $col:expr) => {{
+//        let col: char = std::char::from_u32('A' as u32 + *$col as u32)
+//            .expect("Could not convert number to char");
+//        let line = *$line;
+//        format!("{}{}", col, line)
+//    }};
+//}
 
 const IMAGES: [&str; 46] = [
     "src/content/normal_board.png",
@@ -105,14 +119,14 @@ fn parse_args_and_fill_structs() -> (usize, game::TypeOfParty) {
         .about("Implementation of Gomoku as a school's project")
         .arg(
             Arg::with_name("MODE")
-                .about("What mode to run the program in")
+                .help("What mode to run the program in")
                 .index(1)
                 .possible_values(&["long-pro", "pro", "standard"])
                 .required(true),
         )
         .arg(
             Arg::with_name("NUMBER-OF-PLAYER")
-                .about("Number of Human Players in the game")
+                .help("Number of Human Players in the game")
                 .index(2)
                 .possible_values(&["0", "1", "2"])
                 .required(true),
@@ -159,14 +173,15 @@ pub fn main() {
         .map(|x| get_image!(texture_creator, x))
         .collect::<Vec<Texture>>();
     game.set_changed();
+    let ztable = zobrist::init_zboard();
 
+    let start_game = Instant::now();
     'running: loop {
         if game.actual_player_is_ai().expect("Wrong type of player") {
             let start = Instant::now();
-            let (line, col) = get_ia::get_ia(&mut game);
+            let (line, col) = get_ia::get_ia(&mut game, &ztable, &DEPTH_MAX, &start);
             let end = Instant::now();
             game.set_player_time(end.duration_since(start));
-            println!("{}/{}", line, col);
             game.change_board_from_input(line, col);
             flush_events!(events, 'running);
             //    sleep(Duration::new(1, 0000000));
@@ -194,27 +209,42 @@ pub fn main() {
                     }
                 }
                 Event::KeyDown {
-                    keycode: Some(Keycode::H),
+                    keycode: Some(Keycode::T),
                     ..
                 } => game.set_capture_pos(),
+                Event::KeyDown {
+                    keycode: Some(Keycode::H),
+                    ..
+                } => {
+                    let start = Instant::now();
+                    let (line, col) = get_ia::get_ia(&mut game, &ztable, &4, &start);
+                    game.set_best_move(line, col);
+                }
                 Event::KeyDown {
                     keycode: Some(a), ..
                 } => println!("{}", a),
                 _ => {}
             }
         }
+        //        if game.history.len() == 1 {
+        //            let (dx, dy) = (1isize, -1isize);
+        //            let (new_x, new_y) = game.history[0];
+        //            game.change_board_from_input(
+        //                (new_x as isize + dx) as usize,
+        //                (new_y as isize + dy) as usize,
+        //            );
+        //        }
+
         if game.check_win() {
             break 'running;
         }
-        //        if game.has_changed {
-        //            heuristic::first_heuristic(game.board, None);
-        //        }
         window::render_window(&mut game, &images, &font);
-        // DEBUG for check
-        // if result { use std::process; println!("GAGNE") ; process::exit(0x0100); }
 
         sleep(Duration::new(0, 1_000_000_000u32 / 60));
     }
+    let end_game = Instant::now();
+    let delta = end_game.duration_since(start_game);
+    println!("time : {}.{}", delta.as_secs(), delta.subsec_millis());
     if game.instant_win {
         window::render_window(&mut game, &images, &font);
         'ending: loop {

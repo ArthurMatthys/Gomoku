@@ -139,11 +139,10 @@ pub fn render_score(game: &mut game::Game, font: &sdl2::ttf::Font) -> () {
     }
 
     //game status
-    if game.instant_win {
-        let winner = match game.history.len() % 2 {
-            0 => "Player 2 won",
-            1 => "Player 1 won",
-            _ => unreachable!(),
+    if let Some(a) = game.winner {
+        let winner = match a {
+            true => "Player 2 won",
+            false => "Player 1 won",
         };
         render_text!(
             font,

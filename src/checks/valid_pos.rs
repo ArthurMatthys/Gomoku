@@ -4,10 +4,10 @@ pub fn all_except(valid_pos: Vec<(usize, usize)>) -> Vec<(usize, usize)> {
     let mut ret: Vec<(usize, usize)> = vec![];
     for i in 0..19 {
         for j in 0..19 {
-            if valid_pos.iter().any(|&index| index == (i,j)) {
+            if valid_pos.iter().any(|&index| index == (i, j)) {
                 continue;
             } else {
-                ret.push((i,j));
+                ret.push((i, j));
             }
         }
     }
