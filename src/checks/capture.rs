@@ -13,6 +13,18 @@ pub const DIRS: [(isize, isize); 8] = [
     (-1, -1),
 ];
 
+pub const DIRS_0: [(isize, isize); 9] = [
+    (1, 1),
+    (1, 0),
+    (1, -1),
+    (0, 1),
+    (0, 0),
+    (0, -1),
+    (-1, 1),
+    (-1, 0),
+    (-1, -1),
+];
+
 pub fn valid_dir(
     (line, col): &(isize, isize),
     (dir_line, dir_col): (isize, isize),
@@ -157,7 +169,7 @@ pub fn find_capture(game: &mut game::Game) -> Vec<(usize, usize)> {
 }
 
 pub fn can_capture(game: &mut game::Game, to_capture: Vec<(isize, isize)>) -> bool {
-    let score_board = heuristic::evaluate_board(&mut game.board);
+    let score_board = heuristic::evaluate_board(&mut game.board.into());
     for &(x, y) in to_capture.iter() {
         let new_x = x as usize;
         let new_y = y as usize;

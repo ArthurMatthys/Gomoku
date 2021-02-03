@@ -3,6 +3,7 @@
 // use rand::thread_rng;
 use super::super::checks::capture;
 use super::super::model::game;
+use super::super::model::board::Board;
 use super::super::render::board::SIZE_BOARD;
 use super::handle_board::{
     board_state_win, change_board, change_board_hint, find_continuous_threats, get_space,
@@ -19,7 +20,7 @@ use std::cmp;
 const MIN_INFINITY: i64 = i64::min_value() + 1;
 const MAX_INFINITY: i64 = i64::max_value();
 const DEPTH_THREATS: i8 = 10;
-const LIMIT_DURATION: time::Duration = time::Duration::from_millis(480);
+const LIMIT_DURATION: time::Duration = time::Duration::from_millis(495);
 
 macro_rules! get_opp {
     ($e:expr) => {
@@ -31,13 +32,13 @@ macro_rules! get_opp {
 }
 
 fn find_winning_align(
-    board: &mut [[Option<bool>; SIZE_BOARD]; SIZE_BOARD],
+    board: &mut Board,
     score_board: &mut [[[(u8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD],
     actual: Option<bool>,
 ) -> bool {
     for line in 0..SIZE_BOARD {
         for col in 0..SIZE_BOARD {
-            if board[line][col] == actual {
+            if board.get_pawn(line, col) == actual {
                 for dir in 0..4 {
                     if score_board[line][col][dir].0 >= 5 {
                         return true;
@@ -51,7 +52,7 @@ fn find_winning_align(
 
 // negamax_try
 fn ab_negamax(
-    board: &mut [[Option<bool>; SIZE_BOARD]; SIZE_BOARD],
+    board: &mut Board,
     table: &[[[u64; 2]; SIZE_BOARD]; SIZE_BOARD],
     score_board: &mut [[[(u8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD],
     zhash: &mut u64,
@@ -73,6 +74,7 @@ fn ab_negamax(
         // println!("DAAAAAMMMNN: {}", current_depth);
         return None;
     }
+//    println!("here1");
     let mut tte = zobrist::retrieve_tt_from_hash(tt, zhash);
     let alpha_orig = *alpha;
     *counter_tree += 1;
@@ -90,6 +92,7 @@ fn ab_negamax(
         }
     }
 
+//    println!("here2");
     if *opp_catch >= 5 {
         return Some((-heuristic::INSTANT_WIN * ((*depth_max - *current_depth) as i64 + 1), None));
     } else if find_winning_align(board, score_board, actual) {
@@ -107,6 +110,7 @@ fn ab_negamax(
         return Some((weight, None));
     }
 
+//    println!("here3");
     // Otherwise bubble up values from below
     let mut best_move: Option<(usize, usize)> = None;
     let mut best_score = MIN_INFINITY;
@@ -114,8 +118,9 @@ fn ab_negamax(
 
     if tte.is_valid && tte.depth >= *depth_max - *current_depth {
         // println!("rentré");
+//        println!("here4");
         if let Some((line, col)) = tte.r#move {
-            if board[line][col] == None {
+            if board.get_pawn(line, col) == None {
                 let removed = change_board(board, score_board, line, col, actual, table, zhash);
                 *actual_catch += removed.len() as isize;
 
@@ -137,6 +142,7 @@ fn ab_negamax(
                     counter_tree,
                     start_time
                 );
+//                println!("here5");
 
                 match value {
                     // None => return None,
@@ -159,6 +165,7 @@ fn ab_negamax(
                         }
                     }
                 }
+//                println!("here6");
                 // else {
                 //     best_score = MIN_INFINITY;
                 //     best_move = None;
@@ -167,6 +174,7 @@ fn ab_negamax(
         }
     }
 
+//    println!("here7");
     if !trig {
         // Collect moves
         let available_positions = get_space(board, score_board, actual, *actual_catch);
@@ -175,6 +183,7 @@ fn ab_negamax(
         //     print!("[({}:{})|{}]", x,  y, z);
         // });
         // println!("");
+//        println!("here8");
         let mut tmp_curr_depth = *current_depth + 1;
         // let calc_depth = cmp::min(((*depth_max - *current_depth) / 2) + *current_depth, *depth_max);
         for (index, &(line, col, _)) in available_positions.iter().enumerate() {
@@ -186,6 +195,7 @@ fn ab_negamax(
             }
 
             // Recurse
+//            println!("here9");
             let value = ab_negamax(
                 board,
                 table,
@@ -205,6 +215,7 @@ fn ab_negamax(
                 start_time
             );
 
+//            println!("here10");
             match value {
                 None => { 
                     *actual_catch -= removed.len() as isize;
@@ -237,6 +248,7 @@ fn ab_negamax(
                     }
                 }
             }
+//            println!("here11");
         }
     }
 
@@ -247,6 +259,7 @@ fn ab_negamax(
     } else {
         tte.r#type = zobrist::TypeOfEl::Exact;
     }
+//    println!("here12");
     tte.is_valid = true;
     tte.key = *zhash;
     tte.value = best_score;
@@ -258,7 +271,7 @@ fn ab_negamax(
 }
 
 fn mtdf(
-    board: &mut [[Option<bool>; SIZE_BOARD]; SIZE_BOARD],
+    board: &mut Board,
     table: &[[[u64; 2]; SIZE_BOARD]; SIZE_BOARD],
     zhash: &mut u64,
     tt: &mut Vec<zobrist::TT>,
@@ -330,7 +343,7 @@ fn mtdf(
 }
 
 pub fn iterative_deepening_mtdf(
-    board: &mut [[Option<bool>; SIZE_BOARD]; SIZE_BOARD],
+    board: &mut Board,
     score_board: &mut [[[(u8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD],
     table: &[[[u64; 2]; SIZE_BOARD]; SIZE_BOARD],
     zhash: &mut u64,
@@ -344,8 +357,8 @@ pub fn iterative_deepening_mtdf(
     start_time: &time::Instant,
     null_move: bool
 ) -> (i64,(usize, usize)) {
-    // println!("========================");
-    // println!("Entering Iterative MTDF");
+//    println!("========================");
+//    println!("Entering Iterative MTDF");
     // print_board(board);
     // println!();
     let mut ret = (MIN_INFINITY,(0, 0));
@@ -422,7 +435,7 @@ fn ia(
     // println!("enter_ia: {}",end.duration_since(*start_time).as_secs_f64());
     let mut player_catch = game.get_actual_player().nb_of_catch;
     let mut opponent_catch = game.get_opponent().nb_of_catch;
-    let mut board = game.board;
+    let mut board: Board = game.board.into();
     let mut score_board = heuristic::evaluate_board(&mut board);
     let pawn = game.player_to_pawn();
     let mut tt = zobrist::initialize_transposition_table();
@@ -526,29 +539,31 @@ mod tests {
         depth_max: &i8,
         expected_result: (usize, usize),
     ) -> bool {
-        let mut board = [[None; SIZE_BOARD]; SIZE_BOARD];
+        let mut bboard = [[None; SIZE_BOARD]; SIZE_BOARD];
         white_pos
             .iter()
-            .for_each(|&(x, y)| board[x][y] = Some(true));
+            .for_each(|&(x, y)| bboard[x][y] = Some(true));
         black_pos
             .iter()
-            .for_each(|&(x, y)| board[x][y] = Some(false));
+            .for_each(|&(x, y)| bboard[x][y] = Some(false));
+        let mut board: Board = bboard.into();
         let mut score_board = heuristic::evaluate_board(&mut board);
         let mut tt = zobrist::initialize_transposition_table();
         let ztable = zobrist::init_zboard();
-        let mut hash = zobrist::board_to_zhash(&mut board, &ztable);
+        let mut hash = zobrist::board_to_zhash(&mut bboard, &ztable);
         println!("// Initial configuration:");
-        for i in 0..19 {
-            print!("// ");
-            for j in 0..19 {
-                match board[j][i] {
-                    Some(true) => print!("⊖"),
-                    Some(false) => print!("⊕"),
-                    None => print!("_"),
-                }
-            }
-            println!();
-        }
+        board.print();
+//        for i in 0..19 {
+//            print!("// ");
+//            for j in 0..19 {
+//                match board[j][i] {
+//                    Some(true) => print!("⊖"),
+//                    Some(false) => print!("⊕"),
+//                    None => print!("_"),
+//                }
+//            }
+//            println!();
+//        }
         let mut counter_tree:u64 = 0;
         let stime_mtdf = time::Instant::now();
         let result = mtdf(
@@ -578,7 +593,7 @@ mod tests {
                         } else if i == y && j == x && actual == Some(true) {
                             print!("⊙");
                         } else {
-                            match board[j][i] {
+                            match board.get_pawn(j, i){
                                 Some(true) => print!("⊖"),
                                 Some(false) => print!("⊕"),
                                 None => print!("_"),

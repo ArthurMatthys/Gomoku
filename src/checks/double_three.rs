@@ -1,4 +1,5 @@
 use super::super::model::game;
+use super::super::model::board::Board;
 use super::super::render::board::SIZE_BOARD;
 use super::after_turn_check;
 use super::capture;
@@ -116,14 +117,8 @@ pub fn check_double_three(game: &mut game::Game) -> Vec<(usize, usize)> {
     ret
 }
 
-macro_rules! valid_coord {
-    ($e:expr, $v:expr) => {
-        $e >= 0 && $v >= 0 && ($e as usize) < SIZE_BOARD && ($v as usize) < SIZE_BOARD
-    };
-}
-
 fn is_free_tree_hint(
-    board: &mut [[Option<bool>; SIZE_BOARD]; SIZE_BOARD],
+    board: &mut Board,
     (line, col): (isize, isize),
     current: Option<bool>,
     (dir_line, dir_col): (isize, isize),
@@ -142,50 +137,89 @@ fn is_free_tree_hint(
             //                    (line + dir_line * moves * i, col + dir_col * moves * i);
             new_index_line += new_dir_line;
             new_index_col += new_dir_col;
-            if valid_coord!(new_index_line, new_index_col) {
-                match board[new_index_line as usize][new_index_col as usize] {
-                    //  If I am on an empty position
-                    None => {
-                        // Check wether we already met an empty position
-                        // If yes
-                        if parts[index_part][1] == 1 {
-                            if parts[index_part][2] + parts[index_part][0] != 0 {
-                                parts[index_part][3] = 1;
-                            }
-                            break;
-                        // Else, increment second index
-                        } else {
-                            parts[index_part][1] = 1;
-                        }
-                    }
-                    // If I am on a competitors pawn, break
-                    x if x != current => {
-                        if parts[index_part][1] == 1 && parts[index_part][2] == 0 {
-                            parts[index_part][3] = 1;
-                        } else if parts[index_part][1] == 1 && parts[index_part][2] > 0 {
-                            parts[index_part][2] = 0;
+            match board.get(new_index_line as usize, new_index_col as usize){
+                //  If I am on an empty position
+                Some(None) => {
+                    // Check wether we already met an empty position
+                    // If yes
+                    if parts[index_part][1] == 1 {
+                        if parts[index_part][2] + parts[index_part][0] != 0 {
                             parts[index_part][3] = 1;
                         }
                         break;
+                    // Else, increment second index
+                    } else {
+                        parts[index_part][1] = 1;
                     }
-                    // If I am on the player's pawn
-                    x if x == current => {
-                        // If I have met an empty position, increment the index 2 of the vec
-                        if parts[index_part][1] == 1 {
-                            parts[index_part][2] += 1;
-                        // Else, increment the index on positon 0
-                        } else {
-                            parts[index_part][0] += 1;
-                        }
+                }
+                // If I am on the player's pawn
+                Some(x) if x == current => {
+                    // If I have met an empty position, increment the index 2 of the vec
+                    if parts[index_part][1] == 1 {
+                        parts[index_part][2] += 1;
+                    // Else, increment the index on positon 0
+                    } else {
+                        parts[index_part][0] += 1;
                     }
-                    _ => unreachable!(),
-                };
-            //                moves += 1;
-            // Check next move
-            // If we are on an invalid position, break
-            } else {
-                break;
+                }
+                // If I am on a competitors pawn, break
+                Some(x) if x != current => {
+                    if parts[index_part][1] == 1 && parts[index_part][2] == 0 {
+                        parts[index_part][3] = 1;
+                    } else if parts[index_part][1] == 1 && parts[index_part][2] > 0 {
+                        parts[index_part][2] = 0;
+                        parts[index_part][3] = 1;
+                    }
+                    break;
+                }
+                Some(_) => unreachable!(),
+                None => break,
+
             }
+//            if valid_coord!(new_index_line, new_index_col) {
+//                match board[new_index_line as usize][new_index_col as usize] {
+//                    //  If I am on an empty position
+//                    None => {
+//                        // Check wether we already met an empty position
+//                        // If yes
+//                        if parts[index_part][1] == 1 {
+//                            if parts[index_part][2] + parts[index_part][0] != 0 {
+//                                parts[index_part][3] = 1;
+//                            }
+//                            break;
+//                        // Else, increment second index
+//                        } else {
+//                            parts[index_part][1] = 1;
+//                        }
+//                    }
+//                    // If I am on a competitors pawn, break
+//                    x if x != current => {
+//                        if parts[index_part][1] == 1 && parts[index_part][2] == 0 {
+//                            parts[index_part][3] = 1;
+//                        } else if parts[index_part][1] == 1 && parts[index_part][2] > 0 {
+//                            parts[index_part][2] = 0;
+//                            parts[index_part][3] = 1;
+//                        }
+//                        break;
+//                    }
+//                    // If I am on the player's pawn
+//                    x if x == current => {
+//                        // If I have met an empty position, increment the index 2 of the vec
+//                        if parts[index_part][1] == 1 {
+//                            parts[index_part][2] += 1;
+//                        // Else, increment the index on positon 0
+//                        } else {
+//                            parts[index_part][0] += 1;
+//                        }
+//                    }
+//                    _ => unreachable!(),
+//                };
+//            //                moves += 1;
+//            // Check next move
+//            // If we are on an invalid position, break
+//            } else {
+//                break;
+//            }
         }
     }
     let tot = (
@@ -205,7 +239,7 @@ fn is_free_tree_hint(
 }
 
 pub fn check_double_three_hint(
-    board: &mut [[Option<bool>; SIZE_BOARD]; SIZE_BOARD],
+    board: &mut Board,
     actual_player: Option<bool>,
     x: isize,
     y: isize,
@@ -265,7 +299,7 @@ mod tests {
         }
 
         let ret = check_double_three_hint(
-            &mut test_board,
+            &mut test_board.into(),
             actual_player,
             x,
             y,

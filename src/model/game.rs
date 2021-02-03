@@ -3,6 +3,7 @@ extern crate sdl2;
 
 use sdl2::render::Canvas;
 
+use super::super::model::board::Board;
 use super::super::checks::after_turn_check;
 use super::super::checks::capture;
 use super::super::checks::double_three;
@@ -628,7 +629,7 @@ impl Game {
                 true
             } else if let Some(winner) = self.result {
                 if self.result != self.player_to_pawn() {
-                    let score_board = heuristic::evaluate_board(&mut self.board);
+                    let score_board = heuristic::evaluate_board(&mut self.board.into());
                     for x in 0..19 {
                         for y in 0..19 {
                             if Some(!winner) == self.board[x][y] {

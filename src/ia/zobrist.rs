@@ -4,6 +4,7 @@ use super::super::render::board;
 
 const LENGTH_TT: u64 = 4194319;
 
+
 // Type of element in TT
 #[derive(Copy, Clone, PartialEq)]
 pub enum TypeOfEl {
