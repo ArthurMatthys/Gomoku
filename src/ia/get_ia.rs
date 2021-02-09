@@ -4,6 +4,7 @@
 use super::super::checks::capture;
 use super::super::model::game;
 use super::super::model::board::Board;
+use super::super::model::score_board::ScoreBoard;
 use super::super::render::board::SIZE_BOARD;
 use super::handle_board::{
     board_state_win, change_board, change_board_hint, find_continuous_threats, get_space,
@@ -33,15 +34,18 @@ macro_rules! get_opp {
 
 fn find_winning_align(
     board: &mut Board,
-    score_board: &mut [[[(u8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD],
+    score_board: &mut ScoreBoard,
     actual: Option<bool>,
 ) -> bool {
     for line in 0..SIZE_BOARD {
         for col in 0..SIZE_BOARD {
             if board.get_pawn(line, col) == actual {
                 for dir in 0..4 {
-                    if score_board[line][col][dir].0 >= 5 {
-                        return true;
+                    match score_board.get(line, col, dir) {
+                        (a, _, _) if a >= 5 => {
+                            return true;
+                        }
+                        _ => (),
                     }
                 }
             }
@@ -54,7 +58,7 @@ fn find_winning_align(
 fn ab_negamax(
     board: &mut Board,
     table: &[[[u64; 2]; SIZE_BOARD]; SIZE_BOARD],
-    score_board: &mut [[[(u8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD],
+    score_board: &mut ScoreBoard,
     zhash: &mut u64,
     tt: &mut Vec<zobrist::TT>,
     current_depth: &mut i8,
@@ -190,9 +194,9 @@ fn ab_negamax(
             let removed = change_board(board, score_board, line, col, actual, table, zhash);
             *actual_catch += removed.len() as isize;
 
-            if index == 5 {
-                tmp_curr_depth = cmp::min(*current_depth + 3, *depth_max);
-            }
+            // if index == 5 {
+            //     tmp_curr_depth = cmp::min(*current_depth + 3, *depth_max);
+            // }
 
             // Recurse
 //            println!("here9");
@@ -281,7 +285,7 @@ fn mtdf(
     beta: &mut i64,
     depth_max: &i8,
     firstguess: i64,
-    score_board: &mut [[[(u8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD],
+    score_board: &mut ScoreBoard,
     counter_tree: &mut u64,
     start_time: &time::Instant
 ) -> Option<(i64, (usize, usize))> {
@@ -344,7 +348,7 @@ fn mtdf(
 
 pub fn iterative_deepening_mtdf(
     board: &mut Board,
-    score_board: &mut [[[(u8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD],
+    score_board: &mut ScoreBoard,
     table: &[[[u64; 2]; SIZE_BOARD]; SIZE_BOARD],
     zhash: &mut u64,
     tt: &mut Vec<zobrist::TT>,

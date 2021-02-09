@@ -1,5 +1,6 @@
 use super::super::checks::after_turn_check::DIRECTIONS;
 use super::super::model::board::Board;
+use super::super::model::score_board::ScoreBoard;
 //use super::super::checks::capture::DIRS;
 use super::super::checks::double_three::check_double_three_hint;
 use super::super::render::board::SIZE_BOARD;
@@ -201,7 +202,7 @@ fn capture_blank(
 }
 
 fn capture_coordinates_and_blank(
-    score_board: &mut [[[(u8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD],
+    score_board: &mut ScoreBoard,
     board: &mut Board,
     actual_player: Option<bool>,
     x: usize,
@@ -214,7 +215,7 @@ fn capture_coordinates_and_blank(
             continue;
         } else {
             let (mut new_line, mut new_col): (isize, isize) = (x as isize, y as isize);
-            match score_board[x][y][new_dir] {
+            match score_board.get(x, y, new_dir){
                 (2, Some(true), Some(false)) => {
                     explore_align_light!(board, new_line, new_col, actual_player, new_dir, 1);
                     coordinates.push((new_line as usize, new_col as usize));
@@ -245,8 +246,8 @@ fn capture_coordinates_and_blank(
                             (false, false) => (x as isize, y as isize),
                         };
                     match (
-                        score_board[new_line2 as usize][new_col2 as usize][new_dir],
-                        score_board[new_line3 as usize][new_col3 as usize][new_dir],
+                        score_board.get(new_line2 as usize, new_col2 as usize, new_dir),
+                        score_board.get(new_line3 as usize, new_col3 as usize, new_dir),
                     ) {
                         ((1, Some(true), Some(false)), (0, Some(false), Some(false))) => {
                             coordinates.push((new_line3 as usize, new_col3 as usize));
@@ -279,7 +280,7 @@ fn capture_coordinates_and_blank(
 }
 
 fn capture_coordinates(
-    score_board: &mut [[[(u8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD],
+    score_board: &mut ScoreBoard,
     board: &mut Board,
     actual_player: Option<bool>,
     x: usize,
@@ -293,7 +294,7 @@ fn capture_coordinates(
         } else {
             let (mut new_line, mut new_col): (isize, isize) = (x as isize, y as isize);
 
-            match score_board[x][y][new_dir] {
+            match score_board.get(x, y, new_dir){
                 (2, Some(true), Some(false)) => {
                     explore_align_light!(board, new_line, new_col, actual_player, new_dir, 1);
                     coordinates.push((new_line as usize, new_col as usize));
@@ -310,7 +311,7 @@ fn capture_coordinates(
 }
 
 pub fn capture_coordinates_vec(
-    score_board: &mut [[[(u8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD],
+    score_board: &mut ScoreBoard,
     board: &mut Board,
     actual_player: Option<bool>,
     coord: Vec<(usize, usize)>,
@@ -323,7 +324,7 @@ pub fn capture_coordinates_vec(
 }
 
 fn explore_and_find_threats(
-    score_board: &mut [[[(u8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD],
+    score_board: &mut ScoreBoard,
     board: &mut Board,
     limit: usize,
     orientation: isize,
@@ -357,7 +358,7 @@ fn explore_and_find_threats(
 }
 
 fn manage_so(
-    score_board: &mut [[[(u8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD],
+    score_board: &mut ScoreBoard,
     board: &mut Board,
     record: &mut [[[bool; 4]; SIZE_BOARD]; SIZE_BOARD],
     actual_player: Option<bool>,
@@ -374,9 +375,9 @@ fn manage_so(
     let (cline, ccol) = (new_line, new_col);
     if valid_coord!(nline, ncol)
         && board.get_pawn(nline as usize, ncol as usize) == actual_player
-        && score_board[nline as usize][ncol as usize][dir].0 > 0
+        && score_board.get(nline as usize, ncol as usize, dir).0 > 0
     {
-        match score_board[nline as usize][ncol as usize][dir].0 {
+        match score_board.get(nline as usize, ncol as usize, dir).0 {
             x if x >= 5 => {} // Instant win, no need to do manage it, we see it in the recursive!
             4 => {
                 all_threats.push((
@@ -455,7 +456,7 @@ fn manage_so(
 }
 fn connect_4(
     (line, col): (usize, usize),
-    score_board: &mut [[[(u8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD],
+    score_board: &mut ScoreBoard,
     board: &mut Board,
     record: &mut [[[bool; 4]; SIZE_BOARD]; SIZE_BOARD],
     actual_player: Option<bool>,
@@ -465,7 +466,7 @@ fn connect_4(
     let new_col: isize = col as isize;
     let mut all_threats: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![];
 
-    match (score_board[line][col][dir].1, score_board[line][col][dir].2) {
+    match (score_board.get(line, col, dir).1, score_board.get(line, col, dir).2) {
         (Some(true), Some(false)) | (None, Some(false)) => {
             manage_so(
                 score_board,
@@ -579,14 +580,14 @@ fn remove_duplicates_pos(coords: Vec<(usize, usize)>) -> Vec<(usize, usize)> {
 
 pub fn connect_2(
     board: &mut Board,
-    score_board: &mut [[[(u8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD],
+    score_board: &mut ScoreBoard,
     record: &mut [[[bool; 4]; SIZE_BOARD]; SIZE_BOARD],
     actual_player: Option<bool>,
     (x, y): (usize, usize),
     dir: usize,
 ) -> Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> {
     let mut ret: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = Vec::with_capacity(2);
-    let focused_tuple = score_board[x][y][dir as usize];
+    let focused_tuple = score_board.get(x, y, dir as usize);
     let (dx, dy) = DIRECTIONS[dir];
 
     record[x][y][dir] = false;
@@ -610,8 +611,8 @@ pub fn connect_2(
                 break;
             }
             match board.get(cursor_x as usize, cursor_y as usize){
-                Some(a) if a == actual_player =>{
-                    align_ally = score_board[cursor_x as usize][cursor_y as usize][dir].0
+                Some(a) if a == actual_player => {
+                    align_ally = score_board.get(cursor_x as usize, cursor_y as usize, dir).0
                 }
                 Some(None) => space += 1,
                 Some(_) => break,
@@ -646,8 +647,8 @@ pub fn connect_2(
                         if valid_coord!((new_x + way * dx), (new_y + way * dy)) {
                             let (tmp_edge, _) = get_edges!(
                                 way,
-                                score_board[(new_x + way * dx) as usize]
-                                    [(new_y + way * dy) as usize][dir]
+                                score_board.get((new_x + way * dx) as usize,
+                                    (new_y + way * dy) as usize, dir)
                             );
                             ally_edge = tmp_edge;
                         }
@@ -839,8 +840,8 @@ pub fn connect_2(
                         if valid_coord!((new_x + way * dx), (new_y + way * dy)) {
                             let (tmp_edge, _) = get_edges!(
                                 way,
-                                score_board[(new_x + way * dx) as usize]
-                                    [(new_y + way * dy) as usize][dir]
+                                score_board.get((new_x + way * dx) as usize,
+                                    (new_y + way * dy) as usize, dir)
                             );
                             ally_edge = tmp_edge;
                         }
@@ -1010,14 +1011,14 @@ pub fn connect_2(
 
 pub fn connect_3(
     board: &mut Board,
-    score_board: &mut [[[(u8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD],
+    score_board: &mut ScoreBoard,
     record: &mut [[[bool; 4]; SIZE_BOARD]; SIZE_BOARD],
     actual_player: Option<bool>,
     (x, y): (usize, usize),
     dir: usize,
 ) -> Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> {
     let mut ret: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = Vec::with_capacity(2);
-    let focused_tuple = score_board[x][y][dir as usize];
+    let focused_tuple = score_board.get(x, y, dir as usize);
     let (dx, dy) = DIRECTIONS[dir];
 
     record[x][y][dir] = false;
@@ -1042,7 +1043,7 @@ pub fn connect_3(
             }
             match board.get(cursor_x as usize, cursor_y as usize){
                 Some(a) if a == actual_player =>{
-                    align_ally = score_board[cursor_x as usize][cursor_y as usize][dir].0
+                    align_ally = score_board.get(cursor_x as usize, cursor_y as usize, dir).0
                 }
                 Some(None) => space += 1,
                 Some(_) => break,
@@ -1252,7 +1253,7 @@ pub fn connect_3(
 
 pub fn threat_search_space(
     board: &mut Board,
-    score_board: &mut [[[(u8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD],
+    score_board: &mut ScoreBoard,
     actual_player: Option<bool>,
     actual_take: &mut isize,
 ) -> Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> {
@@ -1282,7 +1283,7 @@ pub fn threat_search_space(
                 for dir in 0..4 {
                     if record[line][col][dir] {
                         let ret: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> =
-                            match score_board[line][col][dir].0 {
+                            match score_board.get(line, col, dir).0 {
                                 5..=9 => vec![((line, col), TypeOfThreat::AlreadyWon, vec![])],
 
                                 4 => connect_4(
@@ -1344,7 +1345,7 @@ pub fn threat_search_space(
             } else if board.get_pawn(line, col) == get_opp!(actual_player) {
                 for dir in 0..4 {
                     let (mut new_line, mut new_col): (isize, isize) = (line as isize, col as isize);
-                    match score_board[line][col][dir] {
+                    match score_board.get(line, col, dir){
                         (2, Some(true), Some(false)) => {
                             // println!("ici");
                             explore_align_light!(

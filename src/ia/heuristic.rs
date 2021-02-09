@@ -1,6 +1,7 @@
 use super::super::checks::after_turn_check::DIRECTIONS;
 // use super::super::checks::double_three::check_double_three_hint;
 use super::super::model::board::Board;
+use super::super::model::score_board::ScoreBoard;
 // use super::threat_space::*;
 use std::thread::sleep;
 use std::time::Duration;
@@ -36,7 +37,7 @@ macro_rules! explore_align_light {
 
 pub fn evaluate_board(
     board: &mut Board,
-) -> [[[(u8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD] {
+) -> ScoreBoard {
     let mut score_tab: [[[(u8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD] =
         [[[(0, Some(false), Some(false)); 4]; SIZE_BOARD]; SIZE_BOARD];
     for x in 0..SIZE_BOARD {
@@ -119,7 +120,7 @@ pub fn evaluate_board(
             }
         }
     }
-    score_tab
+    score_tab.into()
 }
 
 pub const INSTANT_WIN: i64 = 1000000000000000;
@@ -188,7 +189,7 @@ fn score_to_points(
 
 pub fn first_heuristic_hint(
     board: &mut Board,
-    score_board: &mut [[[(u8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD],
+    score_board: &mut ScoreBoard,
     player_actual: Option<bool>,
     player_actual_catch: &mut isize,
     player_opposite_catch: &mut isize,
@@ -202,7 +203,7 @@ pub fn first_heuristic_hint(
 
 fn get_alignements(
     board: &mut Board,
-    score_board: &mut [[[(u8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD],
+    score_board: &mut ScoreBoard,
     player_actual: Option<bool>,
 ) -> (
     (u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8),
@@ -249,7 +250,7 @@ fn get_alignements(
                     Some(Some(a)) if a != actual_pawn => break,
                     Some(Some(a)) if a == actual_pawn => {
                          if changed == 1 {
-                             free_space += score_board[new_x as usize][new_y as usize][dir].0 as u8;
+                             free_space += score_board.get(new_x as usize, new_y as usize, dir).0 as u8;
                          }
                     }
                     Some(Some(_)) => unreachable!(),
@@ -370,7 +371,7 @@ fn get_alignements(
             if dir == new_dir {
                 continue;
             } else {
-                match score_board[x][y][new_dir] {
+                match score_board.get(x, y, new_dir) {
                     (2, Some(true), Some(false)) => return true,
                     (2, Some(false), Some(true)) => return true,
                     _ => continue,
@@ -390,7 +391,7 @@ fn get_alignements(
                             if new_dir == dir {
                                 continue;
                             } else {
-                                match score_board[new_x as usize][new_y as usize][new_dir] {
+                                match score_board.get(new_x as usize, new_y as usize, new_dir) {
                                     (2, Some(true), Some(false)) => return true,
                                     (2, Some(false), Some(true)) => return true,
                                     _ => continue,
@@ -433,7 +434,7 @@ fn get_alignements(
                         status_pawn: Option<bool>|
      -> () {
         for dir in 0..4 {
-            match score_board[x][y][dir] {
+            match score_board.get(x, y, dir) {
                 (1, _, _) => continue,
                 (2, left, right) => match handle_2(dir, x, y, status_pawn, left, right) {
                     0 => actual_tuple.9 += 1,
@@ -467,15 +468,7 @@ fn get_alignements(
                 }
                 (a, _, _) => {
                     board.print();
-                    for i in 0..19 {
-                        for j in 0..19 {
-                            for dir in 0..4 {
-                                print!("{:2}", score_board[j][i][dir].0);
-                            }
-                            print!("||");
-                        }
-                        println!();
-                    }
+                    score_board.print();
                     println!("len : {}, ({},{})", a, x, y);
                     sleep(Duration::new(15, 1_000_000_000u32 / 60));
                     unreachable!()

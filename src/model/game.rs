@@ -3,7 +3,7 @@ extern crate sdl2;
 
 use sdl2::render::Canvas;
 
-use super::super::model::board::Board;
+use super::super::model::score_board::ScoreBoard;
 use super::super::checks::after_turn_check;
 use super::super::checks::capture;
 use super::super::checks::double_three;
@@ -634,7 +634,7 @@ impl Game {
                         for y in 0..19 {
                             if Some(!winner) == self.board[x][y] {
                                 for dir in 0..4 {
-                                    if score_board[x][y][dir].0 >= 5 {
+                                    if score_board.get(x, y, dir).0 >= 5 {
                                         self.instant_win = true;
                                         self.winner = self.player_to_pawn();
                                         return true;
@@ -655,6 +655,7 @@ impl Game {
                 } else {
                     let player = self.get_actual_player();
                     if player.nb_of_catch == 4 {
+                        println!("yo");
                         false
                     } else {
                         self.result = None;

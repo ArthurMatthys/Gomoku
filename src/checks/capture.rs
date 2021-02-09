@@ -174,13 +174,11 @@ pub fn can_capture(game: &mut game::Game, to_capture: Vec<(isize, isize)>) -> bo
         let new_x = x as usize;
         let new_y = y as usize;
         for dir in 0..4 {
-            if score_board[new_x][new_y][dir].0 == 2
-                && ((score_board[new_x][new_y][dir].1 == Some(false)
-                    && score_board[new_x][new_y][dir].2 == Some(true))
-                    || (score_board[new_x][new_y][dir].1 == Some(true)
-                        && score_board[new_x][new_y][dir].2 == Some(false)))
-            {
-                return true;
+            match score_board.get(new_x, new_y, dir) {
+                (a, l, r) if a == 2 && ((l == Some(false) && r == Some(true)) || (l == Some (true) && r == Some(false))) => {
+                    return true
+                }
+                _ => (),
             }
         }
     }
