@@ -21,7 +21,7 @@ use std::cmp;
 
 const MIN_INFINITY: i64 = i64::min_value() + 1;
 const MAX_INFINITY: i64 = i64::max_value();
-const DEPTH_THREATS: i8 = 10;
+// const DEPTH_THREATS: i8 = 10;
 const LIMIT_DURATION: time::Duration = time::Duration::from_millis(495);
 
 macro_rules! get_opp {
@@ -344,59 +344,37 @@ fn mtdf(
 }
 
 pub fn iterative_deepening_mtdf(
-    board: &mut Board,
-    score_board: &mut ScoreBoard,
-    // table: &[[[u64; 2]; SIZE_BOARD]; SIZE_BOARD],
-    zhash: &mut u64,
-    actual: Option<bool>,
-    actual_catch: &mut isize,
-    opp_catch: &mut isize,
-    beta: &mut i64,
-    depth_max: &i8,
-    // game: &mut game::Game,
-    start_time: &time::Instant,
-    // null_move: bool
+    params: &mut ParamsIA
 ) -> (i64,(usize, usize)) {
-//    println!("========================");
-//    println!("Entering Iterative MTDF");
-    // print_board(board);
-    // println!();
     let mut ret = (MIN_INFINITY,(0, 0));
-    let mut f = 0;
-    // let mut f = match actual {
-    //     Some(true) => game.firstguess.0,
-    //     Some(false) => game.firstguess.1,
-    //     None => unreachable!(),
-    // };
-    // let limit_duration = time::Duration::from_millis(480);
+    // To verify, if behavior changes or not
+    let actual_catch2 = params.actual_catch;
+    let opp_catch2 = params.opp_catch;
+    
+    for d in (2..(params.depth_max + 1)).step_by(2) {
+        // Check if necessary
+        params.opp_catch = actual_catch2;
+        params.actual_catch = opp_catch2;
+        
+        params.counter_tree = 0;
 
-    // println!("before- f: {}", f);
-    // for d in [2, 3, 5].iter() {
-    for d in (2..(depth_max + 1)).step_by(2) {
-        let mut beta2 = *beta;
-        let mut actual_catch2 = *actual_catch;
-        let mut opp_catch2 = *opp_catch;
-
-        // for d in (1..DEPTH_MAX).step_by(2) {
-        //    println!("debug: {}|{}|{}|{}|{}|{}|", *alpha, *beta, actual_catch2, opp_catch2, d, *zhash);
-        let mut counter_tree:u64 = 0;
         let stime_mtdf = time::Instant::now();
-        if stime_mtdf.duration_since(*start_time) >= LIMIT_DURATION {
+        if stime_mtdf.duration_since(params.start_time) >= LIMIT_DURATION {
             break;
         }
         let tmp_ret = mtdf(
-            board,
+            &mut params.board,
             // table,
-            zhash,
-            actual,
-            &mut actual_catch2,
-            &mut opp_catch2,
-            &mut beta2,
+            &mut params.zhash,
+            params.actual,
+            &mut params.actual_catch,
+            &mut params.opp_catch,
+            &mut params.beta,
             &d,
-            f,
-            score_board,
-            &mut counter_tree,
-            start_time
+            params.f,
+            &mut params.score_board,
+            &mut params.counter_tree,
+            & params.start_time
         );
         // println!("middle_mtdf");
         // print_board(board);
@@ -404,63 +382,45 @@ pub fn iterative_deepening_mtdf(
         match tmp_ret {
             None => break,
             Some((score, r#move)) => {   
-                // println!("move_iterative_deepening_mtdf: [score:{}|{}/{}]",score, r#move.0,r#move.1);
                 let ndtime_mtdf = time::Instant::now();
                 // if !null_move {
-                println!("Depth: [{}] | Nb. moves: [{}] | Nb. moves/s: [{}]", d, counter_tree, (counter_tree as f64 / ndtime_mtdf.duration_since(stime_mtdf).as_secs_f64()).floor());
+                println!("Depth: [{}] | Nb. moves: [{}] | Nb. moves/s: [{}]", d, params.counter_tree, (params.counter_tree as f64 / ndtime_mtdf.duration_since(stime_mtdf).as_secs_f64()).floor());
                 // }
                 ret = (score,r#move);
-                f = score;
+                params.f = score;
             }
         }
-        // println!("debug2: {}|{}|{}|{}|{}|{}|", *alpha, *beta, actual_catch2, opp_catch2, d, *zhash);
     }
-    // match actual {
-    //     Some(true) => game.firstguess.0 = f,
-    //     Some(false) => game.firstguess.1 = f,
-    //     None => unreachable!(),
-    // };
-    // println!("after- f: {}", f);
     ret
 }
 
 fn ia(
     game: &mut game::Game,
-    mut hash: u64,
+    hash: u64,
     depth_max: &i8,
     start_time: &time::Instant
 ) -> (usize, usize) {
 
     let mut board: Board = game.board.into();
-    // let params = ParamsIA {
-    //     board: board,
-    //     score_board: heuristic::evaluate_board(&mut board),
-    //     zhash: hash,
-    //     actual: game.player_to_pawn(),
-    //     actual_catch: game.get_actual_player().nb_of_catch,
-    //     opp_catch: game.get_opponent().nb_of_catch,
-    // };
-    // let end = time::Instant::now();
-    // println!("enter_ia: {}",end.duration_since(*start_time).as_secs_f64());
-    
-    let mut player_catch = game.get_actual_player().nb_of_catch;
-    let mut opponent_catch = game.get_opponent().nb_of_catch;
-    let mut score_board = heuristic::evaluate_board(&mut board);
-    let pawn = game.player_to_pawn();
+    let mut params = ParamsIA {
+        score_board: heuristic::evaluate_board(&mut board),
+        board: board,
+        zhash: hash,
+        current_depth: 0,
+        actual: game.player_to_pawn(),
+        actual_catch: game.get_actual_player().nb_of_catch,
+        opp_catch: game.get_opponent().nb_of_catch,
+        alpha: MIN_INFINITY,
+        beta: MAX_INFINITY,
+        color: 0,
+        depth_max: *depth_max,
+        counter_tree: 0,
+        start_time: *start_time,
+        f: 0,
+    };
 
     iterative_deepening_mtdf(
-        &mut board,
-        &mut score_board,
-        // table,
-        &mut hash,
-        pawn,
-        &mut player_catch,
-        &mut opponent_catch,
-        &mut MAX_INFINITY,
-        depth_max,
-        // game,
-        start_time,
-        // false
+        &mut params
     ).1
 }
 

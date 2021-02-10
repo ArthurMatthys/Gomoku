@@ -16,5 +16,6 @@ pub struct ParamsIA {
     pub color: i8,
     pub depth_max: i8,
     pub counter_tree: u64,
-    pub start_time: time::Instant
+    pub start_time: time::Instant,
+    pub f: i64,
 }
