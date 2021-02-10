@@ -8,7 +8,7 @@ use super::super::model::score_board::ScoreBoard;
 use super::super::render::board::SIZE_BOARD;
 use super::handle_board::{
     board_state_win, change_board, change_board_hint, find_continuous_threats, get_space,
-    null_move_heuristic, remove_last_pawn, remove_last_pawn_hint, print_board
+     remove_last_pawn, remove_last_pawn_hint, print_board
 };
 // use super::super::model::player;
 use super::heuristic;
@@ -60,7 +60,6 @@ fn ab_negamax(
     table: &[[[u64; 2]; SIZE_BOARD]; SIZE_BOARD],
     score_board: &mut ScoreBoard,
     zhash: &mut u64,
-    tt: &mut Vec<zobrist::TT>,
     current_depth: &mut i8,
     actual: Option<bool>,
     actual_catch: &mut isize,
@@ -80,7 +79,7 @@ fn ab_negamax(
         return None;
     }
 //    println!("here1");
-    let mut tte = zobrist::retrieve_tt_from_hash(tt, zhash);
+    let mut tte = zobrist::retrieve_tt_from_hash(zhash);
     let alpha_orig = *alpha;
     *counter_tree += 1;
     if tte.is_valid && tte.depth == *depth_max - *current_depth {
@@ -135,7 +134,6 @@ fn ab_negamax(
                     table,
                     score_board,
                     zhash,
-                    tt,
                     &mut (*current_depth + 1),
                     get_opp!(actual),
                     opp_catch,
@@ -206,7 +204,6 @@ fn ab_negamax(
                 table,
                 score_board,
                 zhash,
-                tt,
                 // &mut (*current_depth + 1),
                 &mut tmp_curr_depth,
                 get_opp!(actual),
@@ -270,7 +267,7 @@ fn ab_negamax(
     tte.value = best_score;
     tte.r#move = best_move;
     tte.depth = *depth_max - *current_depth;
-    zobrist::store_tt_entry(tt, zhash, tte);
+    zobrist::store_tt_entry(zhash, tte);
 
     Some((best_score, best_move))
 }
@@ -279,7 +276,6 @@ fn mtdf(
     board: &mut Board,
     table: &[[[u64; 2]; SIZE_BOARD]; SIZE_BOARD],
     zhash: &mut u64,
-    tt: &mut Vec<zobrist::TT>,
     actual: Option<bool>,
     actual_catch: &mut isize,
     opp_catch: &mut isize,
@@ -314,7 +310,6 @@ fn mtdf(
             table,
             score_board,
             zhash,
-            tt,
             &mut 0,
             actual,
             &mut actual_catch2,
@@ -352,7 +347,6 @@ pub fn iterative_deepening_mtdf(
     score_board: &mut ScoreBoard,
     table: &[[[u64; 2]; SIZE_BOARD]; SIZE_BOARD],
     zhash: &mut u64,
-    tt: &mut Vec<zobrist::TT>,
     actual: Option<bool>,
     actual_catch: &mut isize,
     opp_catch: &mut isize,
@@ -393,7 +387,6 @@ pub fn iterative_deepening_mtdf(
             board,
             table,
             zhash,
-            tt,
             actual,
             &mut actual_catch2,
             &mut opp_catch2,
@@ -443,42 +436,44 @@ fn ia(
     let mut board: Board = game.board.into();
     let mut score_board = heuristic::evaluate_board(&mut board);
     let pawn = game.player_to_pawn();
-    let mut tt = zobrist::initialize_transposition_table();
+    // zobrist::clear_tt();
+    // let mut tt = zobrist::initialize_transposition_table();
     // let end = time::Instant::now();
     // println!("after_initialization: {}",end.duration_since(*start_time).as_secs_f64());
     
     // let end = time::Instant::now();
     // println!("before_null: {}",end.duration_since(*start_time).as_secs_f64());
-    if let Some((x, y)) = null_move_heuristic(
-        &mut board,
-        &mut score_board,
-        pawn,
-        &mut opponent_catch,
-        &mut player_catch,
-        &(table, hash),
-        start_time,
-        game
-    ) {
-        println!("Answer null move ({},{})", x, y);
-        return (x, y);
-    }
+    // if let Some((x, y)) = null_move_heuristic(
+    //     &mut board,
+    //     &mut score_board,
+    //     pawn,
+    //     &mut opponent_catch,
+    //     &mut player_catch,
+    //     &(table, hash),
+    //     start_time,
+    //     game
+    // ) {
+    //     println!("Answer null move ({},{})", x, y);
+    //     return (x, y);
+    // }
+
     // let end = time::Instant::now();
     // println!("after_null: {}",end.duration_since(*start_time).as_secs_f64());
     // let end = time::Instant::now();
     // println!("before continuous: {}",end.duration_since(*start_time).as_secs_f64());
-    if let Some((x, y)) = find_continuous_threats(
-        &mut board,
-        &mut score_board,
-        pawn,
-        &mut player_catch,
-        &mut opponent_catch,
-        &mut DEPTH_THREATS,
-        &mut 0,
-        true,
-    ) {
-        println!("find threat ({},{})", x, y);
-        return (x, y);
-    }
+    // if let Some((x, y)) = find_continuous_threats(
+    //     &mut board,
+    //     &mut score_board,
+    //     pawn,
+    //     &mut player_catch,
+    //     &mut opponent_catch,
+    //     &mut DEPTH_THREATS,
+    //     &mut 0,
+    //     true,
+    // ) {
+    //     println!("find threat ({},{})", x, y);
+    //     return (x, y);
+    // }
     // let end = time::Instant::now();
     // println!("after_continuous: {}",end.duration_since(*start_time).as_secs_f64());
     // let end = time::Instant::now();
@@ -489,7 +484,6 @@ fn ia(
         &mut score_board,
         table,
         &mut hash,
-        &mut tt,
         pawn,
         &mut player_catch,
         &mut opponent_catch,
@@ -553,7 +547,6 @@ mod tests {
             .for_each(|&(x, y)| bboard[x][y] = Some(false));
         let mut board: Board = bboard.into();
         let mut score_board = heuristic::evaluate_board(&mut board);
-        let mut tt = zobrist::initialize_transposition_table();
         let ztable = zobrist::init_zboard();
         let mut hash = zobrist::board_to_zhash(&mut bboard, &ztable);
         println!("// Initial configuration:");
@@ -575,7 +568,6 @@ mod tests {
             &mut board,
             &ztable,
             &mut hash,
-            &mut tt,
             actual,
             actual_catch,
             opp_catch,

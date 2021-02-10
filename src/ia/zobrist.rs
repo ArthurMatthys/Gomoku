@@ -2,7 +2,7 @@ extern crate rand;
 
 use super::super::render::board;
 
-const LENGTH_TT: u64 = 4194319;
+const LENGTH_TT: usize = 4194319;
 
 
 // Type of element in TT
@@ -29,8 +29,8 @@ pub struct TT {
 // Transposition table of at least 2^20 entries
 // 2^22 here => 4 194 304 entries, from which we found
 // the next prime : 4194319 (to avoid hash collision)
-pub fn initialize_transposition_table() -> Vec<TT> {
-    let initialized_struct = TT {
+static mut GTT: [TT; LENGTH_TT] = [
+    TT {
         key: 0,
         is_valid: false,
         value: 0,
@@ -38,15 +38,34 @@ pub fn initialize_transposition_table() -> Vec<TT> {
         depth: 0,
         r#move: None,
     };
-    vec![initialized_struct; LENGTH_TT as usize]
+    LENGTH_TT
+];
+
+pub fn retrieve_tt_from_hash(zhash: &u64) -> TT {
+    unsafe {
+        GTT[(*zhash % LENGTH_TT as u64) as usize]
+    }
 }
 
-pub fn retrieve_tt_from_hash(tt: &Vec<TT>, zhash: &u64) -> TT {
-    tt[(*zhash % LENGTH_TT) as usize]
+pub fn store_tt_entry(zhash: &mut u64, tte: TT) -> () {
+    unsafe {
+        GTT[(*zhash % LENGTH_TT as u64) as usize] = tte;
+    }
 }
 
-pub fn store_tt_entry(tt: &mut Vec<TT>, zhash: &mut u64, tte: TT) -> () {
-    tt[(*zhash % LENGTH_TT) as usize] = tte;
+pub fn clear_tt() -> () {
+    unsafe {
+        GTT.iter_mut().for_each(|el|
+            *el = TT {
+                key: 0,
+                is_valid: false,
+                value: 0,
+                r#type: TypeOfEl::Exact,
+                depth: 0,
+                r#move: None,
+            }
+        );
+    }
 }
 
 // Zobrist hash

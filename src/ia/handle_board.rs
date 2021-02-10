@@ -1026,7 +1026,7 @@ fn best_of_board(
     game: &mut game::Game,
     start_time: &time::Instant
 ) -> Option<(usize, usize)> {
-    let mut tt = zobrist::initialize_transposition_table();
+    // let mut tt = zobrist::initialize_transposition_table();
     let mut best_move = (MAX_INFINITY, TypeOfThreat::ThreeOF, (0,0));
 
     lst_moove.iter().for_each(|&((line,col),threat,_)| {
@@ -1039,7 +1039,7 @@ fn best_of_board(
                 score_board,
                 table,
                 &mut hash,
-                &mut tt,
+                // &mut tt,
                 get_opp!(player_actual),
                 player_opposite_catch,
                 player_actual_catch,
@@ -1064,123 +1064,123 @@ fn best_of_board(
     Some(best_move.2)
 }
 
-pub fn null_move_heuristic(
-    board: &mut Board,
-    score_board: &mut ScoreBoard,
-    player_actual: Option<bool>,
-    player_actual_catch: &mut isize,
-    player_opposite_catch: &mut isize,
-    (table, mut hash): &(&[[[u64; 2]; SIZE_BOARD]; SIZE_BOARD], u64),
-    start_time: &time::Instant,
-    game: &mut game::Game,
-) -> Option<(usize, usize)> {
-    let mut actual_threat = threat_search_space(board, score_board, player_actual, player_actual_catch);
-    let mut opp_threat = threat_search_space(
-        board,
-        score_board,
-        get_opp!(player_actual),
-        player_opposite_catch,
-    );
-    opp_threat = opp_threat.into_iter()
-              .filter(|((x, y), _, _)| {
-                    !check_double_three_hint(
-                        board,
-                        player_actual,
-                        *x as isize,
-                        *y as isize,
-                    )
-                }).collect::<Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)>>();
-    actual_threat = actual_threat.into_iter()
-        .filter(|((x, y), _, _)| {
-                !check_double_three_hint(
-                    board,
-                    player_actual,
-                    *x as isize,
-                    *y as isize,
-                )
-            }).collect::<Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)>>();
-    if opp_threat.len() == 0 || opp_threat[0].1 < TypeOfThreat::FourOF {
-        return None;
-    } else if opp_threat[0].1 == TypeOfThreat::AlreadyWon {
-        for line in 0..19 {
-            for col in 0..19 {
-                for dir in 0..4 {
-                    match score_board.get(line, col, dir).0 {
-                        a if a >= 5 => {
-                            let mut new_x = line as isize;
-                            let mut new_y = col as isize;
-                            let (dx, dy) = DIRS[dir];
-                            explore_align_light!(board, new_x, new_y, get_opp!(player_actual), dir, -1);
-                            let mut to_take: Vec<(usize, usize)> = vec![];
-                            let start: isize = a as isize - 5;
-                            let end: isize = start + (10 - a as isize);
-                            for step in start..end {
-                                to_take.push((
-                                    (new_x + dx * (step + 1)) as usize,
-                                    (new_y + dy * (step + 1)) as usize,
-                                ));
-                            }
-                            let mut captures = capture_coordinates_vec(
-                                score_board,
-                                board,
-                                get_opp!(player_actual),
-                                to_take,
-                                dir,
-                            );
-                            captures = captures.into_iter()
-                                .filter(|(x, y)| {
-                                        !check_double_three_hint(
-                                            board,
-                                            player_actual,
-                                            *x as isize,
-                                            *y as isize,
-                                        )
-                                    }).collect::<Vec<(usize, usize)>>();
-                            //TODO ^ add filter double three
-                            if captures.len() > 0 {
-                                return Some(captures[0]);
-                            } else {
-                                return None;
-                            }
-                        }
-                        _ => ()
-                    }
-                }
-            }
-        }
-        return None;
-    } else if actual_threat.len() == 0 {
-        return best_of_board(
-            board,
-            score_board,
-            player_actual,
-            player_actual_catch,
-            player_opposite_catch,
-            opp_threat,
-            &(table, hash),
-            game,
-            start_time
-        );
-    } else {
-        if actual_threat[0].1 >= opp_threat[0].1 {
-            return None;
-        } else if opp_threat[0].1 >= TypeOfThreat::FourOF {
-            return best_of_board(
-                board,
-                score_board,
-                player_actual,
-                player_actual_catch,
-                player_opposite_catch,
-                opp_threat,
-                &(table, hash),
-                game,
-                start_time
-            );
-        } else {
-            return None;
-        }
-    }
-}
+// pub fn null_move_heuristic(
+//     board: &mut Board,
+//     score_board: &mut ScoreBoard,
+//     player_actual: Option<bool>,
+//     player_actual_catch: &mut isize,
+//     player_opposite_catch: &mut isize,
+//     (table, mut hash): &(&[[[u64; 2]; SIZE_BOARD]; SIZE_BOARD], u64),
+//     start_time: &time::Instant,
+//     game: &mut game::Game,
+// ) -> Option<(usize, usize)> {
+//     let mut actual_threat = threat_search_space(board, score_board, player_actual, player_actual_catch);
+//     let mut opp_threat = threat_search_space(
+//         board,
+//         score_board,
+//         get_opp!(player_actual),
+//         player_opposite_catch,
+//     );
+//     opp_threat = opp_threat.into_iter()
+//               .filter(|((x, y), _, _)| {
+//                     !check_double_three_hint(
+//                         board,
+//                         player_actual,
+//                         *x as isize,
+//                         *y as isize,
+//                     )
+//                 }).collect::<Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)>>();
+//     actual_threat = actual_threat.into_iter()
+//         .filter(|((x, y), _, _)| {
+//                 !check_double_three_hint(
+//                     board,
+//                     player_actual,
+//                     *x as isize,
+//                     *y as isize,
+//                 )
+//             }).collect::<Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)>>();
+//     if opp_threat.len() == 0 || opp_threat[0].1 < TypeOfThreat::FourOF {
+//         return None;
+//     } else if opp_threat[0].1 == TypeOfThreat::AlreadyWon {
+//         for line in 0..19 {
+//             for col in 0..19 {
+//                 for dir in 0..4 {
+//                     match score_board.get(line, col, dir).0 {
+//                         a if a >= 5 => {
+//                             let mut new_x = line as isize;
+//                             let mut new_y = col as isize;
+//                             let (dx, dy) = DIRS[dir];
+//                             explore_align_light!(board, new_x, new_y, get_opp!(player_actual), dir, -1);
+//                             let mut to_take: Vec<(usize, usize)> = vec![];
+//                             let start: isize = a as isize - 5;
+//                             let end: isize = start + (10 - a as isize);
+//                             for step in start..end {
+//                                 to_take.push((
+//                                     (new_x + dx * (step + 1)) as usize,
+//                                     (new_y + dy * (step + 1)) as usize,
+//                                 ));
+//                             }
+//                             let mut captures = capture_coordinates_vec(
+//                                 score_board,
+//                                 board,
+//                                 get_opp!(player_actual),
+//                                 to_take,
+//                                 dir,
+//                             );
+//                             captures = captures.into_iter()
+//                                 .filter(|(x, y)| {
+//                                         !check_double_three_hint(
+//                                             board,
+//                                             player_actual,
+//                                             *x as isize,
+//                                             *y as isize,
+//                                         )
+//                                     }).collect::<Vec<(usize, usize)>>();
+//                             //TODO ^ add filter double three
+//                             if captures.len() > 0 {
+//                                 return Some(captures[0]);
+//                             } else {
+//                                 return None;
+//                             }
+//                         }
+//                         _ => ()
+//                     }
+//                 }
+//             }
+//         }
+//         return None;
+//     } else if actual_threat.len() == 0 {
+//         return best_of_board(
+//             board,
+//             score_board,
+//             player_actual,
+//             player_actual_catch,
+//             player_opposite_catch,
+//             opp_threat,
+//             &(table, hash),
+//             game,
+//             start_time
+//         );
+//     } else {
+//         if actual_threat[0].1 >= opp_threat[0].1 {
+//             return None;
+//         } else if opp_threat[0].1 >= TypeOfThreat::FourOF {
+//             return best_of_board(
+//                 board,
+//                 score_board,
+//                 player_actual,
+//                 player_actual_catch,
+//                 player_opposite_catch,
+//                 opp_threat,
+//                 &(table, hash),
+//                 game,
+//                 start_time
+//             );
+//         } else {
+//             return None;
+//         }
+//     }
+// }
 
 //macro_rules! get_bool {
 //    ($e:expr) => {

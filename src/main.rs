@@ -178,6 +178,7 @@ pub fn main() {
     let start_game = Instant::now();
     'running: loop {
         if game.actual_player_is_ai().expect("Wrong type of player") {
+            zobrist::clear_tt();
             let start = Instant::now();
             let (line, col) = get_ia::get_ia(&mut game, &ztable, &DEPTH_MAX, &start);
             let end = Instant::now();
