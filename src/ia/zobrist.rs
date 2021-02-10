@@ -1,9 +1,7 @@
 extern crate rand;
-
 use super::super::render::board;
 
 const LENGTH_TT: usize = 4194319;
-
 
 // Type of element in TT
 #[derive(Copy, Clone, PartialEq)]
@@ -29,7 +27,7 @@ pub struct TT {
 // Transposition table of at least 2^20 entries
 // 2^22 here => 4 194 304 entries, from which we found
 // the next prime : 4194319 (to avoid hash collision)
-static mut GTT: [TT; LENGTH_TT] = [
+pub static mut GTT: [TT; LENGTH_TT] = [
     TT {
         key: 0,
         is_valid: false,
@@ -71,37 +69,42 @@ pub fn clear_tt() -> () {
 // Zobrist hash
 pub const ZPIECES: [usize; 2] = [0, 1]; // 0 is black_pawn, 1 is white_pawn
 
+pub static mut ZTABLE: [[[u64; 2]; board::SIZE_BOARD]; board::SIZE_BOARD] =
+                    [[[0_u64; 2]; board::SIZE_BOARD]; board::SIZE_BOARD];
+
 // Initialize the first zobrist hash
 // We initialize a 3D array of 19x19 containing for each cell
 // An array of uniform random f64 number (2, one for each piece)
-pub fn init_zboard() -> [[[u64; 2]; board::SIZE_BOARD]; board::SIZE_BOARD] {
-    let mut table = [[[0_u64; 2]; board::SIZE_BOARD]; board::SIZE_BOARD];
-
+pub fn init_zboard() -> () {
     let mut index = 0;
     for line in 0..board::SIZE_BOARD {
         for col in 0..board::SIZE_BOARD {
             for i in 0..2 {
                 // Fill it with a uniformly generated f64 to avoid collision
-                table[line][col][i] = RDM_NUMBERS[index];
+                unsafe {
+                    ZTABLE[line][col][i] = RDM_NUMBERS[index];
+                }
                 index += 1;
             }
         }
     }
-    table
 }
+
 // Function that initializes the zhash as a u64 accordingly to the current board's state
 pub fn board_to_zhash(
     board: &[[Option<bool>; board::SIZE_BOARD]; board::SIZE_BOARD],
-    ztable: &[[[u64; 2]; board::SIZE_BOARD]; board::SIZE_BOARD],
+    // ztable: &[[[u64; 2]; board::SIZE_BOARD]; board::SIZE_BOARD],
 ) -> u64 {
     let mut hash: u64 = 0;
 
     for line in 0..board::SIZE_BOARD {
         for col in 0..board::SIZE_BOARD {
-            match board[line][col] {
-                None => (),
-                Some(true) => hash ^= ztable[line][col][ZPIECES[1]],
-                Some(false) => hash ^= ztable[line][col][ZPIECES[0]],
+            unsafe {
+                match board[line][col] {
+                    None => (),
+                    Some(true) => hash ^= ZTABLE[line][col][ZPIECES[1]],
+                    Some(false) => hash ^= ZTABLE[line][col][ZPIECES[0]],
+                }
             }
         }
     }

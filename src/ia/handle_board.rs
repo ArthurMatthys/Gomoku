@@ -1015,54 +1015,54 @@ macro_rules! explore_align_light {
 //     None
 // }
 
-fn best_of_board(
-    board: &mut Board,
-    score_board: &mut ScoreBoard,
-    player_actual: Option<bool>,
-    player_actual_catch: &mut isize,
-    player_opposite_catch: &mut isize,
-    lst_moove: Vec<((usize, usize), TypeOfThreat, std::vec::Vec<(usize, usize)>)>,
-    (table, mut hash): &(&[[[u64; 2]; SIZE_BOARD]; SIZE_BOARD], u64),
-    game: &mut game::Game,
-    start_time: &time::Instant
-) -> Option<(usize, usize)> {
-    // let mut tt = zobrist::initialize_transposition_table();
-    let mut best_move = (MAX_INFINITY, TypeOfThreat::ThreeOF, (0,0));
+// fn best_of_board(
+//     board: &mut Board,
+//     score_board: &mut ScoreBoard,
+//     player_actual: Option<bool>,
+//     player_actual_catch: &mut isize,
+//     player_opposite_catch: &mut isize,
+//     lst_moove: Vec<((usize, usize), TypeOfThreat, std::vec::Vec<(usize, usize)>)>,
+//     (table, mut hash): &(&[[[u64; 2]; SIZE_BOARD]; SIZE_BOARD], u64),
+//     game: &mut game::Game,
+//     start_time: &time::Instant
+// ) -> Option<(usize, usize)> {
+//     // let mut tt = zobrist::initialize_transposition_table();
+//     let mut best_move = (MAX_INFINITY, TypeOfThreat::ThreeOF, (0,0));
 
-    lst_moove.iter().for_each(|&((line,col),threat,_)| {
-        if threat >= best_move.1 {
-            let removed = change_board(board, score_board, line, col, player_actual, table, &mut hash);
-            *player_actual_catch += removed.len() as isize;
+//     lst_moove.iter().for_each(|&((line,col),threat,_)| {
+//         if threat >= best_move.1 {
+//             let removed = change_board(board, score_board, line, col, player_actual, table, &mut hash);
+//             *player_actual_catch += removed.len() as isize;
 
-            let tmp_move = get_ia::iterative_deepening_mtdf(
-                board,
-                score_board,
-                table,
-                &mut hash,
-                // &mut tt,
-                get_opp!(player_actual),
-                player_opposite_catch,
-                player_actual_catch,
-                &mut MAX_INFINITY,
-                &2,
-                game,
-                start_time,
-                true
-            );
+//             let tmp_move = get_ia::iterative_deepening_mtdf(
+//                 board,
+//                 score_board,
+//                 // table,
+//                 &mut hash,
+//                 // &mut tt,
+//                 get_opp!(player_actual),
+//                 player_opposite_catch,
+//                 player_actual_catch,
+//                 &mut MAX_INFINITY,
+//                 &2,
+//                 game,
+//                 start_time,
+//                 true
+//             );
 
-            best_move = match (best_move, tmp_move) {
-                (x,y) if x.0 <= y.0 => { x },
-                (x,y) if x.0 > y.0 => { (y.0, threat, (line,col)) },
-                (_,_) => unreachable!()
-            };
+//             best_move = match (best_move, tmp_move) {
+//                 (x,y) if x.0 <= y.0 => { x },
+//                 (x,y) if x.0 > y.0 => { (y.0, threat, (line,col)) },
+//                 (_,_) => unreachable!()
+//             };
 
-            *player_actual_catch -= removed.len() as isize;
-            remove_last_pawn(board, score_board, line, col, player_actual, removed, table, &mut hash);
-        }
-    });
+//             *player_actual_catch -= removed.len() as isize;
+//             remove_last_pawn(board, score_board, line, col, player_actual, removed, table, &mut hash);
+//         }
+//     });
 
-    Some(best_move.2)
-}
+//     Some(best_move.2)
+// }
 
 // pub fn null_move_heuristic(
 //     board: &mut Board,
@@ -1273,8 +1273,10 @@ macro_rules! get_zindex_from_pawn {
 }
 
 macro_rules! add_zhash {
-    ($table:expr, $zhash:expr, $x:expr, $y:expr, $piece:expr) => {
-        *$zhash ^= $table[$x as usize][$y as usize][zobrist::ZPIECES[$piece]];
+    ($zhash:expr, $x:expr, $y:expr, $piece:expr) => {
+        unsafe {
+            *$zhash ^= zobrist::ZTABLE[$x as usize][$y as usize][zobrist::ZPIECES[$piece]];
+        }
     };
 }
 
@@ -1360,7 +1362,6 @@ pub fn remove_last_pawn(
     y: usize,
     pawn: Option<bool>,
     removed: Vec<((isize, isize), (isize, isize))>,
-    table: &[[[u64; 2]; SIZE_BOARD]; SIZE_BOARD],
     zhash: &mut u64,
 ) {
 //    println!("start remove");
@@ -1368,12 +1369,12 @@ pub fn remove_last_pawn(
 //    println!("yop1");
     change_score_board_remove(board, score_board, x as isize, y as isize);
 //    println!("yop2");
-    add_zhash!(table, zhash, x, y, get_zindex_from_pawn!(pawn));
+    add_zhash!(zhash, x, y, get_zindex_from_pawn!(pawn));
     removed.iter().for_each(|&((x1, y1), (x2, y2))| {
         //        println!("fixed removed");
-        add_zhash!(table, zhash, x1, y1, get_zindex_from_pawn!(old));
+        add_zhash!(zhash, x1, y1, get_zindex_from_pawn!(old));
         change_score_board_add(board, score_board, x1 as usize, y1 as usize, old);
-        add_zhash!(table, zhash, x2, y2, get_zindex_from_pawn!(old));
+        add_zhash!(zhash, x2, y2, get_zindex_from_pawn!(old));
         change_score_board_add(board, score_board, x2 as usize, y2 as usize, old);
     });
 //    println!("end remove");
@@ -1385,13 +1386,12 @@ pub fn change_board(
     x: usize,
     y: usize,
     pawn: Option<bool>,
-    table: &[[[u64; 2]; SIZE_BOARD]; SIZE_BOARD],
     zhash: &mut u64,
 ) -> Vec<((isize, isize), (isize, isize))> {
     let mut removed = Vec::with_capacity(16);
     //    println!("add pawn");
     change_score_board_add(board, score_board, x, y, pawn);
-    add_zhash!(table, zhash, x, y, get_zindex_from_pawn!(pawn));
+    add_zhash!(zhash, x, y, get_zindex_from_pawn!(pawn));
     let opp = get_opp!(pawn);
     for &(dx, dy) in DIRS.iter() {
         let mut count = 0;
@@ -1423,9 +1423,9 @@ pub fn change_board(
             let (x1, y1) = (new_x - dx, new_y - dy);
             let (x2, y2) = (x1 - dx, y1 - dy);
             change_score_board_remove(board, score_board, x1, y1);
-            add_zhash!(table, zhash, x1, y1, get_zindex_from_pawn!(opp));
+            add_zhash!(zhash, x1, y1, get_zindex_from_pawn!(opp));
             change_score_board_remove(board, score_board, x2, y2);
-            add_zhash!(table, zhash, x2, y2, get_zindex_from_pawn!(opp));
+            add_zhash!(zhash, x2, y2, get_zindex_from_pawn!(opp));
             removed.push(((x1, y1), (x2, y2)));
         }
     }
@@ -2373,7 +2373,8 @@ mod tests {
         actual_player: Option<bool>,
     ) -> bool {
         let mut bboard = [[None; SIZE_BOARD]; SIZE_BOARD];
-        let table = [[[0u64; 2]; SIZE_BOARD]; SIZE_BOARD];
+        // let table = [[[0u64; 2]; SIZE_BOARD]; SIZE_BOARD];
+        zobrist::init_zboard();
         let mut zhash = 0u64;
         white_pos
             .iter()
@@ -2393,7 +2394,7 @@ mod tests {
             x,
             y,
             actual_player,
-            &table,
+            // &table,
             &mut zhash,
         );
         println!("// final configuration:");
@@ -2436,7 +2437,7 @@ mod tests {
         actual_player: Option<bool>,
         removed: Vec<((isize, isize), (isize, isize))>,
     ) -> bool {
-        let table = [[[0u64; 2]; SIZE_BOARD]; SIZE_BOARD];
+        // let table = [[[0u64; 2]; SIZE_BOARD]; SIZE_BOARD];
         let mut zhash = 0u64;
         let mut bboard = [[None; SIZE_BOARD]; SIZE_BOARD];
         white_pos
@@ -2446,6 +2447,7 @@ mod tests {
             .iter()
             .for_each(|&(x, y)| bboard[x][y] = Some(false));
         let mut board: Board = bboard.into();
+        zobrist::init_zboard();
         let mut score_board = heuristic::evaluate_board(&mut board);
         println!("// Initial configuration:");
         board.print();
@@ -2458,7 +2460,7 @@ mod tests {
             y,
             actual_player,
             removed,
-            &table,
+            // &table,
             &mut zhash,
         );
         println!("// final configuration:");

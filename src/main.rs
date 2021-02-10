@@ -173,14 +173,14 @@ pub fn main() {
         .map(|x| get_image!(texture_creator, x))
         .collect::<Vec<Texture>>();
     game.set_changed();
-    let ztable = zobrist::init_zboard();
+    zobrist::init_zboard();
 
     let start_game = Instant::now();
     'running: loop {
         if game.actual_player_is_ai().expect("Wrong type of player") {
             zobrist::clear_tt();
             let start = Instant::now();
-            let (line, col) = get_ia::get_ia(&mut game, &ztable, &DEPTH_MAX, &start);
+            let (line, col) = get_ia::get_ia(&mut game, &DEPTH_MAX, &start);
             let end = Instant::now();
             game.set_player_time(end.duration_since(start));
             game.change_board_from_input(line, col);
@@ -218,7 +218,7 @@ pub fn main() {
                     ..
                 } => {
                     let start = Instant::now();
-                    let (line, col) = get_ia::get_ia(&mut game, &ztable, &4, &start);
+                    let (line, col) = get_ia::get_ia(&mut game, &4, &start);
                     game.set_best_move(line, col);
                 }
                 Event::KeyDown {
