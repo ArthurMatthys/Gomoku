@@ -274,71 +274,58 @@ fn ab_negamax(
 }
 
 fn mtdf(
-    board: &mut Board,
-    // table: &[[[u64; 2]; SIZE_BOARD]; SIZE_BOARD],
-    zhash: &mut u64,
-    actual: Option<bool>,
-    actual_catch: &mut isize,
-    opp_catch: &mut isize,
-    beta: &mut i64,
-    depth_max: &i8,
-    firstguess: i64,
-    score_board: &mut ScoreBoard,
-    counter_tree: &mut u64,
-    start_time: &time::Instant
+    params: &mut ParamsIA,
 ) -> Option<(i64, (usize, usize))> {
-    let mut g = firstguess;
+    let mut g = params.f;
     let mut ret = (0, (0, 0));
     let mut upperbnd = MAX_INFINITY;
     let mut lowerbnd = MIN_INFINITY;
 
+    // Still bug covering here
+    let actual_catch2 = params.actual_catch;
+    let opp_catch2 = params.opp_catch;
+    // let mut beta = params.beta;
     while lowerbnd < upperbnd {
-        // let mut score_board2 = heuristic::evaluate_board(board);
-        let mut actual_catch2 = *actual_catch;
-        let mut opp_catch2 = *opp_catch;
+        // UNNECESSARY, PATCHES BUG
+        params.actual_catch = actual_catch2;
+        params.opp_catch = opp_catch2;
+    
         if g == lowerbnd {
-            *beta = g + 1;
+            params.beta = g + 1;
+            // beta = g + 1;
         } else {
-            *beta = g;
+            params.beta = g;
+            // beta = g;
         }
-        // if time::Instant::now().duration_since(*start_time) >= LIMIT_DURATION {
-        //     println!("Mtd-f: break before");
-        //     return None;
-        // }
-        // *beta = i64::max(g, lowerbnd + 1);
+
         let values: Option<(i64, Option<(usize, usize)>)> = ab_negamax(
-            board,
+            &mut params.board,
             // table,
-            score_board,
-            zhash,
+            &mut params.score_board,
+            &mut params.zhash,
             &mut 0,
-            actual,
-            &mut actual_catch2,
-            &mut opp_catch2,
-            &mut (*beta - 1),
-            beta,
+            params.actual,
+            &mut params.actual_catch,
+            &mut params.opp_catch,
+            &mut (params.beta - 1),
+            &mut params.beta,
             &mut 1,
-            depth_max,
-            counter_tree,
-            start_time
+            &mut params.depth_max,
+            &mut params.counter_tree,
+            &mut params.start_time
         );
         match values {
-            // None => { println!("DEBUUGG: d:{}", depth_max); return None },
             None => { return None },
             Some((score, r#move)) => {
                 ret = (score, r#move.unwrap());
                 g = score;
-                if g < *beta {
+                if g < params.beta {
                     upperbnd = g;
                 } else {
                     lowerbnd = g;
                 }
             }
         }
-        // if time::Instant::now().duration_since(*start_time) >= LIMIT_DURATION {
-        //     println!("Mtd-f: break after");
-        //     return None;
-        // }
     }
     Some(ret)
 }
@@ -347,38 +334,27 @@ pub fn iterative_deepening_mtdf(
     params: &mut ParamsIA
 ) -> (i64,(usize, usize)) {
     let mut ret = (MIN_INFINITY,(0, 0));
-    // To verify, if behavior changes or not
+    // BEHAVIOR CHANGES --> BUG
     let actual_catch2 = params.actual_catch;
     let opp_catch2 = params.opp_catch;
-    
+    // let beta2 = params.beta;
     for d in (2..(params.depth_max + 1)).step_by(2) {
-        // Check if necessary
+        // UNNECESSARY, PATCHES BUG
         params.opp_catch = actual_catch2;
         params.actual_catch = opp_catch2;
-        
+        // Below, their existence is justified (checks still needed for beta)
+        // params.beta = beta2;
         params.counter_tree = 0;
+        params.depth_max = d;
 
         let stime_mtdf = time::Instant::now();
         if stime_mtdf.duration_since(params.start_time) >= LIMIT_DURATION {
             break;
         }
+        
         let tmp_ret = mtdf(
-            &mut params.board,
-            // table,
-            &mut params.zhash,
-            params.actual,
-            &mut params.actual_catch,
-            &mut params.opp_catch,
-            &mut params.beta,
-            &d,
-            params.f,
-            &mut params.score_board,
-            &mut params.counter_tree,
-            & params.start_time
+            params,
         );
-        // println!("middle_mtdf");
-        // print_board(board);
-        // println!();
         match tmp_ret {
             None => break,
             Some((score, r#move)) => {   
@@ -479,6 +455,23 @@ mod tests {
         let mut hash = zobrist::board_to_zhash(&mut bboard);
         println!("// Initial configuration:");
         board.print();
+        // let stime_mtdf = time::Instant::now();
+        let mut params = ParamsIA {
+            score_board: score_board,
+            board: board,
+            zhash: hash,
+            current_depth: 0,
+            actual: actual,
+            actual_catch: *actual_catch,
+            opp_catch: *opp_catch,
+            alpha: MIN_INFINITY,
+            beta: MAX_INFINITY,
+            color: 0,
+            depth_max: *depth_max,
+            counter_tree: 0,
+            start_time: time::Instant::now(),
+            f: 0,
+        };
 //        for i in 0..19 {
 //            print!("// ");
 //            for j in 0..19 {
@@ -490,21 +483,9 @@ mod tests {
 //            }
 //            println!();
 //        }
-        let mut counter_tree:u64 = 0;
-        let stime_mtdf = time::Instant::now();
+        // let mut counter_tree:u64 = 0;
         let result = mtdf(
-            &mut board,
-            // &ztable,
-            &mut hash,
-            actual,
-            actual_catch,
-            opp_catch,
-            &mut MAX_INFINITY,
-            depth_max,
-            0,
-            &mut score_board,
-            &mut counter_tree,
-            &stime_mtdf
+            &mut params
         );
         match result {
             None => false,
