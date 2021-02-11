@@ -284,7 +284,6 @@ fn mtdf(
     // Still bug covering here
     let actual_catch2 = params.actual_catch;
     let opp_catch2 = params.opp_catch;
-    // let mut beta = params.beta;
     while lowerbnd < upperbnd {
         // UNNECESSARY, PATCHES BUG
         params.actual_catch = actual_catch2;
@@ -292,10 +291,8 @@ fn mtdf(
     
         if g == lowerbnd {
             params.beta = g + 1;
-            // beta = g + 1;
         } else {
             params.beta = g;
-            // beta = g;
         }
 
         let values: Option<(i64, Option<(usize, usize)>)> = ab_negamax(
@@ -337,13 +334,11 @@ pub fn iterative_deepening_mtdf(
     // BEHAVIOR CHANGES --> BUG
     let actual_catch2 = params.actual_catch;
     let opp_catch2 = params.opp_catch;
-    // let beta2 = params.beta;
     for d in (2..(params.depth_max + 1)).step_by(2) {
         // UNNECESSARY, PATCHES BUG
         params.opp_catch = actual_catch2;
         params.actual_catch = opp_catch2;
         // Below, their existence is justified (checks still needed for beta)
-        // params.beta = beta2;
         params.counter_tree = 0;
         params.depth_max = d;
 
