@@ -1438,7 +1438,7 @@ mod tests {
 
     pub fn find_continuous_threats_print(
         board: &mut Board,
-        score_board: &mut [[[(u8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD],
+        score_board: &mut ScoreBoard,
         player_actual: Option<bool>,
         player_actual_catch: &mut isize,
         player_opposite_catch: &mut isize,
@@ -1650,8 +1650,8 @@ mod tests {
         opp_take: &mut isize,
     ) -> bool {
         let mut test_board:Board = [[None; SIZE_BOARD]; SIZE_BOARD].into();
-        let mut score_tab: [[[(u8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD] =
-            [[[(0, Some(false), Some(false)); 4]; SIZE_BOARD]; SIZE_BOARD];
+        let mut score_tab: ScoreBoard =
+            [[[(0, Some(false), Some(false)); 4]; SIZE_BOARD]; SIZE_BOARD].into();
         white_pos.iter().for_each(|&(x, y)| {
             test_board.set(x, y, Some(true));
             change_score_board_add(&mut test_board, &mut score_tab, x, y, Some(true));
@@ -1678,7 +1678,7 @@ mod tests {
                     Some(false) => print!("N"),
                     None => print!("E"),
                 }
-                score_tab[j][i].iter().for_each(|&(value, a, b)| {
+                score_tab.get_arr(j, i).iter().for_each(|&(value, a, b)| {
                     print!("{:2}{}{}", value, get_bool!(a), get_bool!(b))
                 });
                 print!(" ");
@@ -2386,7 +2386,7 @@ mod tests {
         let mut score_board = heuristic::evaluate_board(&mut board);
         println!("// Initial configuration:");
         board.print();
-        print_score_board(&mut score_board);
+        score_board.print();
         let (x, y) = to_add;
         change_board(
             &mut board,
@@ -2399,7 +2399,7 @@ mod tests {
         );
         println!("// final configuration:");
         board.print();
-        print_score_board(&mut score_board);
+        score_board.print();
         false
     }
 
@@ -2451,7 +2451,7 @@ mod tests {
         let mut score_board = heuristic::evaluate_board(&mut board);
         println!("// Initial configuration:");
         board.print();
-        print_score_board(&mut score_board);
+        score_board.print();
         let (x, y) = to_remove;
         remove_last_pawn(
             &mut board,
@@ -2465,7 +2465,7 @@ mod tests {
         );
         println!("// final configuration:");
         board.print();
-        print_score_board(&mut score_board);
+        score_board.print();
         false
     }
 
@@ -2551,12 +2551,12 @@ mod tests {
         let mut score_board = heuristic::evaluate_board(&mut board);
         println!("// Initial configuration:");
         board.print();
-        print_score_board(&mut score_board);
+        score_board.print();
         let (x, y) = to_remove;
         let res = change_board_hint(&mut board, &mut score_board, x, y, actual_player);
         println!("// final configuration:");
         board.print();
-        print_score_board(&mut score_board);
+        score_board.print();
         if removed.len() != res.len() {
             return false;
         }

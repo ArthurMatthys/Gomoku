@@ -523,8 +523,8 @@ mod tests {
         t2: (u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8),
     ) -> bool {
         let mut test_board: Board = [[None; SIZE_BOARD]; SIZE_BOARD].into();
-        let mut score_tab: [[[(u8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD] =
-            [[[(0, Some(false), Some(false)); 4]; SIZE_BOARD]; SIZE_BOARD];
+        let mut score_tab: ScoreBoard=
+            [[[(0, Some(false), Some(false)); 4]; SIZE_BOARD]; SIZE_BOARD].into();
         white_pos.iter().for_each(|&(x, y)| {
             test_board.set(x, y, Some(true));
             change_score_board_add(
@@ -545,16 +545,7 @@ mod tests {
                 Some(false),
             );
         });
-        for i in 0..19 {
-            for j in 0..19 {
-                match test_board.get_pawn(j, i){
-                    Some(true) => print!("⊖"),
-                    Some(false) => print!("⊕"),
-                    None => print!("_"),
-                }
-            }
-            println!();
-        }
+        test_board.print();
         let (v1, v2) = get_alignements(&mut test_board, &mut score_tab, Some(false));
         let print_tuple = |(a, b, c, d, e, f, g, h, i, j, k, l): (
             u8,

@@ -4,18 +4,24 @@ pub struct ScoreBoard([[[(u8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE
 
 impl ScoreBoard{
     
-    // Retrieve score_board[x][y]
+/// Retrieve score_board[x][y][dir]
     pub fn get(&self, x: usize, y:usize, dir:usize) -> (u8, Option<bool>, Option<bool>){
         self.0[x][y][dir]
     }
 
-    // Retrieve score_board[x][y]
+/// Check and Retrieve score_board[x][y][dir] if possible
     pub fn get_check(&self, x: usize, y:usize, dir:usize) -> Option<(u8, Option<bool>, Option<bool>)>{
         self.0.get(x).map(|b| b.get(y).map(|c| c.get(dir))).flatten().flatten().cloned()
     }
 
+/// Change value of score_board[x][y][dir]
     pub fn set(&mut self, x: usize, y:usize, dir:usize, score: (u8, Option<bool>, Option<bool>)) -> () {
         self.0[x][y][dir] = score;
+    }
+
+/// Retrieve score_board[x][y]
+    pub fn get_arr(&self, x: usize, y:usize) -> [(u8, Option<bool>, Option<bool>); 4]{
+        self.0[x][y]
     }
 
     pub fn reset(&mut self, x: usize, y:usize, dir:usize) -> () {

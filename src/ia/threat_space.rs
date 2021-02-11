@@ -1474,9 +1474,9 @@ mod tests {
         x: usize,
         y: usize,
     ) -> bool {
-        let mut test_board:Board = [[None; SIZE_BOARD]; SIZE_BOARD].into();
-        let mut score_tab: [[[(u8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD] =
-            [[[(0, Some(false), Some(false)); 4]; SIZE_BOARD]; SIZE_BOARD];
+        let mut test_board: Board = [[None; SIZE_BOARD]; SIZE_BOARD].into();
+        let mut score_tab: ScoreBoard =
+            [[[(0, Some(false), Some(false)); 4]; SIZE_BOARD]; SIZE_BOARD].into();
         white_pos.iter().for_each(|&(x, y)| {
             test_board.set(x, y, Some(true));
             change_score_board_add(
@@ -1504,7 +1504,7 @@ mod tests {
                     Some(false) => print!("N"),
                     None => print!("E"),
                 }
-                score_tab[j][i].iter().for_each(|&(value, a, b)| {
+                score_tab.get_arr(j, i).iter().for_each(|&(value, a, b)| {
                     print!("{:2}{}{}", value, get_bool!(a), get_bool!(b))
                 });
                 print!(" ");
@@ -1563,7 +1563,7 @@ mod tests {
 
     fn test_catch_board(
         board: &mut Board,
-        score_board: &mut [[[(u8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD],
+        score_board: &mut ScoreBoard,
         actual_player: Option<bool>,
         actual_take: &mut isize,
     ) -> (((usize, usize), u8), bool) {
@@ -1575,7 +1575,7 @@ mod tests {
                     for dir in 0..4 {
                         let (mut new_line, mut new_col): (isize, isize) =
                             (line as isize, col as isize);
-                        match score_board[line][col][dir] {
+                        match score_board.get(line, col, dir){
                             (2, Some(true), Some(false)) => {
                                 println!("PREV_MATCH: ({},{})", new_line, new_col);
                                 // println!("ici");
@@ -1954,7 +1954,7 @@ mod tests {
         let mut global_results: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![];
 
         for dir in 0..4 {
-            let tmp_result = match score_board[pos2check.0][pos2check.1][dir].0 {
+            let tmp_result = match score_board.get(pos2check.0, pos2check.1, dir).0 {
                 // 4 => (),
                 // 3 => { connect_4(pos2check, &mut score_board, &mut test_board, &mut record, actual_player, actual_take, dir) },
                 // 2 => { println!("OUPS_I_DID_IT_AGAIN") ; connect_2(&mut test_board, &mut score_board, &mut record, actual_player, pos2check, dir) }
@@ -5569,7 +5569,7 @@ mod tests {
         //     println!();
         // }
         for dir in 0..4 {
-            let tmp_result = match score_board[pos2check.0][pos2check.1][dir].0 {
+            let tmp_result = match score_board.get(pos2check.0, pos2check.1, dir).0 {
                 // 4 => { connect_4(pos2check, &mut score_board, &mut test_board, &mut record, actual_player, actual_take, dir) },
                 // 3 => { connect_4(pos2check, &mut score_board, &mut test_board, &mut record, actual_player, actual_take, dir) },
                 // 2 => { println!("OUPS_I_DID_IT_AGAIN") ; connect_2(&mut test_board, &mut score_board, &mut record, actual_player, pos2check, dir) }
@@ -8954,7 +8954,7 @@ mod tests {
             initialize_record(&mut test_board, actual_player);
         let mut global_results: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![];
         for dir in 0..4 {
-            let tmp_result = match score_board[pos2check.0][pos2check.1][dir].0 {
+            let tmp_result = match score_board.get(pos2check.0, pos2check.1, dir).0 {
                 4 => connect_4(
                     pos2check,
                     &mut score_board,
