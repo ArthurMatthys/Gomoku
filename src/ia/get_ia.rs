@@ -57,10 +57,13 @@ fn find_winning_align(
 
 // negamax_try
 fn ab_negamax(
-    board: &mut Board,
+    // board: &mut Board,
+    // score_board: &mut ScoreBoard,
+    // zhash: &mut u64,
+    // counter_tree: &mut u64,
+    // start_time: &time::Instant,
+    params: &mut ParamsIA,
     // table: &[[[u64; 2]; SIZE_BOARD]; SIZE_BOARD],
-    score_board: &mut ScoreBoard,
-    zhash: &mut u64,
     current_depth: &mut i8,
     actual: Option<bool>,
     actual_catch: &mut isize,
@@ -69,20 +72,14 @@ fn ab_negamax(
     beta: &mut i64,
     color: &mut i8,
     depth_max: &i8,
-    counter_tree: &mut u64,
-    start_time: &time::Instant
 ) -> Option<(i64, Option<(usize, usize)>)> {
     // println!("entered: {}", counter_tree);
-    if time::Instant::now().duration_since(*start_time) >= LIMIT_DURATION {
-        // println!("cutoff: {}", counter_tree);
-        // println!("DAAAAAMMMNN: {}", current_depth);
-        //
+    if time::Instant::now().duration_since(params.start_time) >= LIMIT_DURATION {
         return None;
     }
-//    println!("here1");
-    let mut tte = zobrist::retrieve_tt_from_hash(zhash);
+    let mut tte = zobrist::retrieve_tt_from_hash(&params.zhash);
     let alpha_orig = *alpha;
-    *counter_tree += 1;
+    params.counter_tree += 1;
     if tte.is_valid && tte.depth == *depth_max - *current_depth {
         if tte.r#type == zobrist::TypeOfEl::Exact {
             return Some((tte.value, tte.r#move));
@@ -100,13 +97,13 @@ fn ab_negamax(
 //    println!("here2");
     if *opp_catch >= 5 {
         return Some((-heuristic::INSTANT_WIN * ((*depth_max - *current_depth) as i64 + 1), None));
-    } else if find_winning_align(board, score_board, actual) {
+    } else if find_winning_align(&mut params.board, &mut params.score_board, actual) {
         return Some((heuristic::INSTANT_WIN * ((*depth_max - *current_depth) as i64 + 1), None));
     }
     if *current_depth == *depth_max {
         let weight = heuristic::first_heuristic_hint(
-            board,
-            score_board,
+            &mut params.board,
+            &mut params.score_board,
             actual,
             actual_catch,
             opp_catch,
@@ -125,16 +122,13 @@ fn ab_negamax(
         // println!("rentré");
 //        println!("here4");
         if let Some((line, col)) = tte.r#move {
-            if board.get_pawn(line, col) == None {
-                let removed = change_board(board, score_board, line, col, actual, zhash);
+            if params.board.get_pawn(line, col) == None {
+                let removed = change_board(&mut params.board, &mut params.score_board, line, col, actual, &mut params.zhash);
                 *actual_catch += removed.len() as isize;
 
                 // Recurse
                 let value = ab_negamax(
-                    board,
-                    // table,
-                    score_board,
-                    zhash,
+                    params,
                     &mut (*current_depth + 1),
                     get_opp!(actual),
                     opp_catch,
@@ -143,8 +137,6 @@ fn ab_negamax(
                     &mut (-*alpha),
                     &mut (-*color),
                     depth_max,
-                    counter_tree,
-                    start_time
                 );
 //                println!("here5");
 
@@ -152,17 +144,16 @@ fn ab_negamax(
                     // None => return None,
                     None => { 
                         *actual_catch -= removed.len() as isize;
-                        remove_last_pawn(board, score_board, line, col, actual, removed, zhash);
+                        remove_last_pawn(&mut params.board, &mut params.score_board, line, col, actual, removed, &mut params.zhash);
                         return None
                     },
                     Some((recursed_score, _)) => {
                         let x = -recursed_score;
         
                         *actual_catch -= removed.len() as isize;
-                        remove_last_pawn(board, score_board, line, col, actual, removed, zhash);
+                        remove_last_pawn(&mut params.board, &mut params.score_board, line, col, actual, removed, &mut params.zhash);
         
                         if x >= *beta {
-                            // println!("rentré_cutoff");
                             best_score = x;
                             best_move = tte.r#move;
                             trig = true;
@@ -181,7 +172,7 @@ fn ab_negamax(
 //    println!("here7");
     if !trig {
         // Collect moves
-        let available_positions = get_space(board, score_board, actual, *actual_catch);
+        let available_positions = get_space(&mut params.board, &mut params.score_board, actual, *actual_catch);
         // println!("\nCounter-tree: {}|d:{}", counter_tree,current_depth);
         // available_positions.iter().for_each(|&(x,y,z)|{
         //     print!("[({}:{})|{}]", x,  y, z);
@@ -191,7 +182,7 @@ fn ab_negamax(
         let mut tmp_curr_depth = *current_depth + 1;
         // let calc_depth = cmp::min(((*depth_max - *current_depth) / 2) + *current_depth, *depth_max);
         for (index, &(line, col, _)) in available_positions.iter().enumerate() {
-            let removed = change_board(board, score_board, line, col, actual, zhash);
+            let removed = change_board(&mut params.board, &mut params.score_board, line, col, actual, &mut params.zhash);
             *actual_catch += removed.len() as isize;
 
             // if index == 5 {
@@ -201,11 +192,7 @@ fn ab_negamax(
             // Recurse
 //            println!("here9");
             let value = ab_negamax(
-                board,
-                // table,
-                score_board,
-                zhash,
-                // &mut (*current_depth + 1),
+                params,
                 &mut tmp_curr_depth,
                 get_opp!(actual),
                 opp_catch,
@@ -214,15 +201,13 @@ fn ab_negamax(
                 &mut (-*alpha),
                 &mut (-*color),
                 depth_max,
-                counter_tree,
-                start_time
             );
 
 //            println!("here10");
             match value {
                 None => { 
                     *actual_catch -= removed.len() as isize;
-                    remove_last_pawn(board, score_board, line, col, actual, removed, zhash);
+                    remove_last_pawn(&mut params.board, &mut params.score_board, line, col, actual, removed, &mut params.zhash);
                     // if *current_depth == 1 || *current_depth == 0  || *current_depth == 2 {
                         // continue ;
                     // } else {
@@ -241,17 +226,15 @@ fn ab_negamax(
                     }
         
                     *actual_catch -= removed.len() as isize;
-                    remove_last_pawn(board, score_board, line, col, actual, removed, zhash);
+                    remove_last_pawn(&mut params.board, &mut params.score_board, line, col, actual, removed, &mut params.zhash);
         
                     if *alpha >= *beta {
                         best_score = *alpha;
                         best_move = Some((line, col));
                         break;
-                        // return (*alpha, best_move);
                     }
                 }
             }
-//            println!("here11");
         }
     }
 
@@ -262,13 +245,12 @@ fn ab_negamax(
     } else {
         tte.r#type = zobrist::TypeOfEl::Exact;
     }
-//    println!("here12");
     tte.is_valid = true;
-    tte.key = *zhash;
+    tte.key = params.zhash;
     tte.value = best_score;
     tte.r#move = best_move;
     tte.depth = *depth_max - *current_depth;
-    zobrist::store_tt_entry(zhash, tte);
+    zobrist::store_tt_entry(&mut params.zhash, tte);
 
     Some((best_score, best_move))
 }
@@ -281,42 +263,34 @@ fn mtdf(
     let mut upperbnd = MAX_INFINITY;
     let mut lowerbnd = MIN_INFINITY;
 
-    // Still bug covering here
-    let actual_catch2 = params.actual_catch;
-    let opp_catch2 = params.opp_catch;
     while lowerbnd < upperbnd {
-        // UNNECESSARY, PATCHES BUG
-        params.actual_catch = actual_catch2;
-        params.opp_catch = opp_catch2;
-    
-        if g == lowerbnd {
-            params.beta = g + 1;
-        } else {
-            params.beta = g;
-        }
+        let mut depth_max = params.depth_max;
+        let mut actual_catch2 = params.actual_catch;
+        let mut opp_catch2 = params.opp_catch;
+
+        let mut beta = if g == lowerbnd {
+                            g + 1
+                        } else {
+                            g
+                        };
 
         let values: Option<(i64, Option<(usize, usize)>)> = ab_negamax(
-            &mut params.board,
-            // table,
-            &mut params.score_board,
-            &mut params.zhash,
+            params,
             &mut 0,
             params.actual,
-            &mut params.actual_catch,
-            &mut params.opp_catch,
-            &mut (params.beta - 1),
-            &mut params.beta,
+            &mut actual_catch2,
+            &mut opp_catch2,
+            &mut (beta - 1),
+            &mut beta,
             &mut 1,
-            &mut params.depth_max,
-            &mut params.counter_tree,
-            &mut params.start_time
+            &mut depth_max,
         );
         match values {
             None => { return None },
             Some((score, r#move)) => {
                 ret = (score, r#move.unwrap());
                 g = score;
-                if g < params.beta {
+                if g < beta {
                     upperbnd = g;
                 } else {
                     lowerbnd = g;
@@ -331,22 +305,22 @@ pub fn iterative_deepening_mtdf(
     params: &mut ParamsIA
 ) -> (i64,(usize, usize)) {
     let mut ret = (MIN_INFINITY,(0, 0));
-    // BEHAVIOR CHANGES --> BUG
-    let actual_catch2 = params.actual_catch;
-    let opp_catch2 = params.opp_catch;
+    let beta = params.beta;
+    let actual_catch = params.actual_catch;
+    let opp_catch = params.opp_catch;
     for d in (2..(params.depth_max + 1)).step_by(2) {
-        // UNNECESSARY, PATCHES BUG
-        params.opp_catch = actual_catch2;
-        params.actual_catch = opp_catch2;
         // Below, their existence is justified (checks still needed for beta)
         params.counter_tree = 0;
         params.depth_max = d;
+        params.beta = beta;
+        params.actual_catch = actual_catch;
+        params.opp_catch = opp_catch;
 
         let stime_mtdf = time::Instant::now();
         if stime_mtdf.duration_since(params.start_time) >= LIMIT_DURATION {
             break;
         }
-        
+
         let tmp_ret = mtdf(
             params,
         );
