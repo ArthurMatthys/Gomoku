@@ -123,7 +123,7 @@ fn explore_capture_check(
     }
 }
 
-// Function that checks if a winner has been found
+/// Function that checks if a winner has been found
 pub fn check_capture(game: &mut game::Game) -> Option<Vec<((isize, isize), (isize, isize))>> {
     // let board = game.board;
     if let Some((line, col)) = game.history.last() {
@@ -151,6 +151,7 @@ pub fn check_capture(game: &mut game::Game) -> Option<Vec<((isize, isize), (isiz
     }
 }
 
+/// Check if the current player can do any capture
 pub fn find_capture(game: &mut game::Game) -> Vec<(usize, usize)> {
     let mut ret: Vec<(usize, usize)> = vec![];
     for i in 0..19 {
@@ -172,14 +173,12 @@ pub fn find_capture(game: &mut game::Game) -> Vec<(usize, usize)> {
 }
 
 /// Check if nany of the given pawn can be capture
-pub fn can_capture(game: &mut game::Game, to_capture: Vec<(isize, isize)>) -> bool {
+pub fn can_capture_vec(game: &mut game::Game, to_capture: Vec<(isize, isize)>) -> bool {
     let score_board = heuristic::evaluate_board(&mut game.board.into());
     let mut board: Board = game.board.into();
     for &(x, y) in to_capture.iter() {
-        let new_x = x as usize;
-        let new_y = y as usize;
         for dir in 0..4 {
-            match score_board.get(new_x, new_y, dir) {
+            match score_board.get(x as usize, y as usize, dir) {
                 (a, l, r)
                     if a == 2
                         && ((l == Some(false) && r == Some(true))
@@ -208,30 +207,52 @@ pub fn can_capture(game: &mut game::Game, to_capture: Vec<(isize, isize)>) -> bo
         }
     }
     false
-    //    for i in 0..19 {
-    //        for j in 0..19 {
-    //            if game.board[i][j] != None || game.is_forbidden_from_index(i, j) {
-    //                continue;
-    //            } else {
-    //                game.change_board_value_hint(i, j);
-    //                if let Some(taken) = check_capture(game) {
-    //                    for ((a, b), (c, d)) in taken.iter() {
-    //                        // (a,b)
-    //                        if to_capture
-    //                            .iter()
-    //                            .any(|(x, y)| x == a && y == b || x == c && y == d)
-    //                        {
-    //                            ret.push((i, j));
-    //                        }
-    //                    }
-    //                }
-    //            }
-    //            game.clear_last_move();
-    //        }
-    //    }
-    //    if ret.len() > 0 {
-    //        Some(ret)
-    //    } else {
-    //        None
-    //    }
+}
+
+/// Called by check_win if and only if the current player has a 5 in a row
+/// and the opponent has 4 catches. We are looking if the opponent can do
+/// an other capture
+pub fn can_capture(game: &mut game::Game) -> bool {
+    let score_board = heuristic::evaluate_board(&mut game.board.into());
+    let mut board: Board = game.board.into();
+    let curr = game.player_to_pawn().map(|x| !x);
+    let opp = game.player_to_pawn();
+    for x in 0..board::SIZE_BOARD {
+        for y in 0..board::SIZE_BOARD {
+            match board.get_pawn(x, y) {
+                a if a == curr => {
+                    for dir in 0..4 {
+                        match score_board.get(x as usize, y as usize, dir) {
+                            (a, l, r)
+                                if a == 2
+                                    && ((l == Some(false) && r == Some(true))
+                                        || (l == Some(true) && r == Some(false))) =>
+                            {
+                                let way = if l == Some(false) { -1 } else { 1 };
+                                let (dx, dy) = DIRECTIONS[dir];
+                                for step in 1..3 {
+                                    let new_x = x as isize + way * step * dx;
+                                    let new_y = y as isize + way * step * dy;
+                                    match board.get(new_x as usize, new_y as usize) {
+                                        Some(a) if a == opp => unreachable!(),
+                                        Some(a) if a == curr => (),
+                                        Some(None) => {
+                                            return !(check_double_three_hint(
+                                                &mut board, opp, new_x, new_y,
+                                            ))
+                                        }
+                                        Some(_) => unreachable!(),
+                                        None => return false,
+                                    }
+                                }
+                            }
+                            _ => (),
+                        }
+                    }
+                }
+                _ => (),
+            }
+        }
+    }
+    false
 }

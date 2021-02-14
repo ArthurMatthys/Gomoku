@@ -3,13 +3,13 @@ extern crate sdl2;
 
 use sdl2::render::Canvas;
 
-use super::super::model::score_board::ScoreBoard;
 use super::super::checks::after_turn_check;
 use super::super::checks::capture;
 use super::super::checks::double_three;
 use super::super::checks::valid_pos;
-use super::super::ia::heuristic;
 use super::super::ia::handle_board;
+use super::super::ia::heuristic;
+use super::super::model::score_board::ScoreBoard;
 use std::time::Duration;
 
 use super::super::render::board;
@@ -365,13 +365,15 @@ impl Game {
                     self.board[*line_z][*col_z] = self.player_to_pawn();
                     nbr += 1;
                 } else {
-                    break ;
+                    break;
                 }
             }
             for _ in 0..nbr {
                 self.minus_capture();
             }
-            let _ = self.history_capture.split_off(self.history_capture.len() - nbr);
+            let _ = self
+                .history_capture
+                .split_off(self.history_capture.len() - nbr);
             self.set_changed();
             self.next_player();
         }
@@ -650,11 +652,11 @@ impl Game {
                 }
             } else if let Some(indexes) = after_turn_check::check_winner(self) {
                 self.result = self.player_to_pawn();
-                if capture::can_capture(self, indexes) {
+                if capture::can_capture_vec(self, indexes) {
                     false
                 } else {
                     let player = self.get_actual_player();
-                    if player.nb_of_catch == 4 {
+                    if player.nb_of_catch == 4 && capture::can_capture(self) {
                         println!("yo");
                         false
                     } else {
