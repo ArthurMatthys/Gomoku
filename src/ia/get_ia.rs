@@ -370,7 +370,6 @@ fn ia(
         f: 0,
     };
 
-    println!("AVANT MULTITHREAD");
     // Spawn 3 threads for parallel execution
     for _ in 0..3 {
         let tx_tmp = threadpool.tx.clone();
@@ -383,7 +382,6 @@ fn ia(
             );
         });
     }
-    println!("AAPRES MULTITHREAD");
     // Main thread execution
     iterative_deepening_mtdf(
         &mut params,
@@ -398,7 +396,6 @@ pub fn get_ia(
     start_time: &time::Instant,
     threadpool: &ThreadPool 
 ) -> (usize, usize) {
-    println!("DANS GET_IA");
     let hash: u64 = zobrist::board_to_zhash(&game.board);
     let mut rng = rand::thread_rng();
 

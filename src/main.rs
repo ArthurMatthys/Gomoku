@@ -182,7 +182,6 @@ pub fn main() {
     'running: loop {
         if game.actual_player_is_ai().expect("Wrong type of player") {
             let start = Instant::now();
-            println!("All threads dead");
             let (line, col) = get_ia::get_ia(&mut game, &DEPTH_MAX, &start, &threadpool);
             let end = Instant::now();
             game.set_player_time(end.duration_since(start));
