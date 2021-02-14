@@ -1,6 +1,9 @@
 use super::super::ia::heuristic;
+use super::super::model::board::Board;
 use super::super::model::game;
 use super::super::render::board;
+use super::after_turn_check::DIRECTIONS;
+use super::double_three::check_double_three_hint;
 
 pub const DIRS: [(isize, isize); 8] = [
     (1, 1),
@@ -168,15 +171,37 @@ pub fn find_capture(game: &mut game::Game) -> Vec<(usize, usize)> {
     ret
 }
 
+/// Check if nany of the given pawn can be capture
 pub fn can_capture(game: &mut game::Game, to_capture: Vec<(isize, isize)>) -> bool {
     let score_board = heuristic::evaluate_board(&mut game.board.into());
+    let mut board: Board = game.board.into();
     for &(x, y) in to_capture.iter() {
         let new_x = x as usize;
         let new_y = y as usize;
         for dir in 0..4 {
             match score_board.get(new_x, new_y, dir) {
-                (a, l, r) if a == 2 && ((l == Some(false) && r == Some(true)) || (l == Some (true) && r == Some(false))) => {
-                    return true
+                (a, l, r)
+                    if a == 2
+                        && ((l == Some(false) && r == Some(true))
+                            || (l == Some(true) && r == Some(false))) =>
+                {
+                    let way = if l == Some(false) { -1 } else { 1 };
+                    let pawn = board.get_pawn(x as usize, y as usize);
+                    let opp = pawn.map(|x| !x);
+                    let (dx, dy) = DIRECTIONS[dir];
+                    for step in 1..3 {
+                        let new_x = x + way * step * dx;
+                        let new_y = y + way * step * dy;
+                        match board.get(new_x as usize, new_y as usize) {
+                            Some(a) if a == opp => unreachable!(),
+                            Some(a) if a == pawn => (),
+                            Some(None) => {
+                                return !(check_double_three_hint(&mut board, opp, new_x, new_y))
+                            }
+                            Some(_) => unreachable!(),
+                            None => return false,
+                        }
+                    }
                 }
                 _ => (),
             }

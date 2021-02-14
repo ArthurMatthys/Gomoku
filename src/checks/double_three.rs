@@ -1,5 +1,5 @@
-use super::super::model::game;
 use super::super::model::board::Board;
+use super::super::model::game;
 use super::super::render::board::SIZE_BOARD;
 use super::after_turn_check;
 use super::capture;
@@ -9,7 +9,7 @@ use super::capture;
 //      Index (1) : Second way (1 in for loop below) ==
 // [
 //      [
-//          nb_pions alliés avant espace ou pion ennemi, 
+//          nb_pions alliés avant espace ou pion ennemi,
 //          si premier espace,
 //          nb_pions alliés en 1er et 2ème espace,
 //          2ème espace
@@ -137,7 +137,7 @@ fn is_free_tree_hint(
             //                    (line + dir_line * moves * i, col + dir_col * moves * i);
             new_index_line += new_dir_line;
             new_index_col += new_dir_col;
-            match board.get(new_index_line as usize, new_index_col as usize){
+            match board.get(new_index_line as usize, new_index_col as usize) {
                 //  If I am on an empty position
                 Some(None) => {
                     // Check wether we already met an empty position
@@ -174,52 +174,51 @@ fn is_free_tree_hint(
                 }
                 Some(_) => unreachable!(),
                 None => break,
-
             }
-//            if valid_coord!(new_index_line, new_index_col) {
-//                match board[new_index_line as usize][new_index_col as usize] {
-//                    //  If I am on an empty position
-//                    None => {
-//                        // Check wether we already met an empty position
-//                        // If yes
-//                        if parts[index_part][1] == 1 {
-//                            if parts[index_part][2] + parts[index_part][0] != 0 {
-//                                parts[index_part][3] = 1;
-//                            }
-//                            break;
-//                        // Else, increment second index
-//                        } else {
-//                            parts[index_part][1] = 1;
-//                        }
-//                    }
-//                    // If I am on a competitors pawn, break
-//                    x if x != current => {
-//                        if parts[index_part][1] == 1 && parts[index_part][2] == 0 {
-//                            parts[index_part][3] = 1;
-//                        } else if parts[index_part][1] == 1 && parts[index_part][2] > 0 {
-//                            parts[index_part][2] = 0;
-//                            parts[index_part][3] = 1;
-//                        }
-//                        break;
-//                    }
-//                    // If I am on the player's pawn
-//                    x if x == current => {
-//                        // If I have met an empty position, increment the index 2 of the vec
-//                        if parts[index_part][1] == 1 {
-//                            parts[index_part][2] += 1;
-//                        // Else, increment the index on positon 0
-//                        } else {
-//                            parts[index_part][0] += 1;
-//                        }
-//                    }
-//                    _ => unreachable!(),
-//                };
-//            //                moves += 1;
-//            // Check next move
-//            // If we are on an invalid position, break
-//            } else {
-//                break;
-//            }
+            //            if valid_coord!(new_index_line, new_index_col) {
+            //                match board[new_index_line as usize][new_index_col as usize] {
+            //                    //  If I am on an empty position
+            //                    None => {
+            //                        // Check wether we already met an empty position
+            //                        // If yes
+            //                        if parts[index_part][1] == 1 {
+            //                            if parts[index_part][2] + parts[index_part][0] != 0 {
+            //                                parts[index_part][3] = 1;
+            //                            }
+            //                            break;
+            //                        // Else, increment second index
+            //                        } else {
+            //                            parts[index_part][1] = 1;
+            //                        }
+            //                    }
+            //                    // If I am on a competitors pawn, break
+            //                    x if x != current => {
+            //                        if parts[index_part][1] == 1 && parts[index_part][2] == 0 {
+            //                            parts[index_part][3] = 1;
+            //                        } else if parts[index_part][1] == 1 && parts[index_part][2] > 0 {
+            //                            parts[index_part][2] = 0;
+            //                            parts[index_part][3] = 1;
+            //                        }
+            //                        break;
+            //                    }
+            //                    // If I am on the player's pawn
+            //                    x if x == current => {
+            //                        // If I have met an empty position, increment the index 2 of the vec
+            //                        if parts[index_part][1] == 1 {
+            //                            parts[index_part][2] += 1;
+            //                        // Else, increment the index on positon 0
+            //                        } else {
+            //                            parts[index_part][0] += 1;
+            //                        }
+            //                    }
+            //                    _ => unreachable!(),
+            //                };
+            //            //                moves += 1;
+            //            // Check next move
+            //            // If we are on an invalid position, break
+            //            } else {
+            //                break;
+            //            }
         }
     }
     let tot = (
@@ -269,7 +268,7 @@ mod tests {
         white_pos: Vec<(usize, usize)>,
         black_pos: Vec<(usize, usize)>,
         actual_player: Option<bool>,
-        (x,y): (isize,isize),
+        (x, y): (isize, isize),
         expected_result: bool,
     ) -> bool {
         let mut test_board = [[None; SIZE_BOARD]; SIZE_BOARD];
@@ -286,8 +285,8 @@ mod tests {
         for i in 0..19 {
             print!("    // ");
             for j in 0..19 {
-                match (i,j) {
-                    z if z == (y,x) => print!("⊛"),
+                match (i, j) {
+                    z if z == (y, x) => print!("⊛"),
                     _ => match test_board[j as usize][i as usize] {
                         Some(true) => print!("⊖"),
                         Some(false) => print!("⊕"),
@@ -298,12 +297,7 @@ mod tests {
             println!();
         }
 
-        let ret = check_double_three_hint(
-            &mut test_board.into(),
-            actual_player,
-            x,
-            y,
-        );
+        let ret = check_double_three_hint(&mut test_board.into(), actual_player, x, y);
 
         ret == expected_result
     }
@@ -330,9 +324,9 @@ mod tests {
     // ___________________
     #[test]
     fn double_threat_find_double_three_hint_0() {
-        let black_pos = vec![(9, 8), (9, 7), (8,6), (7,6)];
+        let black_pos = vec![(9, 8), (9, 7), (8, 6), (7, 6)];
         let white_pos = vec![];
-        let pos2check = (9,6);
+        let pos2check = (9, 6);
         let expected_result = true;
 
         assert!(test_double_three_check_double_three_hint(
@@ -366,9 +360,9 @@ mod tests {
     // ___________________
     #[test]
     fn double_threat_find_double_three_hint_1() {
-        let black_pos = vec![(9, 8), (9, 7), (8,6), (7,6)];
-        let white_pos = vec![(9,9)];
-        let pos2check = (9,6);
+        let black_pos = vec![(9, 8), (9, 7), (8, 6), (7, 6)];
+        let white_pos = vec![(9, 9)];
+        let pos2check = (9, 6);
         let expected_result = false;
 
         assert!(test_double_three_check_double_three_hint(
@@ -402,9 +396,9 @@ mod tests {
     // ___________________
     #[test]
     fn double_threat_find_double_three_hint_2() {
-        let black_pos = vec![(9, 5), (9, 7), (8,6), (7,6)];
-        let white_pos = vec![(9,8)];
-        let pos2check = (9,6);
+        let black_pos = vec![(9, 5), (9, 7), (8, 6), (7, 6)];
+        let white_pos = vec![(9, 8)];
+        let pos2check = (9, 6);
         let expected_result = false;
 
         assert!(test_double_three_check_double_three_hint(
@@ -438,9 +432,9 @@ mod tests {
     // ___________________
     #[test]
     fn double_threat_find_double_three_hint_3() {
-        let black_pos = vec![(9, 5), (9, 7), (8,6), (7,6)];
+        let black_pos = vec![(9, 5), (9, 7), (8, 6), (7, 6)];
         let white_pos = vec![];
-        let pos2check = (9,6);
+        let pos2check = (9, 6);
         let expected_result = true;
 
         assert!(test_double_three_check_double_three_hint(
@@ -474,9 +468,9 @@ mod tests {
     // ___________________
     #[test]
     fn double_threat_find_double_three_hint_4() {
-        let black_pos = vec![(9, 4), (9, 7), (8,6), (7,6)];
-        let white_pos = vec![(9,8)];
-        let pos2check = (9,6);
+        let black_pos = vec![(9, 4), (9, 7), (8, 6), (7, 6)];
+        let white_pos = vec![(9, 8)];
+        let pos2check = (9, 6);
         let expected_result = false;
 
         assert!(test_double_three_check_double_three_hint(
@@ -510,9 +504,9 @@ mod tests {
     // ___________________
     #[test]
     fn double_threat_find_double_three_hint_5() {
-        let black_pos = vec![(9, 4), (9, 7), (8,6), (7,6)];
+        let black_pos = vec![(9, 4), (9, 7), (8, 6), (7, 6)];
         let white_pos = vec![];
-        let pos2check = (9,6);
+        let pos2check = (9, 6);
         let expected_result = true;
 
         assert!(test_double_three_check_double_three_hint(
@@ -546,9 +540,9 @@ mod tests {
     // ___________________
     #[test]
     fn double_threat_find_double_three_hint_6() {
-        let black_pos = vec![(9, 4), (9, 7), (6,6), (7,6)];
+        let black_pos = vec![(9, 4), (9, 7), (6, 6), (7, 6)];
         let white_pos = vec![];
-        let pos2check = (9,6);
+        let pos2check = (9, 6);
         let expected_result = true;
 
         assert!(test_double_three_check_double_three_hint(
@@ -582,9 +576,9 @@ mod tests {
     // ___________________
     #[test]
     fn double_threat_find_double_three_hint_7() {
-        let black_pos = vec![(9, 4), (9, 7), (6,6), (7,6)];
-        let white_pos = vec![(9,8)];
-        let pos2check = (9,6);
+        let black_pos = vec![(9, 4), (9, 7), (6, 6), (7, 6)];
+        let white_pos = vec![(9, 8)];
+        let pos2check = (9, 6);
         let expected_result = false;
 
         assert!(test_double_three_check_double_three_hint(
@@ -618,9 +612,9 @@ mod tests {
     // ___________________
     #[test]
     fn double_threat_find_double_three_hint_8() {
-        let black_pos = vec![(9, 8),(6,6),(7,6),(9,5)];
-        let white_pos = vec![(9,9)];
-        let pos2check = (9,6);
+        let black_pos = vec![(9, 8), (6, 6), (7, 6), (9, 5)];
+        let white_pos = vec![(9, 9)];
+        let pos2check = (9, 6);
         let expected_result = false;
 
         assert!(test_double_three_check_double_three_hint(
@@ -654,9 +648,9 @@ mod tests {
     // ___________________
     #[test]
     fn double_threat_find_double_three_hint_9() {
-        let black_pos = vec![(9, 4), (9, 7), (6,6), (7,6)];
-        let white_pos = vec![(9,3)];
-        let pos2check = (9,6);
+        let black_pos = vec![(9, 4), (9, 7), (6, 6), (7, 6)];
+        let white_pos = vec![(9, 3)];
+        let pos2check = (9, 6);
         let expected_result = false;
 
         assert!(test_double_three_check_double_three_hint(
@@ -690,9 +684,9 @@ mod tests {
     // ___________________
     #[test]
     fn double_threat_find_double_three_hint_10() {
-        let black_pos = vec![(9, 4), (9, 7), (6,6), (7,6)];
-        let white_pos = vec![(10,6)];
-        let pos2check = (9,6);
+        let black_pos = vec![(9, 4), (9, 7), (6, 6), (7, 6)];
+        let white_pos = vec![(10, 6)];
+        let pos2check = (9, 6);
         let expected_result = false;
 
         assert!(test_double_three_check_double_three_hint(
@@ -726,9 +720,9 @@ mod tests {
     // ___________________
     #[test]
     fn double_threat_find_double_three_hint_11() {
-        let black_pos = vec![(9, 4), (9, 7), (6,6), (7,6)];
-        let white_pos = vec![(8,6)];
-        let pos2check = (9,6);
+        let black_pos = vec![(9, 4), (9, 7), (6, 6), (7, 6)];
+        let white_pos = vec![(8, 6)];
+        let pos2check = (9, 6);
         let expected_result = false;
 
         assert!(test_double_three_check_double_three_hint(
@@ -762,9 +756,9 @@ mod tests {
     // ___________________
     #[test]
     fn double_threat_find_double_three_hint_12() {
-        let black_pos = vec![(9, 4), (9, 7), (6,6), (7,6)];
-        let white_pos = vec![(9,5)];
-        let pos2check = (9,6);
+        let black_pos = vec![(9, 4), (9, 7), (6, 6), (7, 6)];
+        let white_pos = vec![(9, 5)];
+        let pos2check = (9, 6);
         let expected_result = false;
 
         assert!(test_double_three_check_double_three_hint(
@@ -798,9 +792,9 @@ mod tests {
     // ___________________
     #[test]
     fn double_threat_find_double_three_hint_13() {
-        let black_pos = vec![(9, 4), (9, 7), (6,6), (7,6), (10,5), (11,4)];
-        let white_pos = vec![(9,5)];
-        let pos2check = (9,6);
+        let black_pos = vec![(9, 4), (9, 7), (6, 6), (7, 6), (10, 5), (11, 4)];
+        let white_pos = vec![(9, 5)];
+        let pos2check = (9, 6);
         let expected_result = true;
 
         assert!(test_double_three_check_double_three_hint(
@@ -834,9 +828,9 @@ mod tests {
     // ___________________
     #[test]
     fn double_threat_find_double_three_hint_14() {
-        let black_pos = vec![(9, 4), (9, 7), (6,6), (7,6), (10,5), (11,4)];
-        let white_pos = vec![(9,5), (12,3)];
-        let pos2check = (9,6);
+        let black_pos = vec![(9, 4), (9, 7), (6, 6), (7, 6), (10, 5), (11, 4)];
+        let white_pos = vec![(9, 5), (12, 3)];
+        let pos2check = (9, 6);
         let expected_result = false;
 
         assert!(test_double_three_check_double_three_hint(
@@ -911,7 +905,7 @@ mod tests {
                 }
             }
         }
-    
+
         let tot = (
             parts[0][0] + parts[1][0],
             parts[0][1] + parts[1][1],
@@ -927,7 +921,7 @@ mod tests {
             false
         }
     }
-    
+
     fn check_double_three(
         board: &mut [[Option<bool>; SIZE_BOARD]; SIZE_BOARD],
         actual_player: Option<bool>,
@@ -958,7 +952,7 @@ mod tests {
         white_pos: Vec<(usize, usize)>,
         black_pos: Vec<(usize, usize)>,
         actual_player: Option<bool>,
-        (x,y): (isize,isize),
+        (x, y): (isize, isize),
         expected_result: Vec<(usize, usize)>,
     ) -> bool {
         let mut test_board = [[None; SIZE_BOARD]; SIZE_BOARD];
@@ -975,8 +969,8 @@ mod tests {
         for i in 0..19 {
             print!("    // ");
             for j in 0..19 {
-                match (i,j) {
-                    z if z == (y,x) => print!("⊛"),
+                match (i, j) {
+                    z if z == (y, x) => print!("⊛"),
                     _ => match test_board[j as usize][i as usize] {
                         Some(true) => print!("⊖"),
                         Some(false) => print!("⊕"),
@@ -987,14 +981,17 @@ mod tests {
             println!();
         }
 
-        let ret = check_double_three(
-            &mut test_board,
-            actual_player
-        );
+        let ret = check_double_three(&mut test_board, actual_player);
 
         println!("DEBUG-XXX");
         print!("[");
-        ret.iter().enumerate().for_each(|(i,(x,y))| { if i < ret.len() - 1 { print!("({}:{}),", x, y) } else { print!("({}:{})", x, y) }});
+        ret.iter().enumerate().for_each(|(i, (x, y))| {
+            if i < ret.len() - 1 {
+                print!("({}:{}),", x, y)
+            } else {
+                print!("({}:{})", x, y)
+            }
+        });
         println!("]");
 
         ret == expected_result
@@ -1022,10 +1019,10 @@ mod tests {
     // ___________________
     #[test]
     fn double_threat_find_global_double_three_0() {
-        let black_pos = vec![(9, 8), (9, 7), (8,6), (7,6)];
+        let black_pos = vec![(9, 8), (9, 7), (8, 6), (7, 6)];
         let white_pos = vec![];
-        let pos2check = (9,6);
-        let expected_result = vec![(9,6)];
+        let pos2check = (9, 6);
+        let expected_result = vec![(9, 6)];
 
         assert!(test_double_three_check_double_three(
             white_pos,
@@ -1058,9 +1055,9 @@ mod tests {
     // ___________________
     #[test]
     fn double_threat_find_global_double_three_1() {
-        let black_pos = vec![(9, 8), (9, 7), (8,6), (7,6)];
-        let white_pos = vec![(9,9)];
-        let pos2check = (9,6);
+        let black_pos = vec![(9, 8), (9, 7), (8, 6), (7, 6)];
+        let white_pos = vec![(9, 9)];
+        let pos2check = (9, 6);
         let expected_result = vec![];
 
         assert!(test_double_three_check_double_three(
@@ -1094,9 +1091,9 @@ mod tests {
     // ___________________
     #[test]
     fn double_threat_find_global_double_three_2() {
-        let black_pos = vec![(9, 5), (9, 7), (8,6), (7,6)];
-        let white_pos = vec![(9,8)];
-        let pos2check = (9,6);
+        let black_pos = vec![(9, 5), (9, 7), (8, 6), (7, 6)];
+        let white_pos = vec![(9, 8)];
+        let pos2check = (9, 6);
         let expected_result = vec![];
 
         assert!(test_double_three_check_double_three(
@@ -1130,10 +1127,10 @@ mod tests {
     // ___________________
     #[test]
     fn double_threat_find_global_double_three_3() {
-        let black_pos = vec![(9, 5), (9, 7), (8,6), (7,6)];
+        let black_pos = vec![(9, 5), (9, 7), (8, 6), (7, 6)];
         let white_pos = vec![];
-        let pos2check = (9,6);
-        let expected_result = vec![(9,6)];
+        let pos2check = (9, 6);
+        let expected_result = vec![(9, 6)];
 
         assert!(test_double_three_check_double_three(
             white_pos,
@@ -1166,9 +1163,9 @@ mod tests {
     // ___________________
     #[test]
     fn double_threat_find_global_double_three_4() {
-        let black_pos = vec![(9, 4), (9, 7), (8,6), (7,6)];
-        let white_pos = vec![(9,8)];
-        let pos2check = (9,6);
+        let black_pos = vec![(9, 4), (9, 7), (8, 6), (7, 6)];
+        let white_pos = vec![(9, 8)];
+        let pos2check = (9, 6);
         let expected_result = vec![];
 
         assert!(test_double_three_check_double_three(
@@ -1202,10 +1199,10 @@ mod tests {
     // ___________________
     #[test]
     fn double_threat_find_global_double_three_5() {
-        let black_pos = vec![(9, 4), (9, 7), (8,6), (7,6)];
+        let black_pos = vec![(9, 4), (9, 7), (8, 6), (7, 6)];
         let white_pos = vec![];
-        let pos2check = (9,6);
-        let expected_result = vec![(9,6)];
+        let pos2check = (9, 6);
+        let expected_result = vec![(9, 6)];
 
         assert!(test_double_three_check_double_three(
             white_pos,
@@ -1238,10 +1235,10 @@ mod tests {
     // ___________________
     #[test]
     fn double_threat_find_global_double_three_6() {
-        let black_pos = vec![(9, 4), (9, 7), (6,6), (7,6)];
+        let black_pos = vec![(9, 4), (9, 7), (6, 6), (7, 6)];
         let white_pos = vec![];
-        let pos2check = (9,6);
-        let expected_result = vec![(9,6)];
+        let pos2check = (9, 6);
+        let expected_result = vec![(9, 6)];
 
         assert!(test_double_three_check_double_three(
             white_pos,
@@ -1274,9 +1271,9 @@ mod tests {
     // ___________________
     #[test]
     fn double_threat_find_global_double_three_7() {
-        let black_pos = vec![(9, 4), (9, 7), (6,6), (7,6)];
-        let white_pos = vec![(9,8)];
-        let pos2check = (9,6);
+        let black_pos = vec![(9, 4), (9, 7), (6, 6), (7, 6)];
+        let white_pos = vec![(9, 8)];
+        let pos2check = (9, 6);
         let expected_result = vec![];
 
         assert!(test_double_three_check_double_three(
@@ -1310,9 +1307,9 @@ mod tests {
     // ___________________
     #[test]
     fn double_threat_find_global_double_three_8() {
-        let black_pos = vec![(9, 8),(6,6),(7,6),(9,5)];
-        let white_pos = vec![(9,9)];
-        let pos2check = (9,6);
+        let black_pos = vec![(9, 8), (6, 6), (7, 6), (9, 5)];
+        let white_pos = vec![(9, 9)];
+        let pos2check = (9, 6);
         let expected_result = vec![];
 
         assert!(test_double_three_check_double_three(
@@ -1346,9 +1343,9 @@ mod tests {
     // ___________________
     #[test]
     fn double_threat_find_global_double_three_9() {
-        let black_pos = vec![(9, 4), (9, 7), (6,6), (7,6)];
-        let white_pos = vec![(9,3)];
-        let pos2check = (9,6);
+        let black_pos = vec![(9, 4), (9, 7), (6, 6), (7, 6)];
+        let white_pos = vec![(9, 3)];
+        let pos2check = (9, 6);
         let expected_result = vec![];
 
         assert!(test_double_three_check_double_three(
@@ -1382,9 +1379,9 @@ mod tests {
     // ___________________
     #[test]
     fn double_threat_find_global_double_three_10() {
-        let black_pos = vec![(9, 4), (9, 7), (6,6), (7,6)];
-        let white_pos = vec![(10,6)];
-        let pos2check = (9,6);
+        let black_pos = vec![(9, 4), (9, 7), (6, 6), (7, 6)];
+        let white_pos = vec![(10, 6)];
+        let pos2check = (9, 6);
         let expected_result = vec![];
 
         assert!(test_double_three_check_double_three(
@@ -1418,9 +1415,9 @@ mod tests {
     // ___________________
     #[test]
     fn double_threat_find_global_double_three_11() {
-        let black_pos = vec![(9, 4), (9, 7), (6,6), (7,6)];
-        let white_pos = vec![(8,6)];
-        let pos2check = (9,6);
+        let black_pos = vec![(9, 4), (9, 7), (6, 6), (7, 6)];
+        let white_pos = vec![(8, 6)];
+        let pos2check = (9, 6);
         let expected_result = vec![];
 
         assert!(test_double_three_check_double_three(
@@ -1454,9 +1451,9 @@ mod tests {
     // ___________________
     #[test]
     fn double_threat_find_global_double_three_12() {
-        let black_pos = vec![(9, 4), (9, 7), (6,6), (7,6)];
-        let white_pos = vec![(9,5)];
-        let pos2check = (9,6);
+        let black_pos = vec![(9, 4), (9, 7), (6, 6), (7, 6)];
+        let white_pos = vec![(9, 5)];
+        let pos2check = (9, 6);
         let expected_result = vec![];
 
         assert!(test_double_three_check_double_three(
@@ -1490,10 +1487,10 @@ mod tests {
     // ___________________
     #[test]
     fn double_threat_find_global_double_three_13() {
-        let black_pos = vec![(9, 4), (9, 7), (6,6), (7,6), (10,5), (11,4)];
-        let white_pos = vec![(9,5)];
-        let pos2check = (9,6);
-        let expected_result = vec![(9,6)];
+        let black_pos = vec![(9, 4), (9, 7), (6, 6), (7, 6), (10, 5), (11, 4)];
+        let white_pos = vec![(9, 5)];
+        let pos2check = (9, 6);
+        let expected_result = vec![(9, 6)];
 
         assert!(test_double_three_check_double_three(
             white_pos,
@@ -1526,9 +1523,9 @@ mod tests {
     // ___________________
     #[test]
     fn double_threat_find_global_double_three_14() {
-        let black_pos = vec![(9, 4), (9, 7), (6,6), (7,6), (10,5), (11,4)];
-        let white_pos = vec![(9,5), (12,3)];
-        let pos2check = (9,6);
+        let black_pos = vec![(9, 4), (9, 7), (6, 6), (7, 6), (10, 5), (11, 4)];
+        let white_pos = vec![(9, 5), (12, 3)];
+        let pos2check = (9, 6);
         let expected_result = vec![];
 
         assert!(test_double_three_check_double_three(

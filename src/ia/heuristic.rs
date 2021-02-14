@@ -35,9 +35,7 @@ macro_rules! explore_align_light {
     };
 }
 
-pub fn evaluate_board(
-    board: &mut Board,
-) -> ScoreBoard {
+pub fn evaluate_board(board: &mut Board) -> ScoreBoard {
     let mut score_tab: [[[(u8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD] =
         [[[(0, Some(false), Some(false)); 4]; SIZE_BOARD]; SIZE_BOARD];
     for x in 0..SIZE_BOARD {
@@ -59,12 +57,12 @@ pub fn evaluate_board(
                             loop {
                                 let new_x = x as isize + (way * step * direction.0);
                                 let new_y = y as isize + (way * step * direction.1);
-                                match board.get(new_x as usize, new_y as usize){
-                                    Some(None)=> break,
+                                match board.get(new_x as usize, new_y as usize) {
+                                    Some(None) => break,
                                     Some(Some(a)) if a == player => {
                                         count += 1;
                                         indexes.push((new_x as usize, new_y as usize));
-                                    },
+                                    }
                                     Some(Some(a)) if a != player => {
                                         if *way == -1 {
                                             block_left = Some(true);
@@ -72,7 +70,7 @@ pub fn evaluate_board(
                                             block_right = Some(true);
                                         }
                                         break;
-                                    },
+                                    }
                                     Some(Some(_)) => unreachable!(),
                                     None => {
                                         if *way == -1 {
@@ -81,36 +79,36 @@ pub fn evaluate_board(
                                             block_right = None;
                                         }
                                         break;
-                                    },
+                                    }
                                 };
                                 step += 1;
                             }
-//                                if valid_coord!(new_x, new_y) {
-//                                    if let Some(value) = board[new_x as usize][new_y as usize] {
-//                                        if value == player {
-//                                            count += 1;
-//                                            indexes.push((new_x as usize, new_y as usize));
-//                                        } else {
-//                                            if *way == -1 {
-//                                                block_left = Some(true);
-//                                            } else {
-//                                                block_right = Some(true);
-//                                            }
-//                                            break;
-//                                        }
-//                                    } else {
-//                                        break;
-//                                    }
-//                                } else {
-//                                    if *way == -1 {
-//                                        block_left = None;
-//                                    } else {
-//                                        block_right = None;
-//                                    }
-//                                    break;
-//                                }
-//                                step += 1;
-//                            }
+                            //                                if valid_coord!(new_x, new_y) {
+                            //                                    if let Some(value) = board[new_x as usize][new_y as usize] {
+                            //                                        if value == player {
+                            //                                            count += 1;
+                            //                                            indexes.push((new_x as usize, new_y as usize));
+                            //                                        } else {
+                            //                                            if *way == -1 {
+                            //                                                block_left = Some(true);
+                            //                                            } else {
+                            //                                                block_right = Some(true);
+                            //                                            }
+                            //                                            break;
+                            //                                        }
+                            //                                    } else {
+                            //                                        break;
+                            //                                    }
+                            //                                } else {
+                            //                                    if *way == -1 {
+                            //                                        block_left = None;
+                            //                                    } else {
+                            //                                        block_right = None;
+                            //                                    }
+                            //                                    break;
+                            //                                }
+                            //                                step += 1;
+                            //                            }
                         }
                         indexes.iter().for_each(|&(x, y)| {
                             score_tab[x][y][dir] = (count, block_left, block_right)
@@ -242,55 +240,56 @@ fn get_alignements(
                 }
                 new_x += way * DIRECTIONS[dir].0;
                 new_y += way * DIRECTIONS[dir].1;
-                match board.get(new_x as usize, new_y as usize){
+                match board.get(new_x as usize, new_y as usize) {
                     Some(None) => {
-                         changed = 1;
-                         free_space += 1
+                        changed = 1;
+                        free_space += 1
                     }
                     Some(Some(a)) if a != actual_pawn => break,
                     Some(Some(a)) if a == actual_pawn => {
-                         if changed == 1 {
-                             free_space += score_board.get(new_x as usize, new_y as usize, dir).0 as u8;
-                         }
+                        if changed == 1 {
+                            free_space +=
+                                score_board.get(new_x as usize, new_y as usize, dir).0 as u8;
+                        }
                     }
                     Some(Some(_)) => unreachable!(),
                     None => break,
                 }
-//                 if new_x >= SIZE_BOARD as isize
-//                     || new_x < 0
-//                     || new_y >= SIZE_BOARD as isize
-//                     || new_y < 0
-//                 {
-//                     break;
-//                 }
-//                 match board[new_x as usize][new_y as usize] {
-//                     Some(a) if a != actual_pawn => break,
-//                     Some(a) if a == actual_pawn => {
-//                         if changed == 1 {
-//                             free_space += score_board[new_x as usize][new_y as usize][dir].0 as u8;
-//                         }
-//                     }
-//                     Some(_) => unreachable!(),
-//                     None => {
-//                         changed = 1;
-//                         free_space += 1
-//                     }
-//                 };
+                //                 if new_x >= SIZE_BOARD as isize
+                //                     || new_x < 0
+                //                     || new_y >= SIZE_BOARD as isize
+                //                     || new_y < 0
+                //                 {
+                //                     break;
+                //                 }
+                //                 match board[new_x as usize][new_y as usize] {
+                //                     Some(a) if a != actual_pawn => break,
+                //                     Some(a) if a == actual_pawn => {
+                //                         if changed == 1 {
+                //                             free_space += score_board[new_x as usize][new_y as usize][dir].0 as u8;
+                //                         }
+                //                     }
+                //                     Some(_) => unreachable!(),
+                //                     None => {
+                //                         changed = 1;
+                //                         free_space += 1
+                //                     }
+                //                 };
 
-//                match board.get(new_x as usize).map(|b| b.get(new_y as usize)) {
-//                    Some(Some(Some(a))) if *a != actual_pawn => break,
-//                    Some(Some(Some(a))) if *a == actual_pawn => {
-//                        if changed == 1 {
-//                            free_space += score_board[new_x as usize][new_y as usize][dir].0 as u8;
-//                        }
-//                    },
-//                    Some(Some(None)) => {
-//                        changed = 1;
-//                        free_space += 1;
-//                    },
-//                    Some(None) => {break},
-//                    None => {break},
-//                };
+                //                match board.get(new_x as usize).map(|b| b.get(new_y as usize)) {
+                //                    Some(Some(Some(a))) if *a != actual_pawn => break,
+                //                    Some(Some(Some(a))) if *a == actual_pawn => {
+                //                        if changed == 1 {
+                //                            free_space += score_board[new_x as usize][new_y as usize][dir].0 as u8;
+                //                        }
+                //                    },
+                //                    Some(Some(None)) => {
+                //                        changed = 1;
+                //                        free_space += 1;
+                //                    },
+                //                    Some(None) => {break},
+                //                    None => {break},
+                //                };
             }
         }
         return free_space;
@@ -384,7 +383,7 @@ fn get_alignements(
             loop {
                 new_x += way * DIRECTIONS[dir].0;
                 new_y += way * DIRECTIONS[dir].1;
-                match board.get(new_x as usize, new_y as usize){
+                match board.get(new_x as usize, new_y as usize) {
                     None => (),
                     Some(a) if a == status_pawn => {
                         for new_dir in 0..4 {
@@ -403,24 +402,23 @@ fn get_alignements(
                         break;
                     }
                     Some(_) => unreachable!(),
-
                 }
-//                if board.get(new_x as usize, new_y as usize) != Some(status_pawn)
-//                {
-//                    break;
-//                } else {
-//                    for new_dir in 0..4 {
-//                        if new_dir == dir {
-//                            continue;
-//                        } else {
-//                            match score_board[new_x as usize][new_y as usize][new_dir] {
-//                                (2, Some(true), Some(false)) => return true,
-//                                (2, Some(false), Some(true)) => return true,
-//                                _ => continue,
-//                            }
-//                        }
-//                    }
-//                }
+                //                if board.get(new_x as usize, new_y as usize) != Some(status_pawn)
+                //                {
+                //                    break;
+                //                } else {
+                //                    for new_dir in 0..4 {
+                //                        if new_dir == dir {
+                //                            continue;
+                //                        } else {
+                //                            match score_board[new_x as usize][new_y as usize][new_dir] {
+                //                                (2, Some(true), Some(false)) => return true,
+                //                                (2, Some(false), Some(true)) => return true,
+                //                                _ => continue,
+                //                            }
+                //                        }
+                //                    }
+                //                }
             }
         }
         return false;
@@ -523,27 +521,15 @@ mod tests {
         t2: (u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8),
     ) -> bool {
         let mut test_board: Board = [[None; SIZE_BOARD]; SIZE_BOARD].into();
-        let mut score_tab: ScoreBoard=
+        let mut score_tab: ScoreBoard =
             [[[(0, Some(false), Some(false)); 4]; SIZE_BOARD]; SIZE_BOARD].into();
         white_pos.iter().for_each(|&(x, y)| {
             test_board.set(x, y, Some(true));
-            change_score_board_add(
-                &mut test_board,
-                &mut score_tab,
-                x,
-                y,
-                Some(true),
-            );
+            change_score_board_add(&mut test_board, &mut score_tab, x, y, Some(true));
         });
         black_pos.iter().for_each(|&(x, y)| {
             test_board.set(x, y, Some(false));
-            change_score_board_add(
-                &mut test_board,
-                &mut score_tab,
-                x,
-                y,
-                Some(false),
-            );
+            change_score_board_add(&mut test_board, &mut score_tab, x, y, Some(false));
         });
         test_board.print();
         let (v1, v2) = get_alignements(&mut test_board, &mut score_tab, Some(false));
