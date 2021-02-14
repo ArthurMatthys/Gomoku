@@ -17,6 +17,7 @@ use std::time::Instant;
 mod model;
 use model::game;
 use model::player;
+use model::params::ThreadPool;
 
 mod render;
 use render::score;
@@ -174,10 +175,13 @@ pub fn main() {
         .collect::<Vec<Texture>>();
     game.set_changed();
     zobrist::init_zboard();
+    let mut threadpool: ThreadPool = ThreadPool::new();
 
     let start_game = Instant::now();
     'running: loop {
         if game.actual_player_is_ai().expect("Wrong type of player") {
+            threadpool.wait_threads();
+            threadpool.update();
             zobrist::clear_tt();
             let start = Instant::now();
             let (line, col) = get_ia::get_ia(&mut game, &DEPTH_MAX, &start);
