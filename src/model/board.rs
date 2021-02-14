@@ -1,6 +1,6 @@
 use super::super::render::board::SIZE_BOARD;
 
-
+#[derive(Clone, Copy)]
 pub struct Board([[Option<bool>; SIZE_BOARD]; SIZE_BOARD]);
 
 

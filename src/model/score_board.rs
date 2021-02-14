@@ -1,5 +1,6 @@
 use super::super::render::board::SIZE_BOARD;
 
+#[derive(Clone, Copy)]
 pub struct ScoreBoard([[[(u8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD]);
 
 impl ScoreBoard{

@@ -3,7 +3,7 @@
 // use rand::thread_rng;
 use super::super::checks::capture;
 use super::super::model::game;
-use super::super::model::params::ParamsIA;
+use super::super::model::params::{ ParamsIA, ThreadPool };
 use super::super::model::board::Board;
 use super::super::model::score_board::ScoreBoard;
 use super::super::render::board::SIZE_BOARD;
@@ -15,8 +15,8 @@ use super::handle_board::{
 use super::heuristic;
 use super::zobrist;
 use rand::seq::SliceRandom;
-use std::time;
-use std::cmp;
+use std::{ time, cmp, thread };
+use std::sync::mpsc::Sender;
 // use super::super::player;
 
 const MIN_INFINITY: i64 = i64::min_value() + 1;
@@ -302,7 +302,9 @@ fn mtdf(
 }
 
 pub fn iterative_deepening_mtdf(
-    params: &mut ParamsIA
+    params: &mut ParamsIA,
+    tx: &Sender<bool>,
+    mainloop: bool
 ) -> (i64,(usize, usize)) {
     let mut ret = (MIN_INFINITY,(0, 0));
     let beta = params.beta;
@@ -328,13 +330,16 @@ pub fn iterative_deepening_mtdf(
             None => break,
             Some((score, r#move)) => {   
                 let ndtime_mtdf = time::Instant::now();
-                // if !null_move {
-                println!("Depth: [{}] | Nb. moves: [{}] | Nb. moves/s: [{}]", d, params.counter_tree, (params.counter_tree as f64 / ndtime_mtdf.duration_since(stime_mtdf).as_secs_f64()).floor());
-                // }
+                if mainloop {
+                    println!("Depth: [{}] | Nb. moves: [{}] | Nb. moves/s: [{}]", d, params.counter_tree, (params.counter_tree as f64 / ndtime_mtdf.duration_since(stime_mtdf).as_secs_f64()).floor());
+                }
                 ret = (score,r#move);
                 params.f = score;
             }
         }
+    }
+    if !mainloop {
+        tx.send(true).unwrap();
     }
     ret
 }
@@ -343,7 +348,8 @@ fn ia(
     game: &mut game::Game,
     hash: u64,
     depth_max: &i8,
-    start_time: &time::Instant
+    start_time: &time::Instant,
+    threadpool: &ThreadPool 
 ) -> (usize, usize) {
 
     let mut board: Board = game.board.into();
@@ -364,21 +370,43 @@ fn ia(
         f: 0,
     };
 
+    println!("AVANT MULTITHREAD");
+    // Spawn 3 threads for parallel execution
+    for _ in 0..3 {
+        let tx_tmp = threadpool.tx.clone();
+        let mut params_tmp = params.clone();
+        let _ = threadpool.pool.spawn(move || { 
+            iterative_deepening_mtdf(
+                &mut params_tmp,
+                &tx_tmp,
+                false
+            );
+        });
+    }
+    println!("AAPRES MULTITHREAD");
+    // Main thread execution
     iterative_deepening_mtdf(
-        &mut params
+        &mut params,
+        &threadpool.tx,
+        true
     ).1
 }
 
 pub fn get_ia(
     game: &mut game::Game,
     depth_max: &i8,
-    start_time: &time::Instant
+    start_time: &time::Instant,
+    threadpool: &ThreadPool 
 ) -> (usize, usize) {
+    println!("DANS GET_IA");
     let hash: u64 = zobrist::board_to_zhash(&game.board);
     let mut rng = rand::thread_rng();
 
     match game.history.len() {
-        0 => (9, 9),
+        0 => {
+                threadpool.dumb_send();
+                (9, 9)
+            },
         2 => {
             let (dir_line, dir_col) = capture::DIRS
                 .choose(&mut rng)
@@ -388,11 +416,11 @@ pub fn get_ia(
                 game::TypeOfParty::Longpro => {
                     ((9 + dir_line * 4) as usize, (9 + dir_col * 4) as usize)
                 }
-                game::TypeOfParty::Standard => ia(game, hash, depth_max, start_time),
+                game::TypeOfParty::Standard => ia(game, hash, depth_max, start_time, threadpool),
             }
         }
         _ => {
-            let ret = ia(game, hash, depth_max, start_time);
+            let ret = ia(game, hash, depth_max, start_time, threadpool);
             ret
         }
     }

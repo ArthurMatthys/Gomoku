@@ -3,7 +3,7 @@ use super::super::model::score_board::ScoreBoard;
 use std::sync::mpsc::{ channel, Sender, Receiver };
 use std::time;
 
-// #[derive(Clone, Copy)]
+#[derive(Clone, Copy)]
 pub struct ParamsIA {
     pub board: Board,
     pub score_board: ScoreBoard,
@@ -30,7 +30,6 @@ pub struct ThreadPool {
 impl ThreadPool {
     pub fn new() -> ThreadPool {
         let (tx,rx):(Sender<bool>,Receiver<bool>) = channel::<bool>();
-        tx.send(true).unwrap();
         ThreadPool {
             pool: rayon::ThreadPoolBuilder::new()
                                             .num_threads(3)
@@ -41,6 +40,12 @@ impl ThreadPool {
         }
     }
 
+    pub fn dumb_send(&self) -> () {
+        for _ in 0..3 {
+            self.tx.send(true).unwrap();
+        };
+    }
+
     pub fn update(&mut self) -> () {
         let (tx,rx):(Sender<bool>,Receiver<bool>) = channel::<bool>();
         self.tx = tx;
@@ -48,6 +53,9 @@ impl ThreadPool {
     }
 
     pub fn wait_threads(&self) -> () {
-        let _: bool = self.rx.recv().unwrap();
+        println!("WAIT_THREADS");
+        for _ in 0..3 {
+            let _ = self.rx.recv().unwrap();
+        }
     }
 }
