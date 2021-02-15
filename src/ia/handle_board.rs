@@ -2,17 +2,18 @@ use super::super::checks::after_turn_check::DIRECTIONS;
 use super::super::checks::capture::DIRS;
 use super::super::checks::capture::DIRS_0;
 use super::super::checks::double_three::check_double_three_hint;
+use super::super::model::board::Board;
+use super::super::model::bool_option::get_opp;
+use super::super::model::game;
+use super::super::model::score_board::ScoreBoard;
 use super::super::render::board::SIZE_BOARD;
-use std::time;
-use super::heuristic;
 use super::get_ia;
+use super::heuristic;
 use super::threat_space::capture_coordinates_vec;
 use super::threat_space::threat_search_space;
 use super::threat_space::TypeOfThreat;
 use super::zobrist;
-use super::super::model::game;
-use super::super::model::board::Board;
-use super::super::model::score_board::ScoreBoard;
+use std::time;
 
 const SCORE_ALIGN: i64 = 100;
 const SCORE_TAKE: i64 = 100;
@@ -22,15 +23,6 @@ const MAX_INFINITY: i64 = i64::max_value();
 macro_rules! valid_coord {
     ($x: expr, $y: expr) => {
         $x >= 0 && $x < SIZE_BOARD as isize && $y >= 0 && $y < SIZE_BOARD as isize
-    };
-}
-
-macro_rules! get_opp {
-    ($e:expr) => {
-        match $e {
-            Some(a) => Some(!a),
-            _ => unreachable!(),
-        }
     };
 }
 
@@ -153,7 +145,12 @@ fn modify_align(
                 x, y, dx, dy, len_change, len_align
             );
         }
-        score_board.set(new_x as usize, new_y as usize, dir, (len_align, left_edge, right_edge));
+        score_board.set(
+            new_x as usize,
+            new_y as usize,
+            dir,
+            (len_align, left_edge, right_edge),
+        );
     }
 }
 
@@ -181,7 +178,7 @@ fn decrease_align(
         //            get_bool!(pawn),
         //            get_bool!(board[new_x as usize][new_y as usize]),
         //        );
-        match board.get(new_x as usize, new_y as usize){
+        match board.get(new_x as usize, new_y as usize) {
             Some(a) if a == pawn => {
                 to_change.push((new_x, new_y));
                 nbr_align += 1;
@@ -189,55 +186,55 @@ fn decrease_align(
             _ => {
                 for &(old_x, old_y) in to_change.iter() {
                     //                println!("change here");
-                    score_board.set(old_x as usize, old_y as usize, dir, (nbr_align, left_edge, right_edge))
+                    score_board.set(
+                        old_x as usize,
+                        old_y as usize,
+                        dir,
+                        (nbr_align, left_edge, right_edge),
+                    )
                 }
                 break;
             }
         }
-//        if !valid_coord!(new_x, new_y) || board[new_x as usize][new_y as usize] != pawn {
-//            //            println!("stop {}", nbr_align);
-//            for &(old_x, old_y) in to_change.iter() {
-//                //                println!("change here");
-//                score_board[old_x as usize][old_y as usize][dir] =
-//                    (nbr_align, left_edge, right_edge)
-//            }
-//            break;
-//        } else {
-//            to_change.push((new_x, new_y));
-//            nbr_align += 1;
-//        }
+        //        if !valid_coord!(new_x, new_y) || board[new_x as usize][new_y as usize] != pawn {
+        //            //            println!("stop {}", nbr_align);
+        //            for &(old_x, old_y) in to_change.iter() {
+        //                //                println!("change here");
+        //                score_board[old_x as usize][old_y as usize][dir] =
+        //                    (nbr_align, left_edge, right_edge)
+        //            }
+        //            break;
+        //        } else {
+        //            to_change.push((new_x, new_y));
+        //            nbr_align += 1;
+        //        }
     }
 }
 
 // Change score board after the removal of a pawn
-fn change_score_board_remove(
-    board: &mut Board,
-    score_board: &mut ScoreBoard,
-    x: isize,
-    y: isize,
-) {
-//    println!("start inside remove");
+fn change_score_board_remove(board: &mut Board, score_board: &mut ScoreBoard, x: isize, y: isize) {
+    //    println!("start inside remove");
     let pawn = board.get_pawn(x as usize, y as usize);
-//    match pawn{
-//        Some(false) => println!("false"),
-//        Some(true) => println!("true"),
-//        None => println!("None"),
-//    }
-//    board.print();
+    //    match pawn{
+    //        Some(false) => println!("false"),
+    //        Some(true) => println!("true"),
+    //        None => println!("None"),
+    //    }
+    //    board.print();
     board.set(x as usize, y as usize, None);
-//    board.print();
-//    if pawn == None {
-//        println!("Pas content");
-//        unreachable!();
-//    }
-//    println!("ici1");
+    //    board.print();
+    //    if pawn == None {
+    //        println!("Pas content");
+    //        unreachable!();
+    //    }
+    //    println!("ici1");
     for (i, (dx, dy)) in DIRECTIONS.iter().enumerate() {
         score_board.reset(x as usize, y as usize, i);
         for way in [-1, 1].iter() {
             let new_x = x + (way * dx);
             let new_y = y + (way * dy);
-//            println!("ici2");
-            match board.get(new_x as usize, new_y as usize){
+            //            println!("ici2");
+            match board.get(new_x as usize, new_y as usize) {
                 Some(None) => (),
                 Some(a) if a == pawn => {
                     let (_, mut left_edge, mut right_edge) =
@@ -247,7 +244,7 @@ fn change_score_board_remove(
                     } else {
                         left_edge = Some(false);
                     }
-//                    println!("remove decrease");
+                    //                    println!("remove decrease");
                     decrease_align(
                         board,
                         score_board,
@@ -270,7 +267,7 @@ fn change_score_board_remove(
                     if align >= 10 {
                         println!("wtf2");
                     }
-//                    println!("remove modify");
+                    //                    println!("remove modify");
                     modify_align(
                         score_board,
                         (x as usize, y as usize),
@@ -285,61 +282,61 @@ fn change_score_board_remove(
                 Some(_) => unreachable!(),
                 None => (),
             }
-//            println!("ici3");
-//            if valid_coord!(new_x, new_y) {
-//                match board[new_x as usize][new_y as usize] {
-//                    None => (),
-//                    //                   None => (println!("Hello3")),
-//                    a if a == pawn => {
-//                        let (_, mut left_edge, mut right_edge) =
-//                            score_board[new_x as usize][new_y as usize][i];
-//                        if *way == -1 {
-//                            right_edge = Some(false);
-//                        } else {
-//                            left_edge = Some(false);
-//                        }
-//                        //                        println!("remove decrease");
-//                        decrease_align(
-//                            board,
-//                            score_board,
-//                            pawn,
-//                            (x, y),
-//                            (&(way * dx), &(way * dy)),
-//                            i,
-//                            left_edge,
-//                            right_edge,
-//                        );
-//                    }
-//                    a if a != pawn => {
-//                        if a == None {}
-//                        let (align, mut left_edge, mut right_edge) =
-//                            score_board[new_x as usize][new_y as usize][i];
-//                        if *way == -1 {
-//                            right_edge = Some(false);
-//                        } else {
-//                            left_edge = Some(false);
-//                        }
-//                        if align >= 10 {
-//                            println!("wtf2");
-//                        }
-//                        //                        println!("remove modify");
-//                        modify_align(
-//                            score_board,
-//                            (x, y),
-//                            (&(way * dx), &(way * dy)),
-//                            i,
-//                            align,
-//                            align,
-//                            left_edge,
-//                            right_edge,
-//                        );
-//                    }
-//                    _ => unreachable!(),
-//                }
-//            }
+            //            println!("ici3");
+            //            if valid_coord!(new_x, new_y) {
+            //                match board[new_x as usize][new_y as usize] {
+            //                    None => (),
+            //                    //                   None => (println!("Hello3")),
+            //                    a if a == pawn => {
+            //                        let (_, mut left_edge, mut right_edge) =
+            //                            score_board[new_x as usize][new_y as usize][i];
+            //                        if *way == -1 {
+            //                            right_edge = Some(false);
+            //                        } else {
+            //                            left_edge = Some(false);
+            //                        }
+            //                        //                        println!("remove decrease");
+            //                        decrease_align(
+            //                            board,
+            //                            score_board,
+            //                            pawn,
+            //                            (x, y),
+            //                            (&(way * dx), &(way * dy)),
+            //                            i,
+            //                            left_edge,
+            //                            right_edge,
+            //                        );
+            //                    }
+            //                    a if a != pawn => {
+            //                        if a == None {}
+            //                        let (align, mut left_edge, mut right_edge) =
+            //                            score_board[new_x as usize][new_y as usize][i];
+            //                        if *way == -1 {
+            //                            right_edge = Some(false);
+            //                        } else {
+            //                            left_edge = Some(false);
+            //                        }
+            //                        if align >= 10 {
+            //                            println!("wtf2");
+            //                        }
+            //                        //                        println!("remove modify");
+            //                        modify_align(
+            //                            score_board,
+            //                            (x, y),
+            //                            (&(way * dx), &(way * dy)),
+            //                            i,
+            //                            align,
+            //                            align,
+            //                            left_edge,
+            //                            right_edge,
+            //                        );
+            //                    }
+            //                    _ => unreachable!(),
+            //                }
+            //            }
         }
     }
-//    println!("end inside remove");
+    //    println!("end inside remove");
 }
 
 use std::process;
@@ -353,10 +350,10 @@ pub fn change_score_board_add(
     pawn: Option<bool>,
 ) {
     //    println!("add");
-//    if board[x as usize][y as usize] != None {
-//        println!("wtf");
-//        unreachable!();
-//    }
+    //    if board[x as usize][y as usize] != None {
+    //        println!("wtf");
+    //        unreachable!();
+    //    }
     board.set(x, y, pawn);
     if pawn == None {
         println!("Pas normal");
@@ -376,15 +373,15 @@ pub fn change_score_board_add(
 
         // Get case on the left hand side of the align
         // (board edge, empty slot, ally pawnm ennemy pawn)
-        let edge_case_left = match board.get(x_left as usize, y_left as usize){
+        let edge_case_left = match board.get(x_left as usize, y_left as usize) {
             None => 0,
             Some(a) => get_edge_case(&pawn, a),
         };
-//        let edge_case_left = if !valid_coord!(x_left, y_left) {
-//            0
-//        } else {
-//            get_edge_case(&pawn, board.get_pawn(x_left as usize, y_left as usize))
-//        };
+        //        let edge_case_left = if !valid_coord!(x_left, y_left) {
+        //            0
+        //        } else {
+        //            get_edge_case(&pawn, board.get_pawn(x_left as usize, y_left as usize))
+        //        };
         let (mut align_left, mut left_edge_left): (u8, Option<bool>) = (0, None);
         match edge_case_left {
             // edge
@@ -410,15 +407,15 @@ pub fn change_score_board_add(
         let y_right = y as isize + dy;
         // Get case on the right hand side of the align
         // (board edge, empty slot, ally pawnm ennemy pawn)
-        let edge_case_right = match board.get(x_right as usize, y_right as usize){
+        let edge_case_right = match board.get(x_right as usize, y_right as usize) {
             None => 0,
             Some(a) => get_edge_case(&pawn, a),
         };
-//        let edge_case_right = if !valid_coord!(x_right, y_right) {
-//            0
-//        } else {
-//            get_edge_case(&pawn, board.get_pawn(x_right as usize, y_right as usize))
-//        };
+        //        let edge_case_right = if !valid_coord!(x_right, y_right) {
+        //            0
+        //        } else {
+        //            get_edge_case(&pawn, board.get_pawn(x_right as usize, y_right as usize))
+        //        };
         let (mut align_right, mut right_edge_right): (u8, Option<bool>) = (0, None);
         match edge_case_right {
             // edge
@@ -492,7 +489,12 @@ pub fn change_score_board_add(
         //        if align_right >= 7 {
         //            println!("wtf_right");
         //        }
-        score_board.set(x as usize, y as usize, i, (tot_align, left_edge_left, right_edge_right));
+        score_board.set(
+            x as usize,
+            y as usize,
+            i,
+            (tot_align, left_edge_left, right_edge_right),
+        );
         match edge_case_left {
             // Modify the left hand side ally align after placing a new pawn
             2 => modify_align(
@@ -623,6 +625,8 @@ fn get_score_board(
                 3 => SCORE_ALIGN.pow(tot_align as u32) / 4,
                 //close with board
                 4 => SCORE_ALIGN.pow(tot_align as u32) / 16,
+                //both side close with boarda
+                6 => SCORE_ALIGN.pow(tot_align as u32) / 16,
                 //close *2
                 _ => 0,
             }
@@ -672,10 +676,11 @@ pub fn get_space(
                 let mut check = 0;
                 let mut to_add = false;
                 let mut score = 0i64;
+
                 for &(dx, dy) in DIRS.iter() {
                     let new_x = x as isize + dx;
                     let new_y = y as isize + dy;
-                    match board.get(new_x as usize, new_y as usize){
+                    match board.get(new_x as usize, new_y as usize) {
                         None => (),
                         Some(None) => (),
                         Some(Some(_)) => {
@@ -683,7 +688,7 @@ pub fn get_space(
                                 || !check_double_three_hint(
                                     board,
                                     actual_player,
-                                    //get_opp!($actual_player),
+                                    //get_opp($actual_player),
                                     x as isize,
                                     y as isize,
                                 )
@@ -693,7 +698,7 @@ pub fn get_space(
                                 let opp_x = x as isize - dx;
                                 let opp_y = y as isize - dx;
                                 let (dir, way) = get_dir!((dx, dy));
-                                match board.get(opp_x as usize, opp_y as usize){
+                                match board.get(opp_x as usize, opp_y as usize) {
                                     Some(a) if a == value => {
                                         let opp_tuple =
                                             score_board.get(opp_x as usize, opp_y as usize, dir);
@@ -704,29 +709,16 @@ pub fn get_space(
                                     Some(None) => {
                                         edge_opp = Some(false);
                                     }
-                                    Some(a) if a != value =>{
+                                    Some(a) if a != value => {
                                         edge_opp = Some(true);
                                         to_add = true;
                                     }
                                     Some(_) => unreachable!(),
                                     None => (),
                                 }
-//                                if valid_coord!(opp_x, opp_y) {
-//                                    if board[opp_x as usize][opp_y as usize] == value {
-//                                        let opp_tuple =
-//                                            score_board[opp_x as usize][opp_y as usize][dir];
-//                                        opp_align = opp_tuple.0;
-//                                        edge_opp = get_other_edge!(opp_tuple, (way + 1) % 2);
-//                                        to_add = true;
-//                                    } else if board[opp_x as usize][opp_y as usize] == None {
-//                                        edge_opp = Some(false);
-//                                    } else {
-//                                        edge_opp = Some(true);
-//                                        to_add = true;
-//                                    }
-//                                }
                                 check = 1;
-                                let tuple_focused = score_board.get(new_x as usize, new_y as usize, dir);
+                                let tuple_focused =
+                                    score_board.get(new_x as usize, new_y as usize, dir);
                                 score += get_score_board(
                                     tuple_focused.0,
                                     actual_player == board.get_pawn(new_x as usize, new_y as usize),
@@ -737,7 +729,6 @@ pub fn get_space(
                                 );
                             }
                         }
-                        _ => (),
                     }
                 }
                 //let mut opened: HashSet<String> = HashSet::new();
@@ -758,7 +749,7 @@ pub fn get_space(
                 //                    || !check_double_three_hint(
                 //                        board,
                 //                        actual_player,
-                //                        //get_opp!($actual_player),
+                //                        //get_opp($actual_player),
                 //                        x as isize,
                 //                        y as isize,
                 //                    )
@@ -803,9 +794,9 @@ pub fn get_space(
                 //        }
                 //    }
                 //}
-//                println!("--------");
-//                println!("x:{} || y:{}", x, y);
-//                opened.iter().for_each(|s| println!("{}", s));
+                //                println!("--------");
+                //                println!("x:{} || y:{}", x, y);
+                //                opened.iter().for_each(|s| println!("{}", s));
                 if to_add {
                     ret.push((x, y, score));
                 }
@@ -816,10 +807,7 @@ pub fn get_space(
     ret
 }
 
-pub fn find_available_pos(
-    board: &mut Board,
-    player_actual: Option<bool>,
-) -> Vec<(usize, usize)> {
+pub fn find_available_pos(board: &mut Board, player_actual: Option<bool>) -> Vec<(usize, usize)> {
     let mut ret: Vec<(usize, usize)> = vec![];
     for x in 0..SIZE_BOARD {
         for y in 0..SIZE_BOARD {
@@ -827,7 +815,7 @@ pub fn find_available_pos(
                 for &(dx, dy) in DIRS.iter() {
                     let new_x = x as isize + dx;
                     let new_y = y as isize + dy;
-                    if board.get_pawn(new_x as usize, new_y as usize) != None{
+                    if board.get_pawn(new_x as usize, new_y as usize) != None {
                         if !check_double_three_hint(board, player_actual, x as isize, y as isize) {
                             ret.push((x as usize, y as usize));
                         }
@@ -875,10 +863,10 @@ pub fn find_continuous_threats(
     for (threat, _, counters) in threats.iter() {
         let (x, y) = threat;
         //        println!("CT_threat");
-//        if board.get_pawn(*x, *y) != None {
-//            println!("double wtf");
-//            unreachable!();
-//        }
+        //        if board.get_pawn(*x, *y) != None {
+        //            println!("double wtf");
+        //            unreachable!();
+        //        }
         let removed = change_board_hint(board, score_board, *x, *y, player_actual);
         *player_actual_catch += removed.len() as isize;
         //        print_board(board);
@@ -888,7 +876,7 @@ pub fn find_continuous_threats(
         for (opp_x, opp_y) in counters.iter() {
             if !check_double_three_hint(
                 board,
-                get_opp!(player_actual),
+                get_opp(player_actual),
                 *opp_x as isize,
                 *opp_y as isize,
             ) {
@@ -948,7 +936,7 @@ pub fn find_continuous_threats(
                 score_board,
                 *counter_x,
                 *counter_y,
-                get_opp!(player_actual),
+                get_opp(player_actual),
             );
 
             *player_opposite_catch += removed_counter.len() as isize;
@@ -968,7 +956,7 @@ pub fn find_continuous_threats(
                 score_board,
                 *counter_x,
                 *counter_y,
-                get_opp!(player_actual),
+                get_opp(player_actual),
                 removed_counter,
             );
 
@@ -1040,7 +1028,7 @@ macro_rules! explore_align_light {
 //                 // table,
 //                 &mut hash,
 //                 // &mut tt,
-//                 get_opp!(player_actual),
+//                 get_opp(player_actual),
 //                 player_opposite_catch,
 //                 player_actual_catch,
 //                 &mut MAX_INFINITY,
@@ -1078,7 +1066,7 @@ macro_rules! explore_align_light {
 //     let mut opp_threat = threat_search_space(
 //         board,
 //         score_board,
-//         get_opp!(player_actual),
+//         get_opp(player_actual),
 //         player_opposite_catch,
 //     );
 //     opp_threat = opp_threat.into_iter()
@@ -1110,7 +1098,7 @@ macro_rules! explore_align_light {
 //                             let mut new_x = line as isize;
 //                             let mut new_y = col as isize;
 //                             let (dx, dy) = DIRS[dir];
-//                             explore_align_light!(board, new_x, new_y, get_opp!(player_actual), dir, -1);
+//                             explore_align_light!(board, new_x, new_y, get_opp(player_actual), dir, -1);
 //                             let mut to_take: Vec<(usize, usize)> = vec![];
 //                             let start: isize = a as isize - 5;
 //                             let end: isize = start + (10 - a as isize);
@@ -1123,7 +1111,7 @@ macro_rules! explore_align_light {
 //                             let mut captures = capture_coordinates_vec(
 //                                 score_board,
 //                                 board,
-//                                 get_opp!(player_actual),
+//                                 get_opp(player_actual),
 //                                 to_take,
 //                                 dir,
 //                             );
@@ -1280,15 +1268,6 @@ macro_rules! add_zhash {
     };
 }
 
-macro_rules! get_opp {
-    ($e:expr) => {
-        match $e {
-            Some(a) => Some(!a),
-            _ => unreachable!(),
-        }
-    };
-}
-
 pub fn remove_last_pawn_hint(
     board: &mut Board,
     score_board: &mut ScoreBoard,
@@ -1297,7 +1276,7 @@ pub fn remove_last_pawn_hint(
     pawn: Option<bool>,
     removed: Vec<((isize, isize), (isize, isize))>,
 ) {
-    let old = get_opp!(pawn);
+    let old = get_opp(pawn);
     change_score_board_remove(board, score_board, x as isize, y as isize);
     removed.iter().for_each(|&((x1, y1), (x2, y2))| {
         //        println!("fixed removed_hint");
@@ -1316,7 +1295,7 @@ pub fn change_board_hint(
     let mut removed = Vec::with_capacity(16);
     //    println!("add pawn_hint");
     change_score_board_add(board, score_board, x, y, pawn);
-    let opp = get_opp!(pawn);
+    let opp = get_opp(pawn);
     for &(dx, dy) in DIRS.iter() {
         let mut count = 0;
         let mut new_x = x as isize;
@@ -1324,7 +1303,7 @@ pub fn change_board_hint(
         for _ in 0..3 {
             new_x += dx;
             new_y += dy;
-            match board.get(new_x as usize, new_y as usize){
+            match board.get(new_x as usize, new_y as usize) {
                 Some(a) if a == opp => count += 1,
                 Some(a) if a != opp => break,
                 Some(_) => unreachable!(),
@@ -1364,11 +1343,11 @@ pub fn remove_last_pawn(
     removed: Vec<((isize, isize), (isize, isize))>,
     zhash: &mut u64,
 ) {
-//    println!("start remove");
-    let old = get_opp!(pawn);
-//    println!("yop1");
+    //    println!("start remove");
+    let old = get_opp(pawn);
+    //    println!("yop1");
     change_score_board_remove(board, score_board, x as isize, y as isize);
-//    println!("yop2");
+    //    println!("yop2");
     add_zhash!(zhash, x, y, get_zindex_from_pawn!(pawn));
     removed.iter().for_each(|&((x1, y1), (x2, y2))| {
         //        println!("fixed removed");
@@ -1377,7 +1356,7 @@ pub fn remove_last_pawn(
         add_zhash!(zhash, x2, y2, get_zindex_from_pawn!(old));
         change_score_board_add(board, score_board, x2 as usize, y2 as usize, old);
     });
-//    println!("end remove");
+    //    println!("end remove");
 }
 
 pub fn change_board(
@@ -1392,7 +1371,7 @@ pub fn change_board(
     //    println!("add pawn");
     change_score_board_add(board, score_board, x, y, pawn);
     add_zhash!(zhash, x, y, get_zindex_from_pawn!(pawn));
-    let opp = get_opp!(pawn);
+    let opp = get_opp(pawn);
     for &(dx, dy) in DIRS.iter() {
         let mut count = 0;
         let mut new_x = x as isize;
@@ -1400,7 +1379,7 @@ pub fn change_board(
         for _ in 0..3 {
             new_x += dx;
             new_y += dy;
-            match board.get(new_x as usize, new_y as usize){
+            match board.get(new_x as usize, new_y as usize) {
                 Some(a) if a == opp => count += 1,
                 Some(a) if a != opp => break,
                 Some(_) => unreachable!(),
@@ -1410,14 +1389,14 @@ pub fn change_board(
                     break;
                 }
             }
-//            if !valid_coord!(new_x, new_y) {
-//                count = 0;
-//                break;
-//            } else if board[new_x as usize][new_y as usize] != opp {
-//                break;
-//            } else if board[new_x as usize][new_y as usize] == opp {
-//                count += 1;
-//            }
+            //            if !valid_coord!(new_x, new_y) {
+            //                count = 0;
+            //                break;
+            //            } else if board[new_x as usize][new_y as usize] != opp {
+            //                break;
+            //            } else if board[new_x as usize][new_y as usize] == opp {
+            //                count += 1;
+            //            }
         }
         if count == 2 && board.get_pawn(new_x as usize, new_y as usize) == pawn {
             let (x1, y1) = (new_x - dx, new_y - dy);
@@ -1465,7 +1444,7 @@ mod tests {
                     if i == y && j == x {
                         print!("⊛")
                     } else {
-                        match board.get_pawn(j, i){
+                        match board.get_pawn(j, i) {
                             Some(true) => print!("⊖"),
                             Some(false) => print!("⊕"),
                             None => print!("_"),
@@ -1509,7 +1488,7 @@ mod tests {
                     if i == *y && j == *x {
                         print!("⊛")
                     } else {
-                        match board.get_pawn(j, i){
+                        match board.get_pawn(j, i) {
                             Some(true) => print!("⊖"),
                             Some(false) => print!("⊕"),
                             None => print!("_"),
@@ -1522,7 +1501,7 @@ mod tests {
             for (opp_x, opp_y) in counters.iter() {
                 if !check_double_three_hint(
                     board,
-                    get_opp!(player_actual),
+                    get_opp(player_actual),
                     *opp_x as isize,
                     *opp_y as isize,
                 ) {
@@ -1536,7 +1515,7 @@ mod tests {
             println!();
 
             if counters_valid.len() == 0 && *typeofthreat < TypeOfThreat::FiveTake {
-                for (x, y) in find_available_pos(board, get_opp!(player_actual)) {
+                for (x, y) in find_available_pos(board, get_opp(player_actual)) {
                     if !counters_valid
                         .iter()
                         .any(|&(cmp_x, cmp_y)| cmp_x == x && cmp_y == y)
@@ -1560,7 +1539,7 @@ mod tests {
                     score_board,
                     *counter_x,
                     *counter_y,
-                    get_opp!(player_actual),
+                    get_opp(player_actual),
                 );
                 println!(
                     "Config depth {}, white pawn in ({},{}) ",
@@ -1571,7 +1550,7 @@ mod tests {
                         if i == *counter_y && j == *counter_x {
                             print!("⊙")
                         } else {
-                            match board.get_pawn(j, i){
+                            match board.get_pawn(j, i) {
                                 Some(true) => print!("⊖"),
                                 Some(false) => print!("⊕"),
                                 None => print!("_"),
@@ -1598,7 +1577,7 @@ mod tests {
                     score_board,
                     *counter_x,
                     *counter_y,
-                    get_opp!(player_actual),
+                    get_opp(player_actual),
                     removed_counter,
                 );
                 println!();
@@ -1618,7 +1597,7 @@ mod tests {
                         if i == *y && j == *x {
                             print!("⊛")
                         } else {
-                            match board.get_pawn(j, i){
+                            match board.get_pawn(j, i) {
                                 Some(true) => print!("⊖"),
                                 Some(false) => print!("⊕"),
                                 None => print!("_"),
@@ -1649,7 +1628,7 @@ mod tests {
         actual_take: &mut isize,
         opp_take: &mut isize,
     ) -> bool {
-        let mut test_board:Board = [[None; SIZE_BOARD]; SIZE_BOARD].into();
+        let mut test_board: Board = [[None; SIZE_BOARD]; SIZE_BOARD].into();
         let mut score_tab: ScoreBoard =
             [[[(0, Some(false), Some(false)); 4]; SIZE_BOARD]; SIZE_BOARD].into();
         white_pos.iter().for_each(|&(x, y)| {
@@ -1658,22 +1637,22 @@ mod tests {
         });
         black_pos.iter().for_each(|&(x, y)| {
             test_board.set(x, y, Some(false));
-            change_score_board_add(&mut test_board, &mut score_tab, x, y,  Some(false));
+            change_score_board_add(&mut test_board, &mut score_tab, x, y, Some(false));
         });
         test_board.print();
-//        for i in 0..19 {
-//            for j in 0..19 {
-//                match test_board[j][i] {
-//                    Some(true) => print!("⊖"),
-//                    Some(false) => print!("⊕"),
-//                    None => print!("_"),
-//                }
-//            }
-//            println!();
-//        }
+        //        for i in 0..19 {
+        //            for j in 0..19 {
+        //                match test_board[j][i] {
+        //                    Some(true) => print!("⊖"),
+        //                    Some(false) => print!("⊕"),
+        //                    None => print!("_"),
+        //                }
+        //            }
+        //            println!();
+        //        }
         for i in 0..19 {
             for j in 0..19 {
-                match test_board.get_pawn(j, i){
+                match test_board.get_pawn(j, i) {
                     Some(true) => print!("B"),
                     Some(false) => print!("N"),
                     None => print!("E"),
@@ -1902,21 +1881,21 @@ mod tests {
             .iter()
             .for_each(|&(x, y)| test_bboard[x][y] = Some(false));
 
-        let mut test_board:Board = test_bboard.into();
+        let mut test_board: Board = test_bboard.into();
         // Print initial configuration
         println!("// Initial configuration:");
         test_board.print();
-//        for i in 0..19 {
-//            print!("// ");
-//            for j in 0..19 {
-//                match test_board[j][i] {
-//                    Some(true) => print!("⊖"),
-//                    Some(false) => print!("⊕"),
-//                    None => print!("_"),
-//                }
-//            }
-//            println!();
-//        }
+        //        for i in 0..19 {
+        //            print!("// ");
+        //            for j in 0..19 {
+        //                match test_board[j][i] {
+        //                    Some(true) => print!("⊖"),
+        //                    Some(false) => print!("⊕"),
+        //                    None => print!("_"),
+        //                }
+        //            }
+        //            println!();
+        //        }
         let mut score_board = heuristic::evaluate_board(&mut test_board);
 
         let ret = get_space(
@@ -2082,17 +2061,17 @@ mod tests {
         // Print initial configuration
         println!("// Initial configuration:");
         test_board.print();
-//        for i in 0..19 {
-//            print!("// ");
-//            for j in 0..19 {
-//                match test_board[j][i] {
-//                    Some(true) => print!("⊖"),
-//                    Some(false) => print!("⊕"),
-//                    None => print!("_"),
-//                }
-//            }
-//            println!();
-//        }
+        //        for i in 0..19 {
+        //            print!("// ");
+        //            for j in 0..19 {
+        //                match test_board[j][i] {
+        //                    Some(true) => print!("⊖"),
+        //                    Some(false) => print!("⊕"),
+        //                    None => print!("_"),
+        //                }
+        //            }
+        //            println!();
+        //        }
         let res = find_continuous_threats(
             &mut test_board,
             &mut score_board,
@@ -2128,22 +2107,22 @@ mod tests {
         black_pos
             .iter()
             .for_each(|&(x, y)| test_bboard[x][y] = Some(false));
-        let mut test_board:Board = test_bboard.into();
+        let mut test_board: Board = test_bboard.into();
         let mut score_board = heuristic::evaluate_board(&mut test_board);
         // Print initial configuration
         println!("// Initial configuration:");
         test_board.print();
-//        for i in 0..19 {
-//            print!("// ");
-//            for j in 0..19 {
-//                match test_board[j][i] {
-//                    Some(true) => print!("⊖"),
-//                    Some(false) => print!("⊕"),
-//                    None => print!("_"),
-//                }
-//            }
-//            println!();
-//        }
+        //        for i in 0..19 {
+        //            print!("// ");
+        //            for j in 0..19 {
+        //                match test_board[j][i] {
+        //                    Some(true) => print!("⊖"),
+        //                    Some(false) => print!("⊕"),
+        //                    None => print!("_"),
+        //                }
+        //            }
+        //            println!();
+        //        }
         let res = find_continuous_threats_print(
             &mut test_board,
             &mut score_board,
@@ -2592,4 +2571,4 @@ mod tests {
     //    y: usize,
     //    pawn: Option<bool>,
     //) -> Vec<((isize, isize), (isize, isize))> {
-    }
+}
