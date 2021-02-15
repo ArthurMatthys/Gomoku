@@ -5,6 +5,7 @@ use super::super::checks::capture;
 use super::super::model::game;
 use super::super::model::params::{ ParamsIA, ThreadPool };
 use super::super::model::board::Board;
+use super::super::model::history;
 use super::super::model::score_board::ScoreBoard;
 use super::super::render::board::SIZE_BOARD;
 use super::handle_board::{
@@ -23,11 +24,22 @@ const MIN_INFINITY: i64 = i64::min_value() + 1;
 const MAX_INFINITY: i64 = i64::max_value();
 // const DEPTH_THREATS: i8 = 10;
 const LIMIT_DURATION: time::Duration = time::Duration::from_millis(495);
+const SILENT_MOVE_SCORE: i64 = 1000000;
 
 macro_rules! get_opp {
     ($e:expr) => {
         match $e {
             Some(a) => Some(!a),
+            _ => unreachable!(),
+        }
+    };
+}
+
+macro_rules! get_usize {
+    ($e:expr) => {
+        match $e {
+            Some(true) => 0,
+            Some(false) => 1,
             _ => unreachable!(),
         }
     };
@@ -72,6 +84,7 @@ fn ab_negamax(
     beta: &mut i64,
     color: &mut i8,
     depth_max: &i8,
+    htable: &mut [[[i32; SIZE_BOARD]; SIZE_BOARD]; 2]
 ) -> Option<(i64, Option<(usize, usize)>)> {
     // println!("entered: {}", counter_tree);
     if time::Instant::now().duration_since(params.start_time) >= LIMIT_DURATION {
@@ -137,6 +150,7 @@ fn ab_negamax(
                     &mut (-*alpha),
                     &mut (-*color),
                     depth_max,
+                    htable
                 );
 //                println!("here5");
 
@@ -172,7 +186,11 @@ fn ab_negamax(
 //    println!("here7");
     if !trig {
         // Collect moves
-        let available_positions = get_space(&mut params.board, &mut params.score_board, actual, *actual_catch);
+        let mut available_positions = get_space(&mut params.board, &mut params.score_board, actual, *actual_catch);
+        let mut silent_moves = available_positions.split_off(available_positions.iter().position(|&x| x.2 < SILENT_MOVE_SCORE).unwrap() as usize);
+        history::sort_silent_moves(&htable, get_usize!(actual), &mut silent_moves);
+        let len_available_positions = available_positions.len();
+        available_positions.append(&mut silent_moves);
         // println!("\nCounter-tree: {}|d:{}", counter_tree,current_depth);
         // available_positions.iter().for_each(|&(x,y,z)|{
         //     print!("[({}:{})|{}]", x,  y, z);
@@ -201,6 +219,7 @@ fn ab_negamax(
                 &mut (-*alpha),
                 &mut (-*color),
                 depth_max,
+                htable
             );
 
 //            println!("here10");
@@ -229,6 +248,16 @@ fn ab_negamax(
                     remove_last_pawn(&mut params.board, &mut params.score_board, line, col, actual, removed, &mut params.zhash);
         
                     if *alpha >= *beta {
+                        // History table cutoff
+                        if index >= len_available_positions {
+                            history::update_htable(
+                                htable,
+                                &available_positions[len_available_positions..index],
+                                get_usize!(actual),
+                                &available_positions[index],
+                                current_depth
+                            );
+                        }
                         best_score = *alpha;
                         best_move = Some((line, col));
                         break;
@@ -257,6 +286,7 @@ fn ab_negamax(
 
 fn mtdf(
     params: &mut ParamsIA,
+    htable: &mut [[[i32; SIZE_BOARD]; SIZE_BOARD]; 2]
 ) -> Option<(i64, (usize, usize))> {
     let mut g = params.f;
     let mut ret = (0, (0, 0));
@@ -284,6 +314,7 @@ fn mtdf(
             &mut beta,
             &mut 1,
             &mut depth_max,
+            htable
         );
         match values {
             None => { return None },
@@ -310,6 +341,7 @@ pub fn iterative_deepening_mtdf(
     let beta = params.beta;
     let actual_catch = params.actual_catch;
     let opp_catch = params.opp_catch;
+    let mut htable = history::initialize_htable();
     for d in (2..(params.depth_max + 1)).step_by(2) {
         // Below, their existence is justified (checks still needed for beta)
         params.counter_tree = 0;
@@ -325,6 +357,7 @@ pub fn iterative_deepening_mtdf(
 
         let tmp_ret = mtdf(
             params,
+            &mut htable
         );
         match tmp_ret {
             None => break,
