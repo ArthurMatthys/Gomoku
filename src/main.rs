@@ -16,8 +16,8 @@ use std::time::Instant;
 
 mod model;
 use model::game;
-use model::player;
 use model::params::ThreadPool;
+use model::player;
 
 mod render;
 use render::score;
@@ -32,7 +32,7 @@ mod checks;
 #[global_allocator]
 static GLOBAL: jemallocator::Jemalloc = jemallocator::Jemalloc;
 
-const DEPTH_MAX: i8 = 10;
+const DEPTH_MAX: i8 = 11;
 
 //macro_rules! string_of_index {
 //    ($line:expr, $col:expr) => {{

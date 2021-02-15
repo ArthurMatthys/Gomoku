@@ -3,9 +3,9 @@
 // use rand::thread_rng;
 use super::super::checks::capture;
 use super::super::model::board::Board;
-use super::super::model::history;
 use super::super::model::bool_option::get_opp;
 use super::super::model::game;
+use super::super::model::history;
 use super::super::model::params::{ParamsIA, ThreadPool};
 use super::super::model::score_board::ScoreBoard;
 use super::super::render::board::SIZE_BOARD;
@@ -76,7 +76,7 @@ fn ab_negamax(
     beta: &mut i64,
     color: &mut i8,
     depth_max: &i8,
-    htable: &mut [[[i32; SIZE_BOARD]; SIZE_BOARD]; 2]
+    htable: &mut [[[i32; SIZE_BOARD]; SIZE_BOARD]; 2],
 ) -> Option<(i64, Option<(usize, usize)>)> {
     // println!("entered: {}", counter_tree);
     if time::Instant::now().duration_since(params.start_time) >= LIMIT_DURATION {
@@ -85,7 +85,7 @@ fn ab_negamax(
     let mut tte = zobrist::retrieve_tt_from_hash(&params.zhash);
     let alpha_orig = *alpha;
     params.counter_tree += 1;
-    if tte.is_valid && tte.depth == *depth_max - *current_depth {
+    if tte.is_valid && tte.depth >= *depth_max - *current_depth {
         if tte.r#type == zobrist::TypeOfEl::Exact {
             return Some((tte.value, tte.r#move));
         } else if tte.r#type == zobrist::TypeOfEl::Lowerbound {
@@ -112,6 +112,22 @@ fn ab_negamax(
         ));
     }
     if *current_depth == *depth_max {
+        //        if let Some((_, _)) = find_continuous_threats(
+        //            &mut params.board,
+        //            &mut params.score_board,
+        //            actual,
+        //            actual_catch,
+        //            opp_catch,
+        //            &mut 4,
+        //            &mut 0,
+        //            true,
+        //        ) {
+        //            println!("yo");
+        //            return Some((
+        //                -heuristic::INSTANT_WIN * ((*depth_max - *current_depth) as i64 + 1),
+        //                None,
+        //            ));
+        //        }
         let weight = heuristic::first_heuristic_hint(
             &mut params.board,
             &mut params.score_board,
@@ -155,7 +171,7 @@ fn ab_negamax(
                     &mut (-*alpha),
                     &mut (-*color),
                     depth_max,
-                    htable
+                    htable,
                 );
                 //                println!("here5");
 
@@ -196,8 +212,18 @@ fn ab_negamax(
     //    println!("here7");
     if !trig {
         // Collect moves
-        let mut available_positions = get_space(&mut params.board, &mut params.score_board, actual, *actual_catch);
-        let mut silent_moves = available_positions.split_off(available_positions.iter().position(|&x| x.2 < SILENT_MOVE_SCORE).unwrap() as usize);
+        let mut available_positions = get_space(
+            &mut params.board,
+            &mut params.score_board,
+            actual,
+            *actual_catch,
+        );
+        let mut silent_moves = available_positions.split_off(
+            available_positions
+                .iter()
+                .position(|&x| x.2 < SILENT_MOVE_SCORE)
+                .unwrap() as usize,
+        );
         history::sort_silent_moves(&htable, get_usize!(actual), &mut silent_moves);
         let len_available_positions = available_positions.len();
         available_positions.append(&mut silent_moves);
@@ -210,11 +236,13 @@ fn ab_negamax(
         let mut tmp_curr_depth = *current_depth + 1;
         // let calc_depth = cmp::min(((*depth_max - *current_depth) / 2) + *current_depth, *depth_max);
         for (index, &(line, col, _)) in available_positions.iter().enumerate() {
-            // if (depth_max - *current_depth) * 8 < index as i8
-            //     && best_score > -heuristic::INSTANT_WIN
-            // {
-            //     break;
-            // }
+            if *depth_max >= 6
+                && depth_max - *current_depth < 4
+                && (depth_max - *current_depth) * 8 < index as i8
+                && best_score > -heuristic::INSTANT_WIN
+            {
+                break;
+            }
             let removed = change_board(
                 &mut params.board,
                 &mut params.score_board,
@@ -241,7 +269,7 @@ fn ab_negamax(
                 &mut (-*alpha),
                 &mut (-*color),
                 depth_max,
-                htable
+                htable,
             );
 
             *actual_catch -= removed.len() as isize;
@@ -282,7 +310,7 @@ fn ab_negamax(
                                 &available_positions[len_available_positions..index],
                                 get_usize!(actual),
                                 &available_positions[index],
-                                current_depth
+                                current_depth,
                             );
                         }
                         best_score = *alpha;
@@ -313,7 +341,7 @@ fn ab_negamax(
 
 fn mtdf(
     params: &mut ParamsIA,
-    htable: &mut [[[i32; SIZE_BOARD]; SIZE_BOARD]; 2]
+    htable: &mut [[[i32; SIZE_BOARD]; SIZE_BOARD]; 2],
 ) -> Option<(i64, (usize, usize))> {
     let mut g = params.f;
     let mut ret = (0, (0, 0));
@@ -339,7 +367,7 @@ fn mtdf(
             &mut beta,
             &mut 1,
             &mut depth_max,
-            htable
+            htable,
         );
         //        if actual_catch2 != params.actual_catch || opp_catch2 != params.opp_catch {
         //            println!("aye");
@@ -376,7 +404,7 @@ pub fn iterative_deepening_mtdf(
     let actual_catch = params.actual_catch;
     let opp_catch = params.opp_catch;
     let mut htable = history::initialize_htable();
-    for d in (2..(params.depth_max + 1)).step_by(2) {
+    for d in (2..(params.depth_max + 0)).step_by(2) {
         // Below, their existence is justified (checks still needed for beta)
         params.counter_tree = 0;
         params.depth_max = d;
@@ -389,10 +417,7 @@ pub fn iterative_deepening_mtdf(
             break;
         }
 
-        let tmp_ret = mtdf(
-            params,
-            &mut htable
-        );
+        let tmp_ret = mtdf(params, &mut htable);
         match tmp_ret {
             None => break,
             Some((score, r#move)) => {
