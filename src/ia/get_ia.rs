@@ -543,7 +543,8 @@ mod tests {
         //            println!();
         //        }
         // let mut counter_tree:u64 = 0;
-        let result = mtdf(&mut params);
+        let mut htable = history::initialize_htable();
+        let result = mtdf(&mut params, &mut htable);
         match result {
             None => false,
             Some((_, (x, y))) => {

@@ -33,11 +33,11 @@ pub fn update_htable(
     // Depreciate score unnecessary moves
     silent_moves.iter().for_each(| &(x, y, _) | {
         table[player][x][y] -= (current_depth * current_depth * MULTIPLIER) as i32
-        - (table[player][x][y] * ((current_depth * current_depth * MULTIPLIER) as i32).abs() /
+        - ((table[player][x][y] * ((current_depth * current_depth * MULTIPLIER) as i32)).abs() /
             16384);
     });
     // Appreciate score best move
     table[player][best_move.0][best_move.1] += (current_depth * current_depth * MULTIPLIER) as i32
-                                                - (table[player][best_move.0][best_move.1] * ((current_depth * current_depth * MULTIPLIER) as i32).abs() /
+                                                - ((table[player][best_move.0][best_move.1] * ((current_depth * current_depth * MULTIPLIER) as i32)).abs() /
                                                     16384);
 }
