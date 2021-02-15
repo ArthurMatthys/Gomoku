@@ -2,36 +2,28 @@
 // use rand::distributions::{Distribution, Uniform};
 // use rand::thread_rng;
 use super::super::checks::capture;
-use super::super::model::game;
-use super::super::model::params::{ ParamsIA, ThreadPool };
 use super::super::model::board::Board;
+use super::super::model::bool_option::get_opp;
+use super::super::model::game;
+use super::super::model::params::{ParamsIA, ThreadPool};
 use super::super::model::score_board::ScoreBoard;
 use super::super::render::board::SIZE_BOARD;
 use super::handle_board::{
     board_state_win, change_board, change_board_hint, find_continuous_threats, get_space,
-     remove_last_pawn, remove_last_pawn_hint, print_board
+    remove_last_pawn, remove_last_pawn_hint,
 };
 // use super::super::model::player;
 use super::heuristic;
 use super::zobrist;
 use rand::seq::SliceRandom;
-use std::{ time, cmp, thread };
 use std::sync::mpsc::Sender;
+use std::{cmp, thread, time};
 // use super::super::player;
 
 const MIN_INFINITY: i64 = i64::min_value() + 1;
 const MAX_INFINITY: i64 = i64::max_value();
 // const DEPTH_THREATS: i8 = 10;
 const LIMIT_DURATION: time::Duration = time::Duration::from_millis(495);
-
-macro_rules! get_opp {
-    ($e:expr) => {
-        match $e {
-            Some(a) => Some(!a),
-            _ => unreachable!(),
-        }
-    };
-}
 
 fn find_winning_align(
     board: &mut Board,
@@ -94,11 +86,17 @@ fn ab_negamax(
         }
     }
 
-//    println!("here2");
+    //    println!("here2");
     if *opp_catch >= 5 {
-        return Some((-heuristic::INSTANT_WIN * ((*depth_max - *current_depth) as i64 + 1), None));
+        return Some((
+            -heuristic::INSTANT_WIN * ((*depth_max - *current_depth) as i64 + 1),
+            None,
+        ));
     } else if find_winning_align(&mut params.board, &mut params.score_board, actual) {
-        return Some((heuristic::INSTANT_WIN * ((*depth_max - *current_depth) as i64 + 1), None));
+        return Some((
+            heuristic::INSTANT_WIN * ((*depth_max - *current_depth) as i64 + 1),
+            None,
+        ));
     }
     if *current_depth == *depth_max {
         let weight = heuristic::first_heuristic_hint(
@@ -112,7 +110,7 @@ fn ab_negamax(
         return Some((weight, None));
     }
 
-//    println!("here3");
+    //    println!("here3");
     // Otherwise bubble up values from below
     let mut best_move: Option<(usize, usize)> = None;
     let mut best_score = MIN_INFINITY;
@@ -120,17 +118,24 @@ fn ab_negamax(
 
     if tte.is_valid && tte.depth >= *depth_max - *current_depth {
         // println!("rentré");
-//        println!("here4");
+        //        println!("here4");
         if let Some((line, col)) = tte.r#move {
             if params.board.get_pawn(line, col) == None {
-                let removed = change_board(&mut params.board, &mut params.score_board, line, col, actual, &mut params.zhash);
+                let removed = change_board(
+                    &mut params.board,
+                    &mut params.score_board,
+                    line,
+                    col,
+                    actual,
+                    &mut params.zhash,
+                );
                 *actual_catch += removed.len() as isize;
 
                 // Recurse
                 let value = ab_negamax(
                     params,
                     &mut (*current_depth + 1),
-                    get_opp!(actual),
+                    get_opp(actual),
                     opp_catch,
                     actual_catch,
                     &mut (-*beta),
@@ -138,21 +143,26 @@ fn ab_negamax(
                     &mut (-*color),
                     depth_max,
                 );
-//                println!("here5");
+                //                println!("here5");
 
+                *actual_catch -= removed.len() as isize;
+                remove_last_pawn(
+                    &mut params.board,
+                    &mut params.score_board,
+                    line,
+                    col,
+                    actual,
+                    removed,
+                    &mut params.zhash,
+                );
                 match value {
                     // None => return None,
-                    None => { 
-                        *actual_catch -= removed.len() as isize;
-                        remove_last_pawn(&mut params.board, &mut params.score_board, line, col, actual, removed, &mut params.zhash);
-                        return None
-                    },
+                    None => {
+                        return None;
+                    }
                     Some((recursed_score, _)) => {
                         let x = -recursed_score;
-        
-                        *actual_catch -= removed.len() as isize;
-                        remove_last_pawn(&mut params.board, &mut params.score_board, line, col, actual, removed, &mut params.zhash);
-        
+
                         if x >= *beta {
                             best_score = x;
                             best_move = tte.r#move;
@@ -160,7 +170,7 @@ fn ab_negamax(
                         }
                     }
                 }
-//                println!("here6");
+                //                println!("here6");
                 // else {
                 //     best_score = MIN_INFINITY;
                 //     best_move = None;
@@ -169,20 +179,37 @@ fn ab_negamax(
         }
     }
 
-//    println!("here7");
+    //    println!("here7");
     if !trig {
         // Collect moves
-        let available_positions = get_space(&mut params.board, &mut params.score_board, actual, *actual_catch);
+        let available_positions = get_space(
+            &mut params.board,
+            &mut params.score_board,
+            actual,
+            *actual_catch,
+        );
         // println!("\nCounter-tree: {}|d:{}", counter_tree,current_depth);
         // available_positions.iter().for_each(|&(x,y,z)|{
         //     print!("[({}:{})|{}]", x,  y, z);
         // });
         // println!("");
-//        println!("here8");
+        //        println!("here8");
         let mut tmp_curr_depth = *current_depth + 1;
         // let calc_depth = cmp::min(((*depth_max - *current_depth) / 2) + *current_depth, *depth_max);
         for (index, &(line, col, _)) in available_positions.iter().enumerate() {
-            let removed = change_board(&mut params.board, &mut params.score_board, line, col, actual, &mut params.zhash);
+            if (depth_max - *current_depth) * 8 < index as i8
+                && best_score > -heuristic::INSTANT_WIN
+            {
+                break;
+            }
+            let removed = change_board(
+                &mut params.board,
+                &mut params.score_board,
+                line,
+                col,
+                actual,
+                &mut params.zhash,
+            );
             *actual_catch += removed.len() as isize;
 
             // if index == 5 {
@@ -190,11 +217,11 @@ fn ab_negamax(
             // }
 
             // Recurse
-//            println!("here9");
+            //            println!("here9");
             let value = ab_negamax(
                 params,
                 &mut tmp_curr_depth,
-                get_opp!(actual),
+                get_opp(actual),
                 opp_catch,
                 actual_catch,
                 &mut (-*beta),
@@ -203,17 +230,25 @@ fn ab_negamax(
                 depth_max,
             );
 
-//            println!("here10");
+            *actual_catch -= removed.len() as isize;
+            remove_last_pawn(
+                &mut params.board,
+                &mut params.score_board,
+                line,
+                col,
+                actual,
+                removed,
+                &mut params.zhash,
+            );
+            //            println!("here10");
             match value {
-                None => { 
-                    *actual_catch -= removed.len() as isize;
-                    remove_last_pawn(&mut params.board, &mut params.score_board, line, col, actual, removed, &mut params.zhash);
+                None => {
                     // if *current_depth == 1 || *current_depth == 0  || *current_depth == 2 {
-                        // continue ;
+                    // continue ;
                     // } else {
-                        return None
+                    return None;
                     // }
-                },
+                }
                 Some((recursed_score, _)) => {
                     let x = -recursed_score;
                     if x > best_score {
@@ -224,10 +259,7 @@ fn ab_negamax(
                         *alpha = x;
                         best_move = Some((line, col));
                     }
-        
-                    *actual_catch -= removed.len() as isize;
-                    remove_last_pawn(&mut params.board, &mut params.score_board, line, col, actual, removed, &mut params.zhash);
-        
+
                     if *alpha >= *beta {
                         best_score = *alpha;
                         best_move = Some((line, col));
@@ -255,24 +287,20 @@ fn ab_negamax(
     Some((best_score, best_move))
 }
 
-fn mtdf(
-    params: &mut ParamsIA,
-) -> Option<(i64, (usize, usize))> {
+fn mtdf(params: &mut ParamsIA) -> Option<(i64, (usize, usize))> {
     let mut g = params.f;
     let mut ret = (0, (0, 0));
     let mut upperbnd = MAX_INFINITY;
     let mut lowerbnd = MIN_INFINITY;
+    //    let board_save = params.board;
+    //    let score_board_save = params.score_board;
 
     while lowerbnd < upperbnd {
         let mut depth_max = params.depth_max;
         let mut actual_catch2 = params.actual_catch;
         let mut opp_catch2 = params.opp_catch;
 
-        let mut beta = if g == lowerbnd {
-                            g + 1
-                        } else {
-                            g
-                        };
+        let mut beta = if g == lowerbnd { g + 1 } else { g };
 
         let values: Option<(i64, Option<(usize, usize)>)> = ab_negamax(
             params,
@@ -285,8 +313,17 @@ fn mtdf(
             &mut 1,
             &mut depth_max,
         );
+        //        if actual_catch2 != params.actual_catch || opp_catch2 != params.opp_catch {
+        //            println!("aye");
+        //        }
+        //        if board_save != params.board {
+        //            println!("ouille");
+        //        }
+        //        if score_board_save != params.score_board {
+        //            println!("aille");
+        //        }
         match values {
-            None => { return None },
+            None => return None,
             Some((score, r#move)) => {
                 ret = (score, r#move.unwrap());
                 g = score;
@@ -304,9 +341,9 @@ fn mtdf(
 pub fn iterative_deepening_mtdf(
     params: &mut ParamsIA,
     tx: &Sender<bool>,
-    mainloop: bool
-) -> (i64,(usize, usize)) {
-    let mut ret = (MIN_INFINITY,(0, 0));
+    mainloop: bool,
+) -> (i64, (usize, usize)) {
+    let mut ret = (MIN_INFINITY, (0, 0));
     let beta = params.beta;
     let actual_catch = params.actual_catch;
     let opp_catch = params.opp_catch;
@@ -323,17 +360,22 @@ pub fn iterative_deepening_mtdf(
             break;
         }
 
-        let tmp_ret = mtdf(
-            params,
-        );
+        let tmp_ret = mtdf(params);
         match tmp_ret {
             None => break,
-            Some((score, r#move)) => {   
+            Some((score, r#move)) => {
                 let ndtime_mtdf = time::Instant::now();
                 if mainloop {
-                    println!("Depth: [{}] | Nb. moves: [{}] | Nb. moves/s: [{}]", d, params.counter_tree, (params.counter_tree as f64 / ndtime_mtdf.duration_since(stime_mtdf).as_secs_f64()).floor());
+                    println!(
+                        "Depth: [{}] | Nb. moves: [{}] | Nb. moves/s: [{}]",
+                        d,
+                        params.counter_tree,
+                        (params.counter_tree as f64
+                            / ndtime_mtdf.duration_since(stime_mtdf).as_secs_f64())
+                        .floor()
+                    );
                 }
-                ret = (score,r#move);
+                ret = (score, r#move);
                 params.f = score;
             }
         }
@@ -349,9 +391,8 @@ fn ia(
     hash: u64,
     depth_max: &i8,
     start_time: &time::Instant,
-    threadpool: &ThreadPool 
+    threadpool: &ThreadPool,
 ) -> (usize, usize) {
-
     let mut board: Board = game.board.into();
     let mut params = ParamsIA {
         score_board: heuristic::evaluate_board(&mut board),
@@ -374,36 +415,28 @@ fn ia(
     for _ in 0..3 {
         let tx_tmp = threadpool.tx.clone();
         let mut params_tmp = params.clone();
-        let _ = threadpool.pool.spawn(move || { 
-            iterative_deepening_mtdf(
-                &mut params_tmp,
-                &tx_tmp,
-                false
-            );
+        let _ = threadpool.pool.spawn(move || {
+            iterative_deepening_mtdf(&mut params_tmp, &tx_tmp, false);
         });
     }
     // Main thread execution
-    iterative_deepening_mtdf(
-        &mut params,
-        &threadpool.tx,
-        true
-    ).1
+    iterative_deepening_mtdf(&mut params, &threadpool.tx, true).1
 }
 
 pub fn get_ia(
     game: &mut game::Game,
     depth_max: &i8,
     start_time: &time::Instant,
-    threadpool: &ThreadPool 
+    threadpool: &ThreadPool,
 ) -> (usize, usize) {
     let hash: u64 = zobrist::board_to_zhash(&game.board);
     let mut rng = rand::thread_rng();
 
     match game.history.len() {
         0 => {
-                threadpool.dumb_send();
-                (9, 9)
-            },
+            threadpool.dumb_send();
+            (9, 9)
+        }
         2 => {
             let (dir_line, dir_col) = capture::DIRS
                 .choose(&mut rng)
@@ -466,21 +499,19 @@ mod tests {
             start_time: time::Instant::now(),
             f: 0,
         };
-//        for i in 0..19 {
-//            print!("// ");
-//            for j in 0..19 {
-//                match board[j][i] {
-//                    Some(true) => print!("⊖"),
-//                    Some(false) => print!("⊕"),
-//                    None => print!("_"),
-//                }
-//            }
-//            println!();
-//        }
+        //        for i in 0..19 {
+        //            print!("// ");
+        //            for j in 0..19 {
+        //                match board[j][i] {
+        //                    Some(true) => print!("⊖"),
+        //                    Some(false) => print!("⊕"),
+        //                    None => print!("_"),
+        //                }
+        //            }
+        //            println!();
+        //        }
         // let mut counter_tree:u64 = 0;
-        let result = mtdf(
-            &mut params
-        );
+        let result = mtdf(&mut params);
         match result {
             None => false,
             Some((_, (x, y))) => {
@@ -493,7 +524,7 @@ mod tests {
                         } else if i == y && j == x && actual == Some(true) {
                             print!("⊙");
                         } else {
-                            match board.get_pawn(j, i){
+                            match board.get_pawn(j, i) {
                                 Some(true) => print!("⊖"),
                                 Some(false) => print!("⊕"),
                                 None => print!("_"),
