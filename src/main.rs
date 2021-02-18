@@ -16,7 +16,8 @@ use std::time::Instant;
 
 mod model;
 use model::game;
-use model::params::ThreadPool;
+use model::params::{ ThreadPool };
+use model::params;
 use model::player;
 
 mod render;
@@ -176,7 +177,7 @@ pub fn main() {
     game.set_changed();
     zobrist::init_zboard();
     zobrist::clear_tt();
-    let mut threadpool: ThreadPool = ThreadPool::new();
+    let threadpool: ThreadPool = ThreadPool::new();
 
     let start_game = Instant::now();
     'running: loop {
@@ -186,6 +187,7 @@ pub fn main() {
             let end = Instant::now();
             game.set_player_time(end.duration_since(start));
             game.change_board_from_input(line, col);
+            params::reset_stop_thread();
             // threadpool.wait_threads();
             // threadpool.update();
             zobrist::clear_tt();
@@ -227,6 +229,7 @@ pub fn main() {
                     game.set_best_move(line, col);
                     // threadpool.wait_threads();
                     // threadpool.update();
+                    params::reset_stop_thread();
                     zobrist::clear_tt();
                 }
                 Event::KeyDown {

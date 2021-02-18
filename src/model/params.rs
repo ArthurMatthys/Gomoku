@@ -23,6 +23,13 @@ pub struct ParamsIA {
 }
 
 pub static mut STOP_THREADS: bool = false;
+
+pub fn reset_stop_thread() -> () {
+    unsafe {
+        STOP_THREADS = false;
+    }
+}
+
 const LIMIT_DURATION: time::Duration = time::Duration::from_millis(495);
 
 impl ParamsIA {
@@ -43,7 +50,6 @@ impl ParamsIA {
         false
     }
 }
-
 
 
 pub struct ThreadPool {
