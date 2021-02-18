@@ -13,12 +13,13 @@ use super::handle_board::{
     board_state_win, change_board, change_board_hint, find_continuous_threats, get_space,
     remove_last_pawn, remove_last_pawn_hint,
 };
+use super::super::model::params;
 // use super::super::model::player;
 use super::heuristic;
 use super::zobrist;
 use rand::seq::SliceRandom;
-use std::sync::mpsc::Sender;
-use std::{cmp, thread, time};
+// use std::sync::mpsc::Sender;
+use std::{ time };
 // use super::super::player;
 
 const MIN_INFINITY: i64 = i64::min_value() + 1;
@@ -79,7 +80,7 @@ fn ab_negamax(
     htable: &mut [[[i32; SIZE_BOARD]; SIZE_BOARD]; 2],
 ) -> Option<(i64, Option<(usize, usize)>)> {
     // println!("entered: {}", counter_tree);
-    if time::Instant::now().duration_since(params.start_time) >= LIMIT_DURATION {
+    if params.check_timeout() {
         return None;
     }
     let mut tte = zobrist::retrieve_tt_from_hash(&params.zhash);
@@ -236,10 +237,11 @@ fn ab_negamax(
         let mut tmp_curr_depth = *current_depth + 1;
         // let calc_depth = cmp::min(((*depth_max - *current_depth) / 2) + *current_depth, *depth_max);
         for (index, &(line, col, _)) in available_positions.iter().enumerate() {
-            if *depth_max >= 6
+            if params.check_timeout() || 
+                (*depth_max >= 6
                 && depth_max - *current_depth < 4
                 && (depth_max - *current_depth) * 8 < index as i8
-                && best_score > -heuristic::INSTANT_WIN
+                && best_score > -heuristic::INSTANT_WIN)
             {
                 break;
             }
@@ -396,7 +398,6 @@ fn mtdf(
 
 pub fn iterative_deepening_mtdf(
     params: &mut ParamsIA,
-    tx: &Sender<bool>,
     mainloop: bool,
 ) -> (i64, (usize, usize)) {
     let mut ret = (MIN_INFINITY, (0, 0));
@@ -413,7 +414,7 @@ pub fn iterative_deepening_mtdf(
         params.opp_catch = opp_catch;
 
         let stime_mtdf = time::Instant::now();
-        if stime_mtdf.duration_since(params.start_time) >= LIMIT_DURATION {
+        if unsafe { params::STOP_THREADS } || stime_mtdf.duration_since(params.start_time) >= LIMIT_DURATION {
             break;
         }
 
@@ -436,9 +437,6 @@ pub fn iterative_deepening_mtdf(
                 params.f = score;
             }
         }
-    }
-    if !mainloop {
-        tx.send(true).unwrap();
     }
     ret
 }
@@ -466,18 +464,19 @@ fn ia(
         counter_tree: 0,
         start_time: *start_time,
         f: 0,
+        counter: 0,
     };
 
     // Spawn 3 threads for parallel execution
     for _ in 0..3 {
-        let tx_tmp = threadpool.tx.clone();
+        // let tx_tmp = threadpool.tx.clone();
         let mut params_tmp = params.clone();
         let _ = threadpool.pool.spawn(move || {
-            iterative_deepening_mtdf(&mut params_tmp, &tx_tmp, false);
+            iterative_deepening_mtdf(&mut params_tmp, false);
         });
     }
     // Main thread execution
-    iterative_deepening_mtdf(&mut params, &threadpool.tx, true).1
+    iterative_deepening_mtdf(&mut params, true).1
 }
 
 pub fn get_ia(
@@ -491,7 +490,6 @@ pub fn get_ia(
 
     match game.history.len() {
         0 => {
-            threadpool.dumb_send();
             (9, 9)
         }
         2 => {
@@ -555,6 +553,7 @@ mod tests {
             counter_tree: 0,
             start_time: time::Instant::now(),
             f: 0,
+            counter: 0,
         };
         //        for i in 0..19 {
         //            print!("// ");

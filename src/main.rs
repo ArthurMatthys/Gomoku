@@ -186,8 +186,8 @@ pub fn main() {
             let end = Instant::now();
             game.set_player_time(end.duration_since(start));
             game.change_board_from_input(line, col);
-            threadpool.wait_threads();
-            threadpool.update();
+            // threadpool.wait_threads();
+            // threadpool.update();
             zobrist::clear_tt();
             flush_events!(events, 'running);
             //    sleep(Duration::new(1, 0000000));
@@ -225,8 +225,8 @@ pub fn main() {
                     let start = Instant::now();
                     let (line, col) = get_ia::get_ia(&mut game, &4, &start, &threadpool);
                     game.set_best_move(line, col);
-                    threadpool.wait_threads();
-                    threadpool.update();
+                    // threadpool.wait_threads();
+                    // threadpool.update();
                     zobrist::clear_tt();
                 }
                 Event::KeyDown {
