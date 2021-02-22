@@ -179,7 +179,7 @@ fn score_to_points(
     total -= (nb_3_c / 3) as i64 * ALIGN_3 / 4;
 
     total += (nb_2_o / 2) as i64 * ALIGN_2;
-    total += (nb_2_so / 2) as i64 * ALIGN_2 / 2;
+    total -= (nb_2_so / 2) as i64 * ALIGN_3 / 2;
     total -= (nb_2_c / 2) as i64 * ALIGN_2 / 4;
 
     total * ((*depth * 100 + 1) as i64)

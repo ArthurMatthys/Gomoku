@@ -1,11 +1,13 @@
 // use super::super::model::point;
 // use rand::distributions::{Distribution, Uniform};
 // use rand::thread_rng;
+use super::super::checks::after_turn_check::DIRECTIONS;
 use super::super::checks::capture;
 use super::super::model::board::Board;
 use super::super::model::bool_option::get_opp;
 use super::super::model::game;
 use super::super::model::history;
+use super::super::model::params;
 use super::super::model::params::{ParamsIA, ThreadPool};
 use super::super::model::score_board::ScoreBoard;
 use super::super::render::board::SIZE_BOARD;
@@ -13,13 +15,12 @@ use super::handle_board::{
     board_state_win, change_board, change_board_hint, find_continuous_threats, get_space,
     remove_last_pawn, remove_last_pawn_hint,
 };
-use super::super::model::params;
 // use super::super::model::player;
 use super::heuristic;
 use super::zobrist;
 use rand::seq::SliceRandom;
 // use std::sync::mpsc::Sender;
-use std::{ time };
+use std::time;
 // use super::super::player;
 
 const MIN_INFINITY: i64 = i64::min_value() + 1;
@@ -37,11 +38,15 @@ macro_rules! get_usize {
         }
     };
 }
+const PRINT_LETTER: [&str; 19] = [
+    "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S",
+];
 
 fn find_winning_align(
     board: &mut Board,
     score_board: &mut ScoreBoard,
     actual: Option<bool>,
+    check_capture: bool,
 ) -> bool {
     for line in 0..SIZE_BOARD {
         for col in 0..SIZE_BOARD {
@@ -49,7 +54,25 @@ fn find_winning_align(
                 for dir in 0..4 {
                     match score_board.get(line, col, dir) {
                         (a, _, _) if a >= 5 => {
-                            return true;
+                            let mut align = Vec::with_capacity(10);
+                            let (dx, dy) = DIRECTIONS[dir];
+                            if !check_capture {
+                                return true;
+                            }
+                            align.push((line as isize, col as isize));
+                            for way in [-1, 1].iter() {
+                                let mut new_x = line as isize + dx * way;
+                                let mut new_y = col as isize + dy * way;
+                                loop {
+                                    new_x += way * dx;
+                                    new_y += way * dy;
+                                    match board.get(new_x as usize, new_y as usize) {
+                                        Some(a) if a == actual => align.push((new_x, new_y)),
+                                        _ => break,
+                                    }
+                                }
+                            }
+                            return !capture::can_capture_vec_hint(board, score_board, align);
                         }
                         _ => (),
                     }
@@ -106,7 +129,28 @@ fn ab_negamax(
             -heuristic::INSTANT_WIN * ((*depth_max - *current_depth) as i64 + 1),
             None,
         ));
-    } else if find_winning_align(&mut params.board, &mut params.score_board, actual) {
+    } else if find_winning_align(
+        &mut params.board,
+        &mut params.score_board,
+        get_opp(actual),
+        true,
+    ) {
+        if *current_depth == 0 {
+            println!("WIIIINNNNNNING ALIGN 11111");
+        }
+        return Some((
+            -heuristic::INSTANT_WIN * ((*depth_max - *current_depth) as i64 + 1),
+            None,
+        ));
+    } else if find_winning_align(
+        &mut params.board,
+        &mut params.score_board,
+        actual,
+        false,
+    ) {
+        if *current_depth == 0 {
+            println!("WIIIINNNNNNING ALIGN 22222222 - {}", params.counter_tree);
+        }
         return Some((
             heuristic::INSTANT_WIN * ((*depth_max - *current_depth) as i64 + 1),
             None,
@@ -296,6 +340,7 @@ fn ab_negamax(
                     // }
                 }
                 Some((recursed_score, _)) => {
+                    //println!("{}/{}|score:{}", PRINT_LETTER[line], col, -recursed_score);
                     let x = -recursed_score;
                     if x > best_score {
                         best_score = x;
@@ -398,15 +443,13 @@ fn mtdf(
     Some(ret)
 }
 
-pub fn iterative_deepening_mtdf(
-    params: &mut ParamsIA,
-    mainloop: bool,
-) -> (i64, (usize, usize)) {
+pub fn iterative_deepening_mtdf(params: &mut ParamsIA, mainloop: bool) -> (i64, (usize, usize)) {
     let mut ret = (MIN_INFINITY, (0, 0));
     let beta = params.beta;
     let actual_catch = params.actual_catch;
     let opp_catch = params.opp_catch;
     let mut htable = history::initialize_htable();
+
     for d in (2..(params.depth_max + 0)).step_by(2) {
         // Below, their existence is justified (checks still needed for beta)
         params.counter_tree = 0;
@@ -435,9 +478,10 @@ pub fn iterative_deepening_mtdf(
                         .floor()
                     );
                 }
-                ret = (score, r#move);
                 params.f = score;
+                ret = (score, r#move);
             }
+            // params.f = score;
         }
     }
     ret
@@ -468,6 +512,7 @@ fn ia(
         f: 0,
         counter: 0,
     };
+    println!("---------------------------------------------------------------------------");
 
     // Spawn 3 threads for parallel execution
     for _ in 0..3 {
@@ -491,9 +536,7 @@ pub fn get_ia(
     let mut rng = rand::thread_rng();
 
     match game.history.len() {
-        0 => {
-            (9, 9)
-        }
+        0 => (9, 9),
         2 => {
             let (dir_line, dir_col) = capture::DIRS
                 .choose(&mut rng)

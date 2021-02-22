@@ -614,6 +614,9 @@ fn get_score_board(
                 Some(false) => 0,
                 None => 3,
             };
+            if tot_align == 2 && edged == 1 {
+                return -SCORE_ALIGN.pow(3);
+            }
             match edged {
                 //open
                 0 => SCORE_ALIGN.pow(tot_align as u32),

@@ -1,6 +1,7 @@
 use super::super::ia::heuristic;
 use super::super::model::board::Board;
 use super::super::model::game;
+use super::super::model::score_board::ScoreBoard;
 use super::super::render::board;
 use super::after_turn_check::DIRECTIONS;
 use super::double_three::check_double_three_hint;
@@ -196,6 +197,44 @@ pub fn can_capture_vec(game: &mut game::Game, to_capture: Vec<(isize, isize)>) -
                             Some(a) if a == pawn => (),
                             Some(None) => {
                                 return !(check_double_three_hint(&mut board, opp, new_x, new_y))
+                            }
+                            Some(_) => unreachable!(),
+                            None => return false,
+                        }
+                    }
+                }
+                _ => (),
+            }
+        }
+    }
+    false
+}
+/// Check if nany of the given pawn can be capture
+pub fn can_capture_vec_hint(
+    board: &mut Board,
+    score_board: &mut ScoreBoard,
+    to_capture: Vec<(isize, isize)>,
+) -> bool {
+    for &(x, y) in to_capture.iter() {
+        for dir in 0..4 {
+            match score_board.get(x as usize, y as usize, dir) {
+                (a, l, r)
+                    if a == 2
+                        && ((l == Some(false) && r == Some(true))
+                            || (l == Some(true) && r == Some(false))) =>
+                {
+                    let way = if l == Some(false) { -1 } else { 1 };
+                    let pawn = board.get_pawn(x as usize, y as usize);
+                    let opp = pawn.map(|x| !x);
+                    let (dx, dy) = DIRECTIONS[dir];
+                    for step in 1..3 {
+                        let new_x = x + way * step * dx;
+                        let new_y = y + way * step * dy;
+                        match board.get(new_x as usize, new_y as usize) {
+                            Some(a) if a == opp => unreachable!(),
+                            Some(a) if a == pawn => (),
+                            Some(None) => {
+                                return !(check_double_three_hint(board, opp, new_x, new_y))
                             }
                             Some(_) => unreachable!(),
                             None => return false,
