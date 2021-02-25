@@ -136,7 +136,7 @@ fn ab_negamax(
         true,
     ) {
         if *current_depth == 0 {
-            println!("WIIIINNNNNNING ALIGN 11111");
+            println!("WIIIINNNNNNING ALIGN 11111 - {}", params.counter_tree);
         }
         return Some((
             -heuristic::INSTANT_WIN * ((*depth_max - *current_depth) as i64 + 1),
@@ -281,13 +281,13 @@ fn ab_negamax(
         let mut tmp_curr_depth = *current_depth + 1;
         // let calc_depth = cmp::min(((*depth_max - *current_depth) / 2) + *current_depth, *depth_max);
         for (index, &(line, col, _)) in available_positions.iter().enumerate() {
-            if (*depth_max >= 6
-                && depth_max - *current_depth < 4
-                && (depth_max - *current_depth) * 8 < index as i8
-                && best_score > -heuristic::INSTANT_WIN)
-            {
-                break;
-            }
+            // if *depth_max >= 6
+            //     && depth_max - *current_depth < 4
+            //     && (depth_max - *current_depth) * 8 < index as i8
+            //     && best_score > -heuristic::INSTANT_WIN
+            // {
+            //     break;
+            // }
             // if params.check_timeout() {
             //     return None
             // }
@@ -449,6 +449,7 @@ pub fn iterative_deepening_mtdf(params: &mut ParamsIA, mainloop: bool) -> (i64, 
     let actual_catch = params.actual_catch;
     let opp_catch = params.opp_catch;
     let mut htable = history::initialize_htable();
+    let actual = params.actual;
 
     for d in (2..(params.depth_max + 0)).step_by(2) {
         // Below, their existence is justified (checks still needed for beta)
@@ -465,7 +466,18 @@ pub fn iterative_deepening_mtdf(params: &mut ParamsIA, mainloop: bool) -> (i64, 
 
         let tmp_ret = mtdf(params, &mut htable);
         match tmp_ret {
-            None => break,
+            None => { 
+                let available_positions = get_space(
+                    &mut params.board,
+                    &mut params.score_board,
+                    actual,
+                    actual_catch,
+                ).pop().unwrap();
+                if ret == (MIN_INFINITY, (0, 0)) {
+                    ret = (available_positions.2, (available_positions.0, available_positions.1));
+                }
+                break 
+            },
             Some((score, r#move)) => {
                 let ndtime_mtdf = time::Instant::now();
                 if mainloop {

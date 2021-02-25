@@ -195,7 +195,7 @@ pub fn first_heuristic_hint(
 ) -> i64 {
     let (good_points, bad_points) = get_alignements(board, score_board, player_actual);
 
-    10 * score_to_points(player_actual_catch, good_points, depth)
+    score_to_points(player_actual_catch, good_points, depth)
         - score_to_points(player_opposite_catch, bad_points, depth)
 }
 
