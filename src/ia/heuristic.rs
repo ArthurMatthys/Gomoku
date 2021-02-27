@@ -380,12 +380,22 @@ fn get_alignements(
         for way in [-1, 1].iter() {
             let mut new_x = x as isize;
             let mut new_y = y as isize;
+            
+            println!("infinite_loop: {}/{}", x, y);
             loop {
                 new_x += way * DIRECTIONS[dir].0;
                 new_y += way * DIRECTIONS[dir].1;
                 match board.get(new_x as usize, new_y as usize) {
-                    None => (),
+                    None => {
+                        // if new_x < 0|| new_y < 0 {
+                        //         break;
+                        //     }
+                        println!("je none: {}/{}", new_x, new_y); 
+                        break ;
+                        // () 
+                    },
                     Some(a) if a == status_pawn => {
+                        println!("a == status_pawn: {}/{}", new_x, new_y);
                         for new_dir in 0..4 {
                             if new_dir == dir {
                                 continue;
@@ -399,6 +409,7 @@ fn get_alignements(
                         }
                     }
                     Some(a) if a != status_pawn => {
+                        println!("a != status_pawn: {}/{}", new_x, new_y);
                         break;
                     }
                     Some(_) => unreachable!(),
@@ -819,4 +830,89 @@ mod tests {
             (2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
         ));
     }
+
+     // nb_of catch/5 in a row/5 in a row can take/4 open/4 semi-open/4 close
+    // 3 open/3 semi-open/3 close/2 open/2 semi-open/2 close
+    #[test]
+    fn test_infinite_loop_border() {
+        let black_pos = vec![
+            (0,0),
+            (0,1),
+            (0,2),
+            (1,2),
+            (2,3),
+        ];
+        let white_pos = vec![
+            (1,0),
+            (1,1),
+            (0,3),
+            (1,3),
+            ];
+            assert!(test_board(
+            white_pos,
+            black_pos,
+            (0, 0, 0, 0, 0, 0, 0, 3, 3, 0, 2, 0),
+            (2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4),
+        ));
+    }
+
+    //
+    // Issues possible:
+    // 
+    #[test]
+    fn test_catch_2() {
+        let black_pos = vec![
+            (1,1),
+            (0,1),
+            (5,5),
+        ];
+        let white_pos = vec![
+            (2,2),
+            (3,3),
+            ];
+            assert!(test_board(
+            white_pos,
+            black_pos,
+            (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0),
+            (2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0),
+        ));
+    }
+
+    #[test]
+    fn test_catch_2_error() {
+        let black_pos = vec![
+                (1,1),
+                (0,1),
+            ];
+            let white_pos = vec![
+                (2,2),
+                (3,3),
+                (5,5),
+            ];
+            assert!(test_board(
+            white_pos,
+            black_pos,
+            (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0),
+            (2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0),
+        ));
+    }
+
+    #[test]
+    fn test_catch_2_wall() {
+        let black_pos = vec![
+                (1,1),
+                (1,2),
+            ];
+            let white_pos = vec![
+                (1,3),
+            ];
+            assert!(test_board(
+            white_pos,
+            black_pos,
+            (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2),
+            (2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+        ));
+    }
+
+
 }

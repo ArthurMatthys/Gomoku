@@ -527,13 +527,13 @@ fn ia(
     println!("---------------------------------------------------------------------------");
 
     // Spawn 3 threads for parallel execution
-    for _ in 0..3 {
-        // let tx_tmp = threadpool.tx.clone();
-        let mut params_tmp = params.clone();
-        let _ = threadpool.pool.spawn(move || {
-            iterative_deepening_mtdf(&mut params_tmp, false);
-        });
-    }
+    // for _ in 0..3 {
+    //     // let tx_tmp = threadpool.tx.clone();
+    //     let mut params_tmp = params.clone();
+    //     let _ = threadpool.pool.spawn(move || {
+    //         iterative_deepening_mtdf(&mut params_tmp, false);
+    //     });
+    // }
     // Main thread execution
     iterative_deepening_mtdf(&mut params, true).1
 }
