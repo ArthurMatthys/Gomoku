@@ -301,16 +301,16 @@ fn get_alignements(
                     status_pawn: Option<bool>,
                     left: Option<bool>,
                     right: Option<bool>| {
-        if (left == None || left == Some(true)) && (right == None || right == Some(true)) {
+        if (left == None || left == Some(true)) || (right == None || right == Some(true)) {
+            return 1;
+        } else if (left == None || left == Some(true)) && (right == None || right == Some(true)) {
             return 2;
+        } else if left == None || left == Some(true) || right == None || right == Some(true) {
+            return 3;
         } else {
             let free_space = check_free_space(dir, x, y, 2, status_pawn, left, right);
             if free_space >= 5 {
-                if (left == None || left == Some(true)) || (right == None || right == Some(true)) {
-                    return 1;
-                } else {
-                    return 0;
-                }
+                return 0;
             } else {
                 return 2;
             }
@@ -452,6 +452,7 @@ fn get_alignements(
                         opp_tuple.0 += 1
                     }
                     2 => actual_tuple.11 += 1,
+                    3 => actual_tuple.10 += 1,
                     _ => unreachable!(),
                 },
                 (3, left, right) => match handle_3(dir, x, y, status_pawn, left, right) {
@@ -860,7 +861,7 @@ mod tests {
     // Issues possible:
     // 
     #[test]
-    fn test_catch_2() {
+    fn test_catch_2_main() {
         let black_pos = vec![
             (1,1),
             (0,1),
