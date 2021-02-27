@@ -142,12 +142,7 @@ fn ab_negamax(
             -heuristic::INSTANT_WIN * ((*depth_max - *current_depth) as i64 + 1),
             None,
         ));
-    } else if find_winning_align(
-        &mut params.board,
-        &mut params.score_board,
-        actual,
-        false,
-    ) {
+    } else if find_winning_align(&mut params.board, &mut params.score_board, actual, false) {
         if *current_depth == 0 {
             println!("WIIIINNNNNNING ALIGN 22222222 - {}", params.counter_tree);
         }
@@ -460,24 +455,31 @@ pub fn iterative_deepening_mtdf(params: &mut ParamsIA, mainloop: bool) -> (i64, 
         params.opp_catch = opp_catch;
 
         let stime_mtdf = time::Instant::now();
-        if unsafe { params::STOP_THREADS } || stime_mtdf.duration_since(params.start_time) >= LIMIT_DURATION {
+        if unsafe { params::STOP_THREADS }
+            || stime_mtdf.duration_since(params.start_time) >= LIMIT_DURATION
+        {
             break;
         }
 
         let tmp_ret = mtdf(params, &mut htable);
         match tmp_ret {
-            None => { 
+            None => {
                 let available_positions = get_space(
                     &mut params.board,
                     &mut params.score_board,
                     actual,
                     actual_catch,
-                ).pop().unwrap();
+                )
+                .pop()
+                .unwrap();
                 if ret == (MIN_INFINITY, (0, 0)) {
-                    ret = (available_positions.2, (available_positions.0, available_positions.1));
+                    ret = (
+                        available_positions.2,
+                        (available_positions.0, available_positions.1),
+                    );
                 }
-                break 
-            },
+                break;
+            }
             Some((score, r#move)) => {
                 let ndtime_mtdf = time::Instant::now();
                 if mainloop {
@@ -492,8 +494,7 @@ pub fn iterative_deepening_mtdf(params: &mut ParamsIA, mainloop: bool) -> (i64, 
                 }
                 params.f = score;
                 ret = (score, r#move);
-            }
-            // params.f = score;
+            } // params.f = score;
         }
     }
     ret
@@ -524,16 +525,16 @@ fn ia(
         f: 0,
         counter: 0,
     };
-    println!("---------------------------------------------------------------------------");
+    //println!("---------------------------------------------------------------------------");
 
     // Spawn 3 threads for parallel execution
-    // for _ in 0..3 {
-    //     // let tx_tmp = threadpool.tx.clone();
-    //     let mut params_tmp = params.clone();
-    //     let _ = threadpool.pool.spawn(move || {
-    //         iterative_deepening_mtdf(&mut params_tmp, false);
-    //     });
-    // }
+    for _ in 0..3 {
+        // let tx_tmp = threadpool.tx.clone();
+        let mut params_tmp = params.clone();
+        let _ = threadpool.pool.spawn(move || {
+            iterative_deepening_mtdf(&mut params_tmp, false);
+        });
+    }
     // Main thread execution
     iterative_deepening_mtdf(&mut params, true).1
 }
