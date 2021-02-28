@@ -43,9 +43,6 @@ impl ScoreBoard {
     pub fn reset(&mut self, x: usize, y: usize, dir: usize) -> () {
         self.0[x][y][dir] = (0, Some(false), Some(false));
     }
-    //pub fn get(&self, x: usize, y:usize) -> Option<[(u8, Option<bool>, Option<bool>); 4]>{
-    //    self.0.get(x).map(|b| b.get(y)).flatten().cloned()
-    //}
 
     // Print score_board
     pub fn print(&self) -> () {

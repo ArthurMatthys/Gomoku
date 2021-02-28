@@ -1,6 +1,3 @@
-// use super::super::model::point;
-// use rand::distributions::{Distribution, Uniform};
-// use rand::thread_rng;
 use super::super::checks::after_turn_check::DIRECTIONS;
 use super::super::checks::capture;
 use super::super::model::board::Board;
@@ -8,24 +5,19 @@ use super::super::model::bool_option::get_opp;
 use super::super::model::game;
 use super::super::model::history;
 use super::super::model::params;
-use super::super::model::params::{ParamsIA, ThreadPool};
+use super::super::model::params::{ParamsIA};
 use super::super::model::score_board::ScoreBoard;
 use super::super::render::board::SIZE_BOARD;
 use super::handle_board::{
-    board_state_win, change_board, change_board_hint, find_continuous_threats, get_space,
-    remove_last_pawn, remove_last_pawn_hint,
+    change_board, get_space, remove_last_pawn
 };
-// use super::super::model::player;
 use super::heuristic;
 use super::zobrist;
 use rand::seq::SliceRandom;
-// use std::sync::mpsc::Sender;
 use std::time;
-// use super::super::player;
 
 const MIN_INFINITY: i64 = i64::min_value() + 1;
 const MAX_INFINITY: i64 = i64::max_value();
-// const DEPTH_THREATS: i8 = 10;
 const LIMIT_DURATION: time::Duration = time::Duration::from_millis(495);
 const SILENT_MOVE_SCORE: i64 = 1000000;
 
@@ -38,9 +30,6 @@ macro_rules! get_usize {
         }
     };
 }
-const PRINT_LETTER: [&str; 19] = [
-    "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S",
-];
 
 fn find_winning_align(
     board: &mut Board,
@@ -83,15 +72,8 @@ fn find_winning_align(
     false
 }
 
-// negamax_try
 fn ab_negamax(
-    // board: &mut Board,
-    // score_board: &mut ScoreBoard,
-    // zhash: &mut u64,
-    // counter_tree: &mut u64,
-    // start_time: &time::Instant,
     params: &mut ParamsIA,
-    // table: &[[[u64; 2]; SIZE_BOARD]; SIZE_BOARD],
     current_depth: &mut i8,
     actual: Option<bool>,
     actual_catch: &mut isize,
@@ -102,11 +84,9 @@ fn ab_negamax(
     depth_max: &i8,
     htable: &mut [[[i32; SIZE_BOARD]; SIZE_BOARD]; 2],
 ) -> Option<(i64, Option<(usize, usize)>)> {
-    // println!("entered: {}", counter_tree);
     if params.check_timeout() {
         return None;
     }
-    // println!("call function_tmp_curr_depth:{}/{}", *current_depth, (*current_depth + 1_i8));
 
     let mut tte = zobrist::retrieve_tt_from_hash(&params.zhash);
     let alpha_orig = *alpha;
@@ -125,7 +105,6 @@ fn ab_negamax(
         }
     }
 
-    //    println!("here2");
     if *opp_catch >= 5 {
         return Some((
             -heuristic::INSTANT_WIN * ((*depth_max - *current_depth) as i64 + 1),
@@ -147,25 +126,7 @@ fn ab_negamax(
             None,
         ));
     }
-    // if *depth_max >= 6 && *current_depth == *depth_max {
     if *current_depth == *depth_max {
-        // if let Some((_, _)) = find_continuous_threats(
-        //     &mut params.board,
-        //     &mut params.score_board,
-        //     actual,
-        //     actual_catch,
-        //     opp_catch,
-        //     &mut 4,
-        //     &mut 0,
-        //     true,
-        // ) {
-        //     println!("yo");
-        //     return Some((
-        //         -heuristic::INSTANT_WIN * ((*depth_max - *current_depth) as i64 + 1),
-        //         None,
-        //     ));
-        // }
-
         let weight = heuristic::first_heuristic_hint(
             &mut params.board,
             &mut params.score_board,
@@ -177,15 +138,12 @@ fn ab_negamax(
         return Some((weight, None));
     }
 
-    //    println!("here3");
     // Otherwise bubble up values from below
     let mut best_move: Option<(usize, usize)> = None;
     let mut best_score = MIN_INFINITY;
     let mut trig = false;
 
     if tte.is_valid && tte.depth >= *depth_max - *current_depth {
-        // println!("rentré");
-        //        println!("here4");
         if let Some((line, col)) = tte.r#move {
             if params.board.get_pawn(line, col) == None {
                 let removed = change_board(
@@ -211,7 +169,6 @@ fn ab_negamax(
                     depth_max,
                     htable,
                 );
-                //                println!("here5");
 
                 *actual_catch -= removed.len() as isize;
                 remove_last_pawn(
@@ -224,7 +181,6 @@ fn ab_negamax(
                     &mut params.zhash,
                 );
                 match value {
-                    // None => return None,
                     None => {
                         return None;
                     }
@@ -238,16 +194,10 @@ fn ab_negamax(
                         }
                     }
                 }
-                //                println!("here6");
-                // else {
-                //     best_score = MIN_INFINITY;
-                //     best_move = None;
-                // }
             }
         }
     }
 
-    //    println!("here7");
     if !trig {
         // Collect moves
         let mut available_positions = get_space(
@@ -265,27 +215,12 @@ fn ab_negamax(
         history::sort_silent_moves(&htable, get_usize!(actual), &mut silent_moves);
         let len_available_positions = available_positions.len();
         available_positions.append(&mut silent_moves);
-        // println!("\nCounter-tree: {}|d:{}", counter_tree,current_depth);
-        // available_positions.iter().for_each(|&(x,y,z)|{
-        //     print!("[({}:{})|{}]", x,  y, z);
-        // });
-        // println!("");
-        //        println!("here8");
-        // println!("debug_tmp_curr_depth:{}/{}", *current_depth, (*current_depth + 1_i8));
         let mut tmp_curr_depth:i8 = *current_depth + 1_i8;
-        // let calc_depth = cmp::min(((*depth_max - *current_depth) / 2) + *current_depth, *depth_max);
+
         for (index, &(line, col, _)) in available_positions.iter().enumerate() {
-            // if *depth_max >= 6
-            //     && *current_depth > 2
-            //     && depth_max - *current_depth < 4
-            //     && (depth_max - *current_depth) * 8 < index as i8
-            //     && best_score > -heuristic::INSTANT_WIN
-            // {
-            //     break;
-            // }
-            // if params.check_timeout() {
-            //     return None
-            // }
+            if params.check_timeout() {
+                return None;
+            }
             let removed = change_board(
                 &mut params.board,
                 &mut params.score_board,
@@ -296,12 +231,6 @@ fn ab_negamax(
             );
             *actual_catch += removed.len() as isize;
 
-            // if index == 5 {
-            //     tmp_curr_depth = cmp::min(*current_depth + 3, *depth_max);
-            // }
-
-            // Recurse
-            //            println!("here9");
             let value = ab_negamax(
                 params,
                 &mut tmp_curr_depth,
@@ -325,17 +254,12 @@ fn ab_negamax(
                 removed,
                 &mut params.zhash,
             );
-            //            println!("here10");
+
             match value {
                 None => {
-                    // if *current_depth == 1 || *current_depth == 0  || *current_depth == 2 {
-                    // continue ;
-                    // } else {
                     return None;
-                    // }
                 }
                 Some((recursed_score, _)) => {
-                    //println!("{}/{}|score:{}", PRINT_LETTER[line], col, -recursed_score);
                     let x = -recursed_score;
                     if x > best_score {
                         best_score = x;
@@ -391,8 +315,6 @@ fn mtdf(
     let mut ret = (0, (0, 0));
     let mut upperbnd = MAX_INFINITY;
     let mut lowerbnd = MIN_INFINITY;
-    //    let board_save = params.board;
-    //    let score_board_save = params.score_board;
 
     while lowerbnd < upperbnd {
         let mut depth_max = params.depth_max;
@@ -413,15 +335,7 @@ fn mtdf(
             &mut depth_max,
             htable,
         );
-        //        if actual_catch2 != params.actual_catch || opp_catch2 != params.opp_catch {
-        //            println!("aye");
-        //        }
-        //        if board_save != params.board {
-        //            println!("ouille");
-        //        }
-        //        if score_board_save != params.score_board {
-        //            println!("aille");
-        //        }
+
         match values {
             None => return None,
             Some((score, r#move)) => {
@@ -499,7 +413,7 @@ pub fn iterative_deepening_mtdf(params: &mut ParamsIA, mainloop: bool) -> (i64, 
                 }
                 params.f = score;
                 ret = (score, r#move);
-            } // params.f = score;
+            }
         }
     }
     ret
@@ -510,7 +424,6 @@ fn ia(
     hash: u64,
     depth_max: &i8,
     start_time: &time::Instant,
-    threadpool: &ThreadPool,
 ) -> (usize, usize) {
     let mut board: Board = game.board.into();
     let mut params = ParamsIA {
@@ -530,16 +443,6 @@ fn ia(
         f: 0,
         counter: 0,
     };
-    //println!("---------------------------------------------------------------------------");
-
-    // Spawn 3 threads for parallel execution
-    for _ in 0..3 {
-        // let tx_tmp = threadpool.tx.clone();
-        let mut params_tmp = params.clone();
-        let _ = threadpool.pool.spawn(move || {
-            iterative_deepening_mtdf(&mut params_tmp, false);
-        });
-    }
     // Main thread execution
     iterative_deepening_mtdf(&mut params, true).1
 }
@@ -548,7 +451,6 @@ pub fn get_ia(
     game: &mut game::Game,
     depth_max: &i8,
     start_time: &time::Instant,
-    threadpool: &ThreadPool,
 ) -> (usize, usize) {
     let hash: u64 = zobrist::board_to_zhash(&game.board);
     let mut rng = rand::thread_rng();
@@ -564,11 +466,11 @@ pub fn get_ia(
                 game::TypeOfParty::Longpro => {
                     ((9 + dir_line * 4) as usize, (9 + dir_col * 4) as usize)
                 }
-                game::TypeOfParty::Standard => ia(game, hash, depth_max, start_time, threadpool),
+                game::TypeOfParty::Standard => ia(game, hash, depth_max, start_time),
             }
         }
         _ => {
-            let ret = ia(game, hash, depth_max, start_time, threadpool);
+            let ret = ia(game, hash, depth_max, start_time);
             ret
         }
     }
@@ -618,18 +520,7 @@ mod tests {
             f: 0,
             counter: 0,
         };
-        //        for i in 0..19 {
-        //            print!("// ");
-        //            for j in 0..19 {
-        //                match board[j][i] {
-        //                    Some(true) => print!("⊖"),
-        //                    Some(false) => print!("⊕"),
-        //                    None => print!("_"),
-        //                }
-        //            }
-        //            println!();
-        //        }
-        // let mut counter_tree:u64 = 0;
+
         let mut htable = history::initialize_htable();
         let result = mtdf(&mut params, &mut htable);
         match result {
@@ -658,51 +549,4 @@ mod tests {
         }
     }
 
-    //    #[test]
-    //    fn test_ia_board_00() {
-    //        let black_pos = vec![
-    //            (6, 8),
-    //            (10, 8),
-    //            (7, 9),
-    //            (9, 9),
-    //            (6, 10),
-    //            (8, 10),
-    //            (10, 10),
-    //            (5, 11),
-    //            (7, 11),
-    //            (10, 11),
-    //            (7, 12),
-    //            (10, 12),
-    //            (10, 13),
-    //        ];
-    //        let white_pos = vec![
-    //            (5, 7),
-    //            (7, 7),
-    //            (9, 7),
-    //            (11, 7),
-    //            (8, 6),
-    //            (9, 8),
-    //            (8, 9),
-    //            (7, 10),
-    //            (10, 9),
-    //            (9, 11),
-    //            (11, 11),
-    //            (4, 12),
-    //            (10, 14),
-    //        ];
-    //        let actual = Some(true);
-    //        let mut actual_catch = 1isize;
-    //        let mut opp_catch = 1isize;
-    //        let depth_max = 5i8;
-    //        let expected_result = (0, 0);
-    //        assert!(test_ia(
-    //            black_pos,
-    //            white_pos,
-    //            actual,
-    //            &mut actual_catch,
-    //            &mut opp_catch,
-    //            &depth_max,
-    //            expected_result,
-    //        ));
-    //    }
 }

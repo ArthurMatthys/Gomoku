@@ -16,7 +16,6 @@ use std::time::Instant;
 
 mod model;
 use model::game;
-use model::params::{ ThreadPool };
 use model::params;
 use model::player;
 
@@ -34,15 +33,6 @@ mod checks;
 static GLOBAL: jemallocator::Jemalloc = jemallocator::Jemalloc;
 
 const DEPTH_MAX: i8 = 11;
-
-//macro_rules! string_of_index {
-//    ($line:expr, $col:expr) => {{
-//        let col: char = std::char::from_u32('A' as u32 + *$col as u32)
-//            .expect("Could not convert number to char");
-//        let line = *$line;
-//        format!("{}{}", col, line)
-//    }};
-//}
 
 const IMAGES: [&str; 46] = [
     "src/content/normal_board.png",
@@ -177,22 +167,18 @@ pub fn main() {
     game.set_changed();
     zobrist::init_zboard();
     zobrist::clear_tt();
-    let threadpool: ThreadPool = ThreadPool::new();
 
     let start_game = Instant::now();
     'running: loop {
         if game.actual_player_is_ai().expect("Wrong type of player") {
             let start = Instant::now();
-            let (line, col) = get_ia::get_ia(&mut game, &DEPTH_MAX, &start, &threadpool);
+            let (line, col) = get_ia::get_ia(&mut game, &DEPTH_MAX, &start);
             let end = Instant::now();
             game.set_player_time(end.duration_since(start));
             game.change_board_from_input(line, col);
             params::reset_stop_thread();
-            // threadpool.wait_threads();
-            // threadpool.update();
             zobrist::clear_tt();
             flush_events!(events, 'running);
-            //    sleep(Duration::new(1, 0000000));
         }
         for event in events.poll_iter() {
             match event {
@@ -202,7 +188,6 @@ pub fn main() {
                     ..
                 } => break 'running,
                 Event::MouseButtonDown { x, y, .. } => {
-                    // game.change_board_from_click(x, y);
                     game.change_board_from_click(y, x);
                 }
                 Event::KeyDown {
@@ -225,10 +210,8 @@ pub fn main() {
                     ..
                 } => {
                     let start = Instant::now();
-                    let (line, col) = get_ia::get_ia(&mut game, &4, &start, &threadpool);
+                    let (line, col) = get_ia::get_ia(&mut game, &4, &start);
                     game.set_best_move(line, col);
-                    // threadpool.wait_threads();
-                    // threadpool.update();
                     params::reset_stop_thread();
                     zobrist::clear_tt();
                 }
@@ -238,14 +221,6 @@ pub fn main() {
                 _ => {}
             }
         }
-        //        if game.history.len() == 1 {
-        //            let (dx, dy) = (1isize, -1isize);
-        //            let (new_x, new_y) = game.history[0];
-        //            game.change_board_from_input(
-        //                (new_x as isize + dx) as usize,
-        //                (new_y as isize + dy) as usize,
-        //            );
-        //        }
 
         if game.check_win() {
             break 'running;

@@ -15,7 +15,5 @@ pub fn render_window(game: &mut game::Game, images: &Vec<Texture>, font: &sdl2::
     score::render_score(game, font);
     board::render_board(game, images);
     game.canvas.present();
-    //   let player = game.get_actual_player_mutable();
-    //   player.test_forbidden();
     game.has_changed = false;
 }

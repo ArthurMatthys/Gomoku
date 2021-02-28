@@ -1,39 +1,10 @@
 use super::super::checks::after_turn_check::DIRECTIONS;
-// use super::super::checks::double_three::check_double_three_hint;
 use super::super::model::board::Board;
 use super::super::model::score_board::ScoreBoard;
-// use super::threat_space::*;
 use std::thread::sleep;
 use std::time::Duration;
 
 use super::super::render::board::SIZE_BOARD;
-
-macro_rules! valid_coord {
-    (
-        $x: expr,
-        $y: expr
-    ) => {
-        $x >= 0 && $x < SIZE_BOARD as isize && $y >= 0 && $y < SIZE_BOARD as isize
-    };
-}
-
-macro_rules! explore_align_light {
-    (
-        $board: expr,
-        $new_line: expr,
-        $new_col: expr,
-        $actual_player: expr,
-        $dir: expr,
-        $orientation: expr
-    ) => {
-        while valid_coord!($new_line, $new_col)
-            && $board.get_pawn($new_line as usize, $new_col as usize) == $actual_player
-        {
-            $new_line += (DIRECTIONS[$dir].0 * $orientation);
-            $new_col += (DIRECTIONS[$dir].1 * $orientation);
-        }
-    };
-}
 
 pub fn evaluate_board(board: &mut Board) -> ScoreBoard {
     let mut score_tab: [[[(u8, Option<bool>, Option<bool>); 4]; SIZE_BOARD]; SIZE_BOARD] =
@@ -83,32 +54,6 @@ pub fn evaluate_board(board: &mut Board) -> ScoreBoard {
                                 };
                                 step += 1;
                             }
-                            //                                if valid_coord!(new_x, new_y) {
-                            //                                    if let Some(value) = board[new_x as usize][new_y as usize] {
-                            //                                        if value == player {
-                            //                                            count += 1;
-                            //                                            indexes.push((new_x as usize, new_y as usize));
-                            //                                        } else {
-                            //                                            if *way == -1 {
-                            //                                                block_left = Some(true);
-                            //                                            } else {
-                            //                                                block_right = Some(true);
-                            //                                            }
-                            //                                            break;
-                            //                                        }
-                            //                                    } else {
-                            //                                        break;
-                            //                                    }
-                            //                                } else {
-                            //                                    if *way == -1 {
-                            //                                        block_left = None;
-                            //                                    } else {
-                            //                                        block_right = None;
-                            //                                    }
-                            //                                    break;
-                            //                                }
-                            //                                step += 1;
-                            //                            }
                         }
                         indexes.iter().for_each(|&(x, y)| {
                             score_tab[x][y][dir] = (count, block_left, block_right)
@@ -128,7 +73,7 @@ const ALIGN_4: i64 = 1000;
 const SCORE_TAKE: i64 = 10;
 const FIVE_CAN_TAKE: i64 = 0010000;
 const SCORE_CAN_TAKE: i64 = 000000100;
-pub const MULTIPLIER: i64 = 10;
+// pub const MULTIPLIER: i64 = 10;
 
 fn score_to_points(
     nb_caught: &mut isize,
@@ -157,13 +102,8 @@ fn score_to_points(
             } else if nb_catch == 2 {
                 total += ALIGN_4;
             }
-            //        a => {let b = (a * 2) as u32;
-            //            total += SCORE_TAKE.pow(b.pow(nb_catch as u32 * 2));
-            //
-            //        }
         }
         a => total += SCORE_TAKE * (a as i64 * SCORE_CAN_TAKE) as i64,
-        // a => total += 0,
     }
     if nb_5 > 0 {
         return INSTANT_WIN * ((*depth + 1) as i64 * 2);
@@ -255,41 +195,6 @@ fn get_alignements(
                     Some(Some(_)) => unreachable!(),
                     None => break,
                 }
-                //                 if new_x >= SIZE_BOARD as isize
-                //                     || new_x < 0
-                //                     || new_y >= SIZE_BOARD as isize
-                //                     || new_y < 0
-                //                 {
-                //                     break;
-                //                 }
-                //                 match board[new_x as usize][new_y as usize] {
-                //                     Some(a) if a != actual_pawn => break,
-                //                     Some(a) if a == actual_pawn => {
-                //                         if changed == 1 {
-                //                             free_space += score_board[new_x as usize][new_y as usize][dir].0 as u8;
-                //                         }
-                //                     }
-                //                     Some(_) => unreachable!(),
-                //                     None => {
-                //                         changed = 1;
-                //                         free_space += 1
-                //                     }
-                //                 };
-
-                //                match board.get(new_x as usize).map(|b| b.get(new_y as usize)) {
-                //                    Some(Some(Some(a))) if *a != actual_pawn => break,
-                //                    Some(Some(Some(a))) if *a == actual_pawn => {
-                //                        if changed == 1 {
-                //                            free_space += score_board[new_x as usize][new_y as usize][dir].0 as u8;
-                //                        }
-                //                    },
-                //                    Some(Some(None)) => {
-                //                        changed = 1;
-                //                        free_space += 1;
-                //                    },
-                //                    Some(None) => {break},
-                //                    None => {break},
-                //                };
             }
         }
         return free_space;
@@ -421,22 +326,6 @@ fn get_alignements(
                     }
                     Some(_) => unreachable!(),
                 }
-                //                if board.get(new_x as usize, new_y as usize) != Some(status_pawn)
-                //                {
-                //                    break;
-                //                } else {
-                //                    for new_dir in 0..4 {
-                //                        if new_dir == dir {
-                //                            continue;
-                //                        } else {
-                //                            match score_board[new_x as usize][new_y as usize][new_dir] {
-                //                                (2, Some(true), Some(false)) => return true,
-                //                                (2, Some(false), Some(true)) => return true,
-                //                                _ => continue,
-                //                            }
-                //                        }
-                //                    }
-                //                }
             }
         }
         return false;
@@ -792,10 +681,6 @@ mod tests {
         ));
     }
 
-    //    #[test]
-    //    fn test_fours() {
-    //        ()
-    //    }
     //
     #[test]
     fn test_fives_0() {

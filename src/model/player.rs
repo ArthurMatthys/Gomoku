@@ -44,30 +44,6 @@ impl Player {
         self.name = name
     }
 
-    //    pub fn get_forbidden(&self) -> &Vec<point::Point> {
-    //        &self.forbidden
-    //    }
-    //
-    //    pub fn get_mutable_forbidden(&mut self) -> &mut Vec<point::Point> {
-    //        &mut self.forbidden
-    //    }
-
-    //    pub fn set_forbidden(&mut self, forbidden: Vec<point::Point>) -> () {
-    //        self.forbidden = forbidden
-    //    }
-
-    //    pub fn test_forbidden(&mut self) -> () {
-    //        let mut rng = rand::thread_rng();
-    //        let mut new_forbid = vec![];
-    //        for _ in 0..20 {
-    //            new_forbid.push(point::Point::new(
-    //                rng.gen_range(0, 19),
-    //                rng.gen_range(0, 19),
-    //            ));
-    //        }
-    //        self.set_forbidden(new_forbid);
-    //    }
-
     pub fn get_time(&self) -> String {
         format!(
             "Time spent : {}.{:03}",

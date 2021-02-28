@@ -132,9 +132,6 @@ fn is_free_tree_hint(
         let mut new_index_line = line;
         let mut new_index_col = col;
         loop {
-            //            if capture::valid_dir(&(line, col), (i * dir_line, i * dir_col), moves) {
-            //                let (new_index_line, new_index_col) =
-            //                    (line + dir_line * moves * i, col + dir_col * moves * i);
             new_index_line += new_dir_line;
             new_index_col += new_dir_col;
             match board.get(new_index_line as usize, new_index_col as usize) {
@@ -175,50 +172,6 @@ fn is_free_tree_hint(
                 Some(_) => unreachable!(),
                 None => break,
             }
-            //            if valid_coord!(new_index_line, new_index_col) {
-            //                match board[new_index_line as usize][new_index_col as usize] {
-            //                    //  If I am on an empty position
-            //                    None => {
-            //                        // Check wether we already met an empty position
-            //                        // If yes
-            //                        if parts[index_part][1] == 1 {
-            //                            if parts[index_part][2] + parts[index_part][0] != 0 {
-            //                                parts[index_part][3] = 1;
-            //                            }
-            //                            break;
-            //                        // Else, increment second index
-            //                        } else {
-            //                            parts[index_part][1] = 1;
-            //                        }
-            //                    }
-            //                    // If I am on a competitors pawn, break
-            //                    x if x != current => {
-            //                        if parts[index_part][1] == 1 && parts[index_part][2] == 0 {
-            //                            parts[index_part][3] = 1;
-            //                        } else if parts[index_part][1] == 1 && parts[index_part][2] > 0 {
-            //                            parts[index_part][2] = 0;
-            //                            parts[index_part][3] = 1;
-            //                        }
-            //                        break;
-            //                    }
-            //                    // If I am on the player's pawn
-            //                    x if x == current => {
-            //                        // If I have met an empty position, increment the index 2 of the vec
-            //                        if parts[index_part][1] == 1 {
-            //                            parts[index_part][2] += 1;
-            //                        // Else, increment the index on positon 0
-            //                        } else {
-            //                            parts[index_part][0] += 1;
-            //                        }
-            //                    }
-            //                    _ => unreachable!(),
-            //                };
-            //            //                moves += 1;
-            //            // Check next move
-            //            // If we are on an invalid position, break
-            //            } else {
-            //                break;
-            //            }
         }
     }
     let tot = (
@@ -257,12 +210,7 @@ pub fn check_double_three_hint(
 
 #[cfg(test)]
 mod tests {
-    // use super::super::handle_board::change_score_board_add;
-    // use super::super::heuristic;
     use super::*;
-    // use super::super::super::render::*;
-    // use super::super::super::game::*;
-    // use super::super::super::*;
 
     fn test_double_three_check_double_three_hint(
         white_pos: Vec<(usize, usize)>,

@@ -17,17 +17,17 @@ pub const DIRS: [(isize, isize); 8] = [
     (-1, -1),
 ];
 
-pub const DIRS_0: [(isize, isize); 9] = [
-    (1, 1),
-    (1, 0),
-    (1, -1),
-    (0, 1),
-    (0, 0),
-    (0, -1),
-    (-1, 1),
-    (-1, 0),
-    (-1, -1),
-];
+// pub const DIRS_0: [(isize, isize); 9] = [
+//     (1, 1),
+//     (1, 0),
+//     (1, -1),
+//     (0, 1),
+//     (0, 0),
+//     (0, -1),
+//     (-1, 1),
+//     (-1, 0),
+//     (-1, -1),
+// ];
 
 pub fn valid_dir(
     (line, col): &(isize, isize),
@@ -39,11 +39,7 @@ pub fn valid_dir(
         false
     } else {
         let delta_line = moves * dir_line;
-        // final_index / board::SIZE_BOARD as isize - *index / board::SIZE_BOARD as isize;
         let delta_col = moves * dir_col;
-        // final_index % board::SIZE_BOARD as isize - *index % board::SIZE_BOARD as isize;
-        // println!("final_index:{} - delta_line:{} - delta_col:{} - index: {} - moves: {}", final_index, delta_line, delta_col, index, moves);
-        // println!("-------------------");
         match (dir_line, dir_col) {
             (1, 1) => delta_line == moves && delta_col == moves,
             (1, 0) => delta_line == moves && delta_col == 0,

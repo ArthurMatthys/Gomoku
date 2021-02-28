@@ -93,7 +93,6 @@ pub fn init_zboard() -> () {
 // Function that initializes the zhash as a u64 accordingly to the current board's state
 pub fn board_to_zhash(
     board: &[[Option<bool>; board::SIZE_BOARD]; board::SIZE_BOARD],
-    // ztable: &[[[u64; 2]; board::SIZE_BOARD]; board::SIZE_BOARD],
 ) -> u64 {
     let mut hash: u64 = 0;
 
