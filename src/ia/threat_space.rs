@@ -2523,38 +2523,38 @@ mod tests {
             (
                 (7, 9),
                 TypeOfThreat::ThreeOC,
-                vec![(10, 8), (10, 6), (6, 10)],
+                vec![(10, 6), (6, 10), (10, 8)],
             ),
             (
                 (6, 10),
                 TypeOfThreat::ThreeOF,
-                vec![(10, 8), (7, 9), (10, 6), (5, 11)],
+                vec![(7, 9), (10, 6), (5, 11), (10, 8)],
             ),
             (
                 (10, 6),
                 TypeOfThreat::ThreeOC,
-                vec![(10, 8), (7, 9), (11, 5)],
+                vec![(7, 9), (11, 5), (10, 8)],
             ),
             (
                 (11, 5),
                 TypeOfThreat::ThreeOF,
-                vec![(10, 8), (10, 6), (7, 9), (12, 4)],
+                vec![(10, 6), (7, 9), (12, 4),(10, 8)],
             ),
-            ((9, 6), TypeOfThreat::ThreeOC, vec![(10, 8), (9, 9), (9, 5)]),
+            ((9, 6), TypeOfThreat::ThreeOC, vec![(9, 9), (9, 5), (10, 8)]),
             (
                 (9, 5),
                 TypeOfThreat::ThreeOF,
-                vec![(10, 8), (9, 6), (9, 9), (9, 4)],
+                vec![(9, 6), (9, 9), (9, 4), (10, 8)],
             ),
             (
                 (9, 9),
                 TypeOfThreat::ThreeOC,
-                vec![(10, 8), (9, 6), (9, 10)],
+                vec![(9, 6), (9, 10), (10, 8)],
             ),
             (
                 (9, 10),
                 TypeOfThreat::ThreeOF,
-                vec![(10, 8), (9, 9), (9, 6), (9, 11)],
+                vec![(9, 9), (9, 6), (9, 11), (10, 8)],
             ),
         ];
         assert!(test_threat_2(
@@ -2778,42 +2778,42 @@ mod tests {
             (
                 (7, 5),
                 TypeOfThreat::ThreeOC,
-                vec![(10, 6), (10, 8), (6, 4)],
+                vec![(10,8),(6,4),(10,6)],
             ),
             (
                 (6, 4),
                 TypeOfThreat::ThreeOF,
-                vec![(10, 6), (7, 5), (10, 8), (5, 3)],
+                vec![(7,5),(10,8),(5,3),(10,6)],
             ),
             (
                 (10, 8),
                 TypeOfThreat::ThreeOC,
-                vec![(10, 6), (7, 5), (11, 9)],
+                vec![(7,5),(11,9),(10,6)],
             ),
             (
                 (11, 9),
                 TypeOfThreat::ThreeOF,
-                vec![(10, 6), (10, 8), (7, 5), (12, 10)],
+                vec![(10,8),(7,5),(12,10),(10,6)],
             ),
             (
                 (9, 6),
                 TypeOfThreat::ThreeOC,
-                vec![(10, 6), (10, 8), (9, 9), (9, 5)],
+                vec![(10,6),(9,9),(9,5),(10,8)],
             ),
             (
                 (9, 5),
                 TypeOfThreat::ThreeOF,
-                vec![(10, 8), (10, 6), (9, 6), (9, 9), (9, 4)],
+                vec![(9,6),(9,9),(9,4),(10,8),(10,6)],
             ),
             (
                 (9, 9),
                 TypeOfThreat::ThreeOC,
-                vec![(10, 9), (10, 6), (10, 8), (9, 6), (9, 10)],
+                vec![(10,9),(9,6),(9,10),(10,6),(10,8)],
             ),
             (
                 (9, 10),
                 TypeOfThreat::ThreeOF,
-                vec![(10, 11), (10, 6), (10, 8), (9, 9), (9, 6), (9, 11)],
+                vec![(10,11),(9,9),(9,6),(9,11),(10,6),(10,8)],
             ),
         ];
         assert!(test_threat_2(
@@ -4050,28 +4050,28 @@ mod tests {
             (
                 (7, 9),
                 TypeOfThreat::ThreeOC,
-                vec![(7, 8), (10, 6), (6, 10)],
+                vec![(10, 6), (6, 10), (7, 8)],
             ),
             (
                 (6, 10),
                 TypeOfThreat::ThreeOF,
-                vec![(7, 8), (7, 9), (10, 6), (5, 11)],
+                vec![(7, 9), (10, 6), (5, 11), (7, 8)],
             ),
             (
                 (10, 6),
                 TypeOfThreat::ThreeOC,
-                vec![(7, 8), (7, 9), (11, 5)],
+                vec![(7, 9), (11, 5), (7, 8)],
             ),
             (
                 (11, 5),
                 TypeOfThreat::ThreeOF,
-                vec![(7, 8), (10, 6), (7, 9), (12, 4)],
+                vec![(10, 6), (7, 9), (12, 4), (7, 8)],
             ),
-            ((9, 6), TypeOfThreat::ThreeOC, vec![(7, 8), (9, 9), (9, 5)]),
+            ((9, 6), TypeOfThreat::ThreeOC, vec![(9, 9), (9, 5), (7, 8)]),
             (
                 (9, 5),
                 TypeOfThreat::ThreeOF,
-                vec![(7, 8), (9, 6), (9, 9), (9, 4)],
+                vec![(9,6),(9,9),(9,4),(7,8)],
             ),
             ((9, 9), TypeOfThreat::FiveTake, vec![(7, 8)]),
         ];
@@ -4178,11 +4178,11 @@ mod tests {
         let black_pos = vec![(9, 8), (9, 7), (9, 10), (8, 8)];
         let white_pos = vec![(10, 8)];
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
-            ((9, 6), TypeOfThreat::ThreeOC, vec![(7, 8), (9, 9), (9, 5)]),
+            ((9, 6), TypeOfThreat::ThreeOC, vec![(9, 9), (9, 5), (7, 8)]),
             (
                 (9, 5),
                 TypeOfThreat::ThreeOF,
-                vec![(7, 8), (9, 6), (9, 9), (9, 4)],
+                vec![(9, 6), (9, 9), (9, 4), (7, 8)],
             ),
             ((9, 9), TypeOfThreat::FourOC, vec![(7, 8)]),
         ];
@@ -4200,7 +4200,7 @@ mod tests {
         let black_pos = vec![(9, 8), (9, 10)];
         let white_pos = vec![(10, 8)];
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
-            ((9, 6), TypeOfThreat::ThreeOC, vec![(7, 8), (9, 9), (9, 5)]),
+            // ((9, 6), TypeOfThreat::ThreeOC, vec![(7, 8), (9, 9), (9, 5)]),
             // (
             //     (9, 5),
             //     TypeOfThreat::ThreeOF,
@@ -4265,7 +4265,7 @@ mod tests {
         let black_pos = vec![(9, 8), (9, 7), (9, 10), (8, 8)];
         let white_pos = vec![(10, 8), (9, 6)];
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> =
-            vec![((9, 9), TypeOfThreat::FourSOC, vec![(7, 8), (9, 11)])];
+            vec![((9, 9), TypeOfThreat::FourSOC, vec![(9, 11), (7, 8)])];
         assert!(test_threat_2(
             white_pos,
             black_pos,
@@ -4346,8 +4346,8 @@ mod tests {
         let black_pos = vec![(9, 8), (9, 7), (9, 11), (8, 8)];
         let white_pos = vec![(10, 8), (9, 6)];
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
-            ((9, 9), TypeOfThreat::FourSOF, vec![(7, 8), (9, 10)]),
-            ((9, 10), TypeOfThreat::FourSOF, vec![(7, 8), (9, 9)]),
+            ((9, 9), TypeOfThreat::FourSOF, vec![(9, 10), (7, 8)]),
+            ((9, 10), TypeOfThreat::FourSOF, vec![(9, 9), (7, 8)]),
         ];
         assert!(test_threat_2(
             white_pos,
@@ -4609,17 +4609,17 @@ mod tests {
         let black_pos = vec![(2, 8), (2, 7), (2, 10), (2, 11), (2, 12), (2, 13), (1, 8)];
         let white_pos = vec![(3, 8)];
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
-            ((3, 6), TypeOfThreat::ThreeOC, vec![(0, 8), (0, 9), (4, 5)]),
+            ((3, 6), TypeOfThreat::ThreeOC, vec![(0,9),(4,5),(0,8)]),
             (
                 (4, 5),
                 TypeOfThreat::ThreeOF,
-                vec![(0, 8), (3, 6), (0, 9), (5, 4)],
+                vec![(3,6),(0,9),(5,4),(0,8)],
             ),
-            ((2, 6), TypeOfThreat::ThreeOC, vec![(0, 8), (2, 9), (2, 5)]),
+            ((2, 6), TypeOfThreat::ThreeOC, vec![(2,9),(2,5),(0,8)]),
             (
                 (2, 5),
                 TypeOfThreat::ThreeOF,
-                vec![(0, 8), (2, 6), (2, 9), (2, 4)],
+                vec![(2,6),(2,9),(2,4),(0,8)],
             ),
             ((2, 9), TypeOfThreat::ThreeTake, vec![]),
         ];
@@ -4726,11 +4726,11 @@ mod tests {
         let black_pos = vec![(2, 8), (2, 7), (2, 10), (2, 11), (2, 12), (2, 13), (1, 8)];
         let white_pos = vec![(3, 8)];
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
-            ((2, 6), TypeOfThreat::ThreeOC, vec![(0, 8), (2, 9), (2, 5)]),
+            ((2, 6), TypeOfThreat::ThreeOC, vec![(2, 9), (2, 5), (0, 8)]),
             (
                 (2, 5),
                 TypeOfThreat::ThreeOF,
-                vec![(0, 8), (2, 6), (2, 9), (2, 4)],
+                vec![(2, 6), (2, 9), (2, 4), (0, 8)],
             ),
             ((2, 9), TypeOfThreat::ThreeTake, vec![]),
         ];
@@ -4814,11 +4814,11 @@ mod tests {
         let black_pos = vec![(2, 8), (2, 7), (2, 10), (2, 11), (2, 12), (2, 13), (1, 8)];
         let white_pos = vec![(3, 8)];
         let expected_result: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> = vec![
-            ((3, 6), TypeOfThreat::ThreeOC, vec![(0, 8), (0, 9), (4, 5)]),
+            ((3, 6), TypeOfThreat::ThreeOC, vec![(0, 9), (4, 5),(0,8)]),
             (
                 (4, 5),
                 TypeOfThreat::ThreeOF,
-                vec![(0, 8), (3, 6), (0, 9), (5, 4)],
+                vec![(3, 6), (0, 9), (5, 4),(0,8)],
             ),
         ];
         assert!(test_threat_2(
@@ -6896,7 +6896,7 @@ mod tests {
             (
                 (4, 1),
                 TypeOfThreat::FourSOF,
-                vec![(3, 5), (3, 4), (3, 2), (4, 2)],
+                vec![(4, 2), (3, 5), (3, 4), (3, 2)],
             ),
             ((4, 6), TypeOfThreat::ThreeTake, vec![(3, 7), (3, 5)]),
         ];
