@@ -178,9 +178,9 @@ fn capture_blank(
             index += 1;
         }
         if align[0] == 2 && align[1] == 3 && align[2] == 1 {
-            ret.push((x + dx as usize, y + dy as usize));
+            ret.push(((x as isize + dx) as usize, (y as isize + dy) as usize));
         } else if align[0] == 3 && align[2] == 2 && align[3] == 1 {
-            ret.push((x + 2 * dx as usize, y + 2 * dy as usize));
+            ret.push(((x as isize + 2 * dx) as usize, (y as isize + 2 * dy) as usize));
         } else if align[0] == 1 && align[2] == 2 && align[3] == 3 {
             ret.push(((x as isize - dx) as usize, (y as isize - dy) as usize));
         } else if align[0] == 2 && align[1] == 1 && align[2] == 3 {

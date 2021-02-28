@@ -426,12 +426,17 @@ fn mtdf(
         match values {
             None => return None,
             Some((score, r#move)) => {
-                ret = (score, r#move.unwrap());
-                g = score;
-                if g < beta {
-                    upperbnd = g;
-                } else {
-                    lowerbnd = g;
+                match r#move {
+                    None => return None,
+                    Some(r#move) => {
+                        ret = (score, r#move);
+                        g = score;
+                        if g < beta {
+                            upperbnd = g;
+                        } else {
+                            lowerbnd = g;
+                        }
+                    }
                 }
             }
         }
