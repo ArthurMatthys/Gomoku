@@ -276,13 +276,14 @@ fn ab_negamax(
         let mut tmp_curr_depth = *current_depth + 1;
         // let calc_depth = cmp::min(((*depth_max - *current_depth) / 2) + *current_depth, *depth_max);
         for (index, &(line, col, _)) in available_positions.iter().enumerate() {
-            // if *depth_max >= 6
-            //     && depth_max - *current_depth < 4
-            //     && (depth_max - *current_depth) * 8 < index as i8
-            //     && best_score > -heuristic::INSTANT_WIN
-            // {
-            //     break;
-            // }
+            if *depth_max >= 6
+                && *current_depth > 2
+                && depth_max - *current_depth < 4
+                && (depth_max - *current_depth) * 8 < index as i8
+                && best_score > -heuristic::INSTANT_WIN
+            {
+                break;
+            }
             // if params.check_timeout() {
             //     return None
             // }
