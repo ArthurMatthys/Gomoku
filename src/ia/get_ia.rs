@@ -18,7 +18,7 @@ use std::time;
 
 const MIN_INFINITY: i64 = i64::min_value() + 1;
 const MAX_INFINITY: i64 = i64::max_value();
-const LIMIT_DURATION: time::Duration = time::Duration::from_millis(495);
+const LIMIT_DURATION: time::Duration = time::Duration::from_millis(480);
 const SILENT_MOVE_SCORE: i64 = 1000000;
 
 macro_rules! get_usize {
