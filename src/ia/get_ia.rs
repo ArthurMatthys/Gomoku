@@ -106,6 +106,8 @@ fn ab_negamax(
     if params.check_timeout() {
         return None;
     }
+    // println!("call function_tmp_curr_depth:{}/{}", *current_depth, (*current_depth + 1_i8));
+
     let mut tte = zobrist::retrieve_tt_from_hash(&params.zhash);
     let alpha_orig = *alpha;
     params.counter_tree += 1;
@@ -135,39 +137,35 @@ fn ab_negamax(
         get_opp(actual),
         true,
     ) {
-        if *current_depth == 0 {
-            println!("WIIIINNNNNNING ALIGN 11111 - {}", params.counter_tree);
-        }
         return Some((
             -heuristic::INSTANT_WIN * ((*depth_max - *current_depth) as i64 + 1),
             None,
         ));
     } else if find_winning_align(&mut params.board, &mut params.score_board, actual, false) {
-        if *current_depth == 0 {
-            println!("WIIIINNNNNNING ALIGN 22222222 - {}", params.counter_tree);
-        }
         return Some((
             heuristic::INSTANT_WIN * ((*depth_max - *current_depth) as i64 + 1),
             None,
         ));
     }
+    // if *depth_max >= 6 && *current_depth == *depth_max {
     if *current_depth == *depth_max {
-        //        if let Some((_, _)) = find_continuous_threats(
-        //            &mut params.board,
-        //            &mut params.score_board,
-        //            actual,
-        //            actual_catch,
-        //            opp_catch,
-        //            &mut 4,
-        //            &mut 0,
-        //            true,
-        //        ) {
-        //            println!("yo");
-        //            return Some((
-        //                -heuristic::INSTANT_WIN * ((*depth_max - *current_depth) as i64 + 1),
-        //                None,
-        //            ));
-        //        }
+        // if let Some((_, _)) = find_continuous_threats(
+        //     &mut params.board,
+        //     &mut params.score_board,
+        //     actual,
+        //     actual_catch,
+        //     opp_catch,
+        //     &mut 4,
+        //     &mut 0,
+        //     true,
+        // ) {
+        //     println!("yo");
+        //     return Some((
+        //         -heuristic::INSTANT_WIN * ((*depth_max - *current_depth) as i64 + 1),
+        //         None,
+        //     ));
+        // }
+
         let weight = heuristic::first_heuristic_hint(
             &mut params.board,
             &mut params.score_board,
@@ -273,17 +271,18 @@ fn ab_negamax(
         // });
         // println!("");
         //        println!("here8");
-        let mut tmp_curr_depth = *current_depth + 1;
+        // println!("debug_tmp_curr_depth:{}/{}", *current_depth, (*current_depth + 1_i8));
+        let mut tmp_curr_depth:i8 = *current_depth + 1_i8;
         // let calc_depth = cmp::min(((*depth_max - *current_depth) / 2) + *current_depth, *depth_max);
         for (index, &(line, col, _)) in available_positions.iter().enumerate() {
-            if *depth_max >= 6
-                && *current_depth > 2
-                && depth_max - *current_depth < 4
-                && (depth_max - *current_depth) * 8 < index as i8
-                && best_score > -heuristic::INSTANT_WIN
-            {
-                break;
-            }
+            // if *depth_max >= 6
+            //     && *current_depth > 2
+            //     && depth_max - *current_depth < 4
+            //     && (depth_max - *current_depth) * 8 < index as i8
+            //     && best_score > -heuristic::INSTANT_WIN
+            // {
+            //     break;
+            // }
             // if params.check_timeout() {
             //     return None
             // }
@@ -355,7 +354,7 @@ fn ab_negamax(
                                 &available_positions[len_available_positions..index],
                                 get_usize!(actual),
                                 &available_positions[index],
-                                current_depth,
+                                &current_depth,
                             );
                         }
                         best_score = *alpha;

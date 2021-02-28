@@ -863,7 +863,10 @@ pub fn find_continuous_threats(
         }
     }
 
-    for (threat, _, counters) in threats.iter() {
+    for (threat, typeofthreat, counters) in threats.iter() {
+        if *typeofthreat != threats[0].1 {
+            break;
+        }
         let (x, y) = threat;
         //        println!("CT_threat");
         //        if board.get_pawn(*x, *y) != None {
