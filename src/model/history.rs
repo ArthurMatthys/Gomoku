@@ -1,6 +1,6 @@
 use super::super::render::board;
 
-const MULTIPLIER: i8 = 20;
+const MULTIPLIER: i32 = 20;
 
 /// Datastructure representing the History table.
 /// It will be updated that way :
@@ -30,14 +30,16 @@ pub fn update_htable(
     best_move: &(usize, usize, i64),
     current_depth: &i8
 ) -> () {
+    let current_depth:i32 = (*current_depth).into();
+    
     // Depreciate score unnecessary moves
     silent_moves.iter().for_each(| &(x, y, _) | {
-        table[player][x][y] -= (current_depth * current_depth * MULTIPLIER) as i32
-        - ((table[player][x][y] * ((current_depth * current_depth * MULTIPLIER) as i32)).abs() /
+        table[player][x][y] -= current_depth * current_depth * MULTIPLIER 
+        - ((table[player][x][y] * (current_depth * current_depth * MULTIPLIER)).abs() /
             16384);
     });
     // Appreciate score best move
     table[player][best_move.0][best_move.1] += (current_depth * current_depth * MULTIPLIER) as i32
-                                                - ((table[player][best_move.0][best_move.1] * ((current_depth * current_depth * MULTIPLIER) as i32)).abs() /
+                                                - ((table[player][best_move.0][best_move.1] * (current_depth * current_depth * MULTIPLIER)).abs() /
                                                     16384);
 }
