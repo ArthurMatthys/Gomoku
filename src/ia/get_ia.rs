@@ -66,24 +66,25 @@ fn find_winning_align(
                                     }
                                 }
                             }
-                            if !capture::can_capture_vec_hint(&mut params.board, &mut params.score_board, align){
-                                return true;
-                            } else {
-                                if let Some((_, _)) = find_continuous_threats(
-                                    params,
-                                    get_opp(actual),
-                                    opp_catch,
-                                    actual_catch,
-                                    &mut 4,
-                                    &mut 0,
-                                    true,
-                                    mainloop
-                                ) {
-                                    return true;
-                                } else {
-                                    return false;
-                                }
-                            }
+                            // if !capture::can_capture_vec_hint(&mut params.board, &mut params.score_board, align){
+                            //     return true;
+                            // } else {
+                                // if let Some((_, _)) = find_continuous_threats(
+                                //     params,
+                                //     get_opp(actual),
+                                //     opp_catch,
+                                //     actual_catch,
+                                //     &mut 4,
+                                //     &mut 0,
+                                //     true,
+                                //     mainloop
+                                // ) {
+                                //     return true;
+                                // } else {
+                                    // return false;
+                                // }
+                            // }
+                            return !capture::can_capture_vec_hint(&mut params.board, &mut params.score_board, align);
                         }
                         _ => (),
                     }
@@ -277,6 +278,16 @@ fn ab_negamax(
                 .unwrap() as usize,
         );
         history::sort_silent_moves(&htable, get_usize!(actual), &mut silent_moves);
+        // Late move reduction
+        if *current_depth >= 6 {
+            let silent_cutoff: usize;
+            if silent_moves.len() > ((depth_max - *current_depth) * 8) as usize {
+                silent_cutoff = ((depth_max - *current_depth) * 8) as usize;
+            } else {
+                silent_cutoff = silent_moves.len() as usize;
+            }
+            silent_moves = silent_moves[0..silent_cutoff].to_vec()
+        }
         let len_available_positions = available_positions.len();
         available_positions.append(&mut silent_moves);
         let mut tmp_curr_depth:i8 = *current_depth + 1_i8;
