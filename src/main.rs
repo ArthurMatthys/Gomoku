@@ -155,10 +155,11 @@ pub fn main() {
         .map_err(|e| e.to_string())
         .expect("Failes to initialize front displayer");
     let mut font = ttf_context
-        .load_font("src/content/OpenSans-Bold.ttf", 128)
-        .expect("Failed to load font");
+    .load_font("src/content/OpenSans-Bold.ttf", 128)
+    .expect("Failed to load font");
     font.set_style(sdl2::ttf::FontStyle::BOLD);
-
+    
+    rayon::ThreadPoolBuilder::new().num_threads(4).build_global().unwrap();
     let texture_creator: TextureCreator<_> = game.canvas.texture_creator();
     let images: Vec<Texture> = IMAGES
         .iter()

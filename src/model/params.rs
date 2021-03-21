@@ -1,5 +1,6 @@
 use super::super::model::board::Board;
 use super::super::model::score_board::ScoreBoard;
+// use std::sync::atomic::AtomicUsize;
 // use std::sync::mpsc::{ channel, Sender, Receiver };
 use std::time;
 
@@ -33,14 +34,16 @@ pub fn reset_stop_thread() -> () {
 const LIMIT_DURATION: time::Duration = time::Duration::from_millis(495);
 
 impl ParamsIA {
-    pub fn check_timeout(&mut self) -> bool {
+    pub fn check_timeout(&mut self, mainloop: bool) -> bool {
         if unsafe { STOP_THREADS } {
             return true
         }
         self.counter += 1;
         if self.counter >= 1000 {
             if time::Instant::now().duration_since(self.start_time) >= LIMIT_DURATION {
-                unsafe { STOP_THREADS = true; }
+                if mainloop {
+                    unsafe { STOP_THREADS = true; }
+                }
                 return true
             } else {
                 self.counter = 0;
@@ -50,42 +53,3 @@ impl ParamsIA {
         false
     }
 }
-
-
-// pub struct ThreadPool {
-//     pub pool:rayon::ThreadPool,
-//     pub counter: u64,
-// }
-
-// impl ThreadPool {
-//     pub fn new() -> ThreadPool {
-//         // let (tx,rx):(Sender<bool>,Receiver<bool>) = channel::<bool>();
-//         ThreadPool {
-//             pool: rayon::ThreadPoolBuilder::new()
-//                                             .num_threads(3)
-//                                             .build()
-//                                             .unwrap(),
-//             counter: 0,
-//         }
-//     }
-
-    
-//     // pub fn dumb_send(&self) -> () {
-//     //     for _ in 0..3 {
-//     //         self.tx.send(true).unwrap();
-//     //     };
-//     // }
-
-//     // pub fn update(&mut self) -> () {
-//     //     let (tx,rx):(Sender<bool>,Receiver<bool>) = channel::<bool>();
-//     //     self.tx = tx;
-//     //     self.rx = rx;
-//     // }
-
-//     // pub fn wait_threads(&self) -> () {
-//     //     println!("WAIT_THREADS");
-//     //     for _ in 0..3 {
-//     //         let _ = self.rx.recv().unwrap();
-//     //     }
-//     // }
-// }

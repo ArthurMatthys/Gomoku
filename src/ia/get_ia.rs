@@ -13,8 +13,12 @@ use super::handle_board::{
 };
 use super::heuristic;
 use super::zobrist;
+use std::sync::mpsc::channel;
+use std::sync::mpsc::{Sender, Receiver};
 use rand::seq::SliceRandom;
 use std::time;
+use rayon::prelude::*;
+
 
 const MIN_INFINITY: i64 = i64::min_value() + 1;
 const MAX_INFINITY: i64 = i64::max_value();
@@ -83,8 +87,9 @@ fn ab_negamax(
     color: &mut i8,
     depth_max: &i8,
     htable: &mut [[[i32; SIZE_BOARD]; SIZE_BOARD]; 2],
+    mainloop: bool
 ) -> Option<(i64, Option<(usize, usize)>)> {
-    if params.check_timeout() {
+    if params.check_timeout(mainloop) {
         return None;
     }
 
@@ -168,6 +173,7 @@ fn ab_negamax(
                     &mut (-*color),
                     depth_max,
                     htable,
+                    mainloop
                 );
 
                 *actual_catch -= removed.len() as isize;
@@ -218,7 +224,7 @@ fn ab_negamax(
         let mut tmp_curr_depth:i8 = *current_depth + 1_i8;
 
         for (index, &(line, col, _)) in available_positions.iter().enumerate() {
-            if params.check_timeout() {
+            if params.check_timeout(mainloop) {
                 return None;
             }
             let removed = change_board(
@@ -242,6 +248,7 @@ fn ab_negamax(
                 &mut (-*color),
                 depth_max,
                 htable,
+                mainloop
             );
 
             *actual_catch -= removed.len() as isize;
@@ -310,6 +317,7 @@ fn ab_negamax(
 fn mtdf(
     params: &mut ParamsIA,
     htable: &mut [[[i32; SIZE_BOARD]; SIZE_BOARD]; 2],
+    mainloop: bool
 ) -> Option<(i64, (usize, usize))> {
     let mut g = params.f;
     let mut ret = (0, (0, 0));
@@ -334,6 +342,7 @@ fn mtdf(
             &mut 1,
             &mut depth_max,
             htable,
+            mainloop
         );
 
         match values {
@@ -380,7 +389,7 @@ pub fn iterative_deepening_mtdf(params: &mut ParamsIA, mainloop: bool) -> (i64, 
             break;
         }
 
-        let tmp_ret = mtdf(params, &mut htable);
+        let tmp_ret = mtdf(params, &mut htable, mainloop);
         match tmp_ret {
             None => {
                 let available_positions = get_space(
@@ -426,7 +435,7 @@ fn ia(
     start_time: &time::Instant,
 ) -> (usize, usize) {
     let mut board: Board = game.board.into();
-    let mut params = ParamsIA {
+    let params = ParamsIA {
         score_board: heuristic::evaluate_board(&mut board),
         board: board,
         zhash: hash,
@@ -443,8 +452,20 @@ fn ia(
         f: 0,
         counter: 0,
     };
-    // Main thread execution
-    iterative_deepening_mtdf(&mut params, true).1
+    
+    let (sender,receiver):(Sender<(usize,usize)>,Receiver<(usize,usize)>) = channel();
+    
+    // Spawn 4 threads for parallel execution
+    (0..4).into_par_iter().for_each_with(sender, |s, i| {
+        let mut params_tmp = params.clone();
+        if i == 3 {
+            s.send(iterative_deepening_mtdf(&mut params_tmp, true).1).unwrap();
+        } else {
+            iterative_deepening_mtdf(&mut params_tmp, false);
+        }
+    });
+    let ret: Vec<(usize, usize)> = receiver.into_iter().collect();
+    ret[0]
 }
 
 pub fn get_ia(
