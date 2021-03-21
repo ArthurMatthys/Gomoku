@@ -1,7 +1,5 @@
 use super::super::model::board::Board;
 use super::super::model::score_board::ScoreBoard;
-// use std::sync::atomic::AtomicUsize;
-// use std::sync::mpsc::{ channel, Sender, Receiver };
 use std::time;
 
 #[derive(Clone, Copy)]

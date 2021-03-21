@@ -9,7 +9,7 @@ use super::super::model::params::{ParamsIA};
 use super::super::model::score_board::ScoreBoard;
 use super::super::render::board::SIZE_BOARD;
 use super::handle_board::{
-    change_board, get_space, remove_last_pawn
+    change_board, get_space, remove_last_pawn, find_continuous_threats
 };
 use super::heuristic;
 use super::zobrist;
@@ -132,6 +132,22 @@ fn ab_negamax(
         ));
     }
     if *current_depth == *depth_max {
+        if let Some((_, _)) = find_continuous_threats(
+            &mut params.board,
+            &mut params.score_board,
+            actual,
+            actual_catch,
+            opp_catch,
+            &mut 4,
+            &mut 0,
+            true,
+        ) {
+            println!("yo");
+            return Some((
+                -heuristic::INSTANT_WIN * ((*depth_max - *current_depth) as i64 + 1),
+                None,
+            ));
+        }
         let weight = heuristic::first_heuristic_hint(
             &mut params.board,
             &mut params.score_board,
@@ -452,9 +468,8 @@ fn ia(
         f: 0,
         counter: 0,
     };
-    
     let (sender,receiver):(Sender<(usize,usize)>,Receiver<(usize,usize)>) = channel();
-    
+
     // Spawn 4 threads for parallel execution
     (0..4).into_par_iter().for_each_with(sender, |s, i| {
         let mut params_tmp = params.clone();
@@ -497,77 +512,3 @@ pub fn get_ia(
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn test_ia(
-        white_pos: Vec<(usize, usize)>,
-        black_pos: Vec<(usize, usize)>,
-        actual: Option<bool>,
-        actual_catch: &mut isize,
-        opp_catch: &mut isize,
-        depth_max: &i8,
-        expected_result: (usize, usize),
-    ) -> bool {
-        let mut bboard = [[None; SIZE_BOARD]; SIZE_BOARD];
-        white_pos
-            .iter()
-            .for_each(|&(x, y)| bboard[x][y] = Some(true));
-        black_pos
-            .iter()
-            .for_each(|&(x, y)| bboard[x][y] = Some(false));
-        let mut board: Board = bboard.into();
-        let mut score_board = heuristic::evaluate_board(&mut board);
-        zobrist::init_zboard();
-        let mut hash = zobrist::board_to_zhash(&mut bboard);
-        println!("// Initial configuration:");
-        board.print();
-        // let stime_mtdf = time::Instant::now();
-        let mut params = ParamsIA {
-            score_board: score_board,
-            board: board,
-            zhash: hash,
-            current_depth: 0,
-            actual: actual,
-            actual_catch: *actual_catch,
-            opp_catch: *opp_catch,
-            alpha: MIN_INFINITY,
-            beta: MAX_INFINITY,
-            color: 0,
-            depth_max: *depth_max,
-            counter_tree: 0,
-            start_time: time::Instant::now(),
-            f: 0,
-            counter: 0,
-        };
-
-        let mut htable = history::initialize_htable();
-        let result = mtdf(&mut params, &mut htable);
-        match result {
-            None => false,
-            Some((_, (x, y))) => {
-                println!("// Result IA ({},{}) :", x, y);
-                for i in 0..19 {
-                    print!("// ");
-                    for j in 0..19 {
-                        if i == y && j == x && actual == Some(false) {
-                            print!("⊛");
-                        } else if i == y && j == x && actual == Some(true) {
-                            print!("⊙");
-                        } else {
-                            match board.get_pawn(j, i) {
-                                Some(true) => print!("⊖"),
-                                Some(false) => print!("⊕"),
-                                None => print!("_"),
-                            }
-                        }
-                    }
-                    println!();
-                }
-                expected_result == (x, y)
-            }
-        }
-    }
-
-}
