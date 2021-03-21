@@ -4,6 +4,7 @@ use super::super::checks::double_three::check_double_three_hint;
 use super::super::model::board::Board;
 use super::super::model::bool_option::get_opp;
 use super::super::model::score_board::ScoreBoard;
+use super::super::model::params::{ParamsIA};
 use super::super::render::board::SIZE_BOARD;
 use super::heuristic;
 use super::threat_space::threat_search_space;
@@ -511,20 +512,20 @@ pub fn get_space(
 }
 
 pub fn find_continuous_threats(
-    board: &mut Board,
-    score_board: &mut ScoreBoard,
+    params: &mut ParamsIA,
     player_actual: Option<bool>,
     player_actual_catch: &mut isize,
     player_opposite_catch: &mut isize,
     depth: &mut i8,
     depth_win: &mut i8,
     true_actual_player: bool,
+    mainloop: bool
 ) -> Option<(usize, usize)> {
-    if *depth < *depth_win {
+    if *depth < *depth_win || params.check_timeout(mainloop) {
         return None;
     }
     let threats: Vec<((usize, usize), TypeOfThreat, Vec<(usize, usize)>)> =
-        threat_search_space(board, score_board, player_actual, player_actual_catch);
+        threat_search_space(&mut params.board, &mut params.score_board, player_actual, player_actual_catch);
 
     if threats.len() == 0 {
         return None;
@@ -545,13 +546,13 @@ pub fn find_continuous_threats(
         }
         let (x, y) = threat;
 
-        let removed = change_board_hint(board, score_board, *x, *y, player_actual);
+        let removed = change_board_hint(&mut params.board, &mut params.score_board, *x, *y, player_actual);
         *player_actual_catch += removed.len() as isize;
 
         let mut counters_valid: Vec<(usize, usize)> = vec![];
         for (opp_x, opp_y) in counters.iter() {
             if !check_double_three_hint(
-                board,
+                &mut params.board,
                 get_opp(player_actual),
                 *opp_x as isize,
                 *opp_y as isize,
@@ -562,19 +563,19 @@ pub fn find_continuous_threats(
 
         if counters_valid.len() == 0 {
             *depth_win = *depth;
-            remove_last_pawn_hint(board, score_board, *x, *y, player_actual, removed);
+            remove_last_pawn_hint(&mut params.board, &mut params.score_board, *x, *y, player_actual, removed);
             return Some((*x, *y));
         }
 
         let mut win: bool = true;
 
         for (counter_x, counter_y) in counters_valid.iter() {
-            if board.get_pawn(*counter_x, *counter_y) != None {
+            if params.board.get_pawn(*counter_x, *counter_y) != None {
                 unreachable!();
             }
             let removed_counter = change_board_hint(
-                board,
-                score_board,
+                &mut params.board,
+                &mut params.score_board,
                 *counter_x,
                 *counter_y,
                 get_opp(player_actual),
@@ -582,19 +583,19 @@ pub fn find_continuous_threats(
 
             *player_opposite_catch += removed_counter.len() as isize;
             let res = find_continuous_threats(
-                board,
-                score_board,
+                params,
                 player_actual,
                 player_actual_catch,
                 player_opposite_catch,
                 &mut (*depth - 2),
                 depth_win,
                 true_actual_player,
+                mainloop
             );
             *player_opposite_catch -= removed_counter.len() as isize;
             remove_last_pawn_hint(
-                board,
-                score_board,
+                &mut params.board,
+                &mut params.score_board,
                 *counter_x,
                 *counter_y,
                 get_opp(player_actual),
@@ -606,7 +607,7 @@ pub fn find_continuous_threats(
             }
         }
         *player_actual_catch -= removed.len() as isize;
-        remove_last_pawn_hint(board, score_board, *x, *y, player_actual, removed);
+        remove_last_pawn_hint(&mut params.board, &mut params.score_board, *x, *y, player_actual, removed);
 
         if win {
             *depth_win = *depth;
@@ -1349,6 +1350,8 @@ mod tests {
         ))
     }
 
+    use std::time::Instant;
+
     fn test_continuous_threats(
         white_pos: Vec<(usize, usize)>,
         black_pos: Vec<(usize, usize)>,
@@ -1367,19 +1370,39 @@ mod tests {
             .iter()
             .for_each(|&(x, y)| test_bboard[x][y] = Some(false));
         let mut test_board: Board = test_bboard.into();
-        let mut score_board = heuristic::evaluate_board(&mut test_board);
+        let start_time = Instant::now();
+        let mut params = ParamsIA {
+            score_board: heuristic::evaluate_board(&mut test_board),
+            board: test_board,
+            zhash: zobrist::board_to_zhash(&test_bboard),
+            current_depth: 0,
+            actual: actual_player,
+            actual_catch: *actual_take,
+            opp_catch: *opp_take,
+            alpha: i64::min_value() + 1,
+            beta: i64::max_value(),
+            color: 0,
+            depth_max: 11,
+            counter_tree: 0,
+            start_time: start_time,
+            f: 0,
+            counter: 0,
+        };
+
         // Print initial configuration
         println!("// Initial configuration:");
         test_board.print();
+
+        
         let res = find_continuous_threats(
-            &mut test_board,
-            &mut score_board,
+            &mut params,
             actual_player,
             actual_take,
             opp_take,
             depth,
             depth_win,
             true,
+            true
         );
         match res {
             None => println!("No threat found"),

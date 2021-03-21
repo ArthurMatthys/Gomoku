@@ -552,7 +552,6 @@ impl Game {
                 } else {
                     let player = self.get_actual_player();
                     if player.nb_of_catch == 4 && capture::can_capture(self) {
-                        println!("yo");
                         false
                     } else {
                         self.result = None;

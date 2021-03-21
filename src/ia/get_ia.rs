@@ -6,7 +6,6 @@ use super::super::model::game;
 use super::super::model::history;
 use super::super::model::params;
 use super::super::model::params::{ParamsIA};
-use super::super::model::score_board::ScoreBoard;
 use super::super::render::board::SIZE_BOARD;
 use super::handle_board::{
     change_board, get_space, remove_last_pawn, find_continuous_threats
@@ -36,16 +35,18 @@ macro_rules! get_usize {
 }
 
 fn find_winning_align(
-    board: &mut Board,
-    score_board: &mut ScoreBoard,
+    params: &mut ParamsIA,
+    actual_catch: &mut isize,
+    opp_catch: &mut isize,
     actual: Option<bool>,
     check_capture: bool,
+    mainloop: bool
 ) -> bool {
     for line in 0..SIZE_BOARD {
         for col in 0..SIZE_BOARD {
-            if board.get_pawn(line, col) == actual {
+            if params.board.get_pawn(line, col) == actual {
                 for dir in 0..4 {
-                    match score_board.get(line, col, dir) {
+                    match params.score_board.get(line, col, dir) {
                         (a, _, _) if a >= 5 => {
                             let mut align = Vec::with_capacity(10);
                             let (dx, dy) = DIRECTIONS[dir];
@@ -59,13 +60,30 @@ fn find_winning_align(
                                 loop {
                                     new_x += way * dx;
                                     new_y += way * dy;
-                                    match board.get(new_x as usize, new_y as usize) {
+                                    match params.board.get(new_x as usize, new_y as usize) {
                                         Some(a) if a == actual => align.push((new_x, new_y)),
                                         _ => break,
                                     }
                                 }
                             }
-                            return !capture::can_capture_vec_hint(board, score_board, align);
+                            if !capture::can_capture_vec_hint(&mut params.board, &mut params.score_board, align){
+                                return true;
+                            } else {
+                                if let Some((_, _)) = find_continuous_threats(
+                                    params,
+                                    get_opp(actual),
+                                    opp_catch,
+                                    actual_catch,
+                                    &mut 4,
+                                    &mut 0,
+                                    true,
+                                    mainloop
+                                ) {
+                                    return true;
+                                } else {
+                                    return false;
+                                }
+                            }
                         }
                         _ => (),
                     }
@@ -116,38 +134,62 @@ fn ab_negamax(
             None,
         ));
     } else if find_winning_align(
-        &mut params.board,
-        &mut params.score_board,
+        params,
+        opp_catch,
+        actual_catch,
         get_opp(actual),
         true,
+        mainloop
     ) {
         return Some((
             -heuristic::INSTANT_WIN * ((*depth_max - *current_depth) as i64 + 1),
             None,
         ));
-    } else if find_winning_align(&mut params.board, &mut params.score_board, actual, false) {
+    } else if find_winning_align(
+        params,
+        actual_catch,
+        opp_catch,
+        actual,
+        false,
+        mainloop) {
         return Some((
             heuristic::INSTANT_WIN * ((*depth_max - *current_depth) as i64 + 1),
             None,
         ));
     }
     if *current_depth == *depth_max {
-        if let Some((_, _)) = find_continuous_threats(
-            &mut params.board,
-            &mut params.score_board,
-            actual,
-            actual_catch,
-            opp_catch,
-            &mut 4,
-            &mut 0,
-            true,
-        ) {
-            println!("yo");
-            return Some((
-                -heuristic::INSTANT_WIN * ((*depth_max - *current_depth) as i64 + 1),
-                None,
-            ));
-        }
+        // if mainloop {
+        //     if let Some((_, _)) = find_continuous_threats(
+        //         params,
+        //         actual,
+        //         actual_catch,
+        //         opp_catch,
+        //         &mut 4,
+        //         &mut 0,
+        //         true,
+        //         mainloop
+        //     ) {
+        //         return Some((
+        //             heuristic::INSTANT_WIN * ((*depth_max - *current_depth) as i64 + 1),
+        //             None,
+        //         ));
+        //     } else if let Some((_, _)) = find_continuous_threats(
+        //         params,
+        //         get_opp(actual),
+        //         opp_catch,
+        //         actual_catch,
+        //         &mut 4,
+        //         &mut 0,
+        //         true,
+        //         mainloop
+        //     ) {
+        //         return Some((
+        //             -heuristic::INSTANT_WIN * ((*depth_max - *current_depth) as i64 + 1),
+        //             None,
+        //         ));
+        //     }
+        // }
+
         let weight = heuristic::first_heuristic_hint(
             &mut params.board,
             &mut params.score_board,
