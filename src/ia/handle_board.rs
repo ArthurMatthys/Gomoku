@@ -1530,16 +1530,7 @@ mod tests {
         println!("// Initial configuration:");
         test_board.print();
 
-        let res = find_continuous_threats(
-            &mut params,
-            actual_player,
-            actual_take,
-            opp_take,
-            depth,
-            depth_win,
-            true,
-            true,
-        );
+        let res = find_continuous_threats(&mut params, depth, depth_win, true, true);
         match res {
             None => println!("No threat found"),
             Some((x, y)) => println!("Threat found {}:{}", x, y),
