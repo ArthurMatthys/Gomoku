@@ -5,19 +5,18 @@ use super::super::model::bool_option::get_opp;
 use super::super::model::game;
 use super::super::model::history;
 use super::super::model::params;
-use super::super::model::params::{ParamsIA};
+use super::super::model::params::ParamsIA;
 use super::super::render::board::SIZE_BOARD;
 use super::handle_board::{
-    change_board, get_space, remove_last_pawn, find_continuous_threats
+    change_board, find_continuous_threats, get_space, null_move_heuristic, remove_last_pawn,
 };
 use super::heuristic;
 use super::zobrist;
-use std::sync::mpsc::channel;
-use std::sync::mpsc::{Sender, Receiver};
 use rand::seq::SliceRandom;
-use std::time;
 use rayon::prelude::*;
-
+use std::sync::mpsc::channel;
+use std::sync::mpsc::{Receiver, Sender};
+use std::time;
 
 const MIN_INFINITY: i64 = i64::min_value() + 1;
 const MAX_INFINITY: i64 = i64::max_value();
@@ -34,13 +33,10 @@ macro_rules! get_usize {
     };
 }
 
-fn find_winning_align(
+pub fn find_winning_align(
     params: &mut ParamsIA,
-    actual_catch: &mut isize,
-    opp_catch: &mut isize,
     actual: Option<bool>,
     check_capture: bool,
-    mainloop: bool
 ) -> bool {
     for line in 0..SIZE_BOARD {
         for col in 0..SIZE_BOARD {
@@ -66,25 +62,11 @@ fn find_winning_align(
                                     }
                                 }
                             }
-                            // if !capture::can_capture_vec_hint(&mut params.board, &mut params.score_board, align){
-                            //     return true;
-                            // } else {
-                                // if let Some((_, _)) = find_continuous_threats(
-                                //     params,
-                                //     get_opp(actual),
-                                //     opp_catch,
-                                //     actual_catch,
-                                //     &mut 4,
-                                //     &mut 0,
-                                //     true,
-                                //     mainloop
-                                // ) {
-                                //     return true;
-                                // } else {
-                                    // return false;
-                                // }
-                            // }
-                            return !capture::can_capture_vec_hint(&mut params.board, &mut params.score_board, align);
+                            return !capture::can_capture_vec_hint(
+                                &mut params.board,
+                                &mut params.score_board,
+                                align,
+                            );
                         }
                         _ => (),
                     }
@@ -106,7 +88,7 @@ fn ab_negamax(
     color: &mut i8,
     depth_max: &i8,
     htable: &mut [[[i32; SIZE_BOARD]; SIZE_BOARD]; 2],
-    mainloop: bool
+    mainloop: bool,
 ) -> Option<(i64, Option<(usize, usize)>)> {
     if params.check_timeout(mainloop) {
         return None;
@@ -134,25 +116,12 @@ fn ab_negamax(
             -heuristic::INSTANT_WIN * ((*depth_max - *current_depth) as i64 + 1),
             None,
         ));
-    } else if find_winning_align(
-        params,
-        opp_catch,
-        actual_catch,
-        get_opp(actual),
-        true,
-        mainloop
-    ) {
+    } else if find_winning_align(params, get_opp(actual), true) {
         return Some((
             -heuristic::INSTANT_WIN * ((*depth_max - *current_depth) as i64 + 1),
             None,
         ));
-    } else if find_winning_align(
-        params,
-        actual_catch,
-        opp_catch,
-        actual,
-        false,
-        mainloop) {
+    } else if find_winning_align(params, actual, false) {
         return Some((
             heuristic::INSTANT_WIN * ((*depth_max - *current_depth) as i64 + 1),
             None,
@@ -232,7 +201,7 @@ fn ab_negamax(
                     &mut (-*color),
                     depth_max,
                     htable,
-                    mainloop
+                    mainloop,
                 );
 
                 *actual_catch -= removed.len() as isize;
@@ -290,7 +259,7 @@ fn ab_negamax(
         }
         let len_available_positions = available_positions.len();
         available_positions.append(&mut silent_moves);
-        let mut tmp_curr_depth:i8 = *current_depth + 1_i8;
+        let mut tmp_curr_depth: i8 = *current_depth + 1_i8;
 
         for (index, &(line, col, _)) in available_positions.iter().enumerate() {
             if params.check_timeout(mainloop) {
@@ -317,7 +286,7 @@ fn ab_negamax(
                 &mut (-*color),
                 depth_max,
                 htable,
-                mainloop
+                mainloop,
             );
 
             *actual_catch -= removed.len() as isize;
@@ -386,7 +355,7 @@ fn ab_negamax(
 fn mtdf(
     params: &mut ParamsIA,
     htable: &mut [[[i32; SIZE_BOARD]; SIZE_BOARD]; 2],
-    mainloop: bool
+    mainloop: bool,
 ) -> Option<(i64, (usize, usize))> {
     let mut g = params.f;
     let mut ret = (0, (0, 0));
@@ -411,25 +380,23 @@ fn mtdf(
             &mut 1,
             &mut depth_max,
             htable,
-            mainloop
+            mainloop,
         );
 
         match values {
             None => return None,
-            Some((score, r#move)) => {
-                match r#move {
-                    None => return None,
-                    Some(r#move) => {
-                        ret = (score, r#move);
-                        g = score;
-                        if g < beta {
-                            upperbnd = g;
-                        } else {
-                            lowerbnd = g;
-                        }
+            Some((score, r#move)) => match r#move {
+                None => return None,
+                Some(r#move) => {
+                    ret = (score, r#move);
+                    g = score;
+                    if g < beta {
+                        upperbnd = g;
+                    } else {
+                        lowerbnd = g;
                     }
                 }
-            }
+            },
         }
     }
     Some(ret)
@@ -504,7 +471,7 @@ fn ia(
     start_time: &time::Instant,
 ) -> (usize, usize) {
     let mut board: Board = game.board.into();
-    let params = ParamsIA {
+    let mut params = ParamsIA {
         score_board: heuristic::evaluate_board(&mut board),
         board: board,
         zhash: hash,
@@ -521,26 +488,37 @@ fn ia(
         f: 0,
         counter: 0,
     };
-    let (sender,receiver):(Sender<(usize,usize)>,Receiver<(usize,usize)>) = channel();
+    let mut depth_max_threat = 10;
 
-    // Spawn 4 threads for parallel execution
+    //Spawn 4 threads for parallel execution
+    let (sender, receiver): (
+        Sender<(i64, (usize, usize))>,
+        Receiver<(i64, (usize, usize))>,
+    ) = channel();
     (0..4).into_par_iter().for_each_with(sender, |s, i| {
         let mut params_tmp = params.clone();
         if i == 3 {
-            s.send(iterative_deepening_mtdf(&mut params_tmp, true).1).unwrap();
+            s.send(iterative_deepening_mtdf(&mut params_tmp, true))
+                .unwrap();
         } else {
             iterative_deepening_mtdf(&mut params_tmp, false);
         }
     });
-    let ret: Vec<(usize, usize)> = receiver.into_iter().collect();
-    ret[0]
+    let ret: Vec<(i64, (usize, usize))> = receiver.into_iter().collect();
+    // let ret = vec![iterative_deepening_mtdf(&mut params, true)];
+    if let Some(_) = null_move_heuristic(&mut params) {
+        ret[0].1
+    } else {
+        if let Some((x, y)) =
+            find_continuous_threats(&mut params, &mut depth_max_threat, &mut 0, true, true)
+        {
+            return (x, y);
+        }
+        ret[0].1
+    }
 }
 
-pub fn get_ia(
-    game: &mut game::Game,
-    depth_max: &i8,
-    start_time: &time::Instant,
-) -> (usize, usize) {
+pub fn get_ia(game: &mut game::Game, depth_max: &i8, start_time: &time::Instant) -> (usize, usize) {
     let hash: u64 = zobrist::board_to_zhash(&game.board);
     let mut rng = rand::thread_rng();
 
@@ -564,4 +542,3 @@ pub fn get_ia(
         }
     }
 }
-

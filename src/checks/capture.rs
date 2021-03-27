@@ -244,6 +244,45 @@ pub fn can_capture_vec_hint(
     false
 }
 
+/// Check if nany of the given pawn can be capture
+pub fn get_capture_vec_hint(
+    board: &mut Board,
+    score_board: &mut ScoreBoard,
+    to_capture: Vec<(isize, isize)>,
+) -> Vec<(usize, usize)> {
+    let mut captures: Vec<(usize, usize)> = vec![];
+    for &(x, y) in to_capture.iter() {
+        for dir in 0..4 {
+            match score_board.get(x as usize, y as usize, dir) {
+                (a, l, r)
+                    if a == 2
+                        && ((l == Some(false) && r == Some(true))
+                            || (l == Some(true) && r == Some(false))) =>
+                {
+                    let way = if l == Some(false) { -1 } else { 1 };
+                    let pawn = board.get_pawn(x as usize, y as usize);
+                    let opp = pawn.map(|x| !x);
+                    let (dx, dy) = DIRECTIONS[dir];
+                    for step in 1..3 {
+                        let new_x = x + way * step * dx;
+                        let new_y = y + way * step * dy;
+                        match board.get(new_x as usize, new_y as usize) {
+                            Some(a) if a == opp => unreachable!(),
+                            Some(a) if a == pawn => (),
+                            Some(None) => {
+                                captures.push((new_x as usize, new_y as usize));
+                            }
+                            Some(_) => unreachable!(),
+                            None => (),
+                        }
+                    }
+                }
+                _ => (),
+            }
+        }
+    }
+    captures
+}
 /// Called by check_win if and only if the current player has a 5 in a row
 /// and the opponent has 4 catches. We are looking if the opponent can do
 /// an other capture

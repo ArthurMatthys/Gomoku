@@ -73,6 +73,7 @@ const ALIGN_4: i64 = 1000;
 const SCORE_TAKE: i64 = 10;
 const FIVE_CAN_TAKE: i64 = 0010000;
 const SCORE_CAN_TAKE: i64 = 000000100;
+const BONUS_OLD_MOOVE: i64 = 1000;
 // pub const MULTIPLIER: i64 = 10;
 
 fn score_to_points(
@@ -92,6 +93,7 @@ fn score_to_points(
         nb_2_c,
     ): (u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8),
     depth: &mut i8,
+    last_player: bool,
 ) -> i64 {
     let mut total = 0i64;
     match *nb_caught {
@@ -108,13 +110,24 @@ fn score_to_points(
     if nb_5 > 0 {
         return INSTANT_WIN * ((*depth + 1) as i64 * 2);
     }
-    total += (nb_5_take / 5) as i64 * FIVE_CAN_TAKE;
+    if last_player {
+        total += (nb_5_take / 5) as i64 * FIVE_CAN_TAKE;
 
-    total += (nb_4_o / 4) as i64 * ALIGN_4;
-    total += (nb_4_so / 4) as i64 * ALIGN_4 / 2;
+        total += (nb_4_o / 4) as i64 * ALIGN_4;
+        total += (nb_4_so / 4) as i64 * ALIGN_4 / 2;
+
+        total += (nb_3_o / 3) as i64 * ALIGN_3;
+    } else {
+        total += BONUS_OLD_MOOVE * (nb_5_take / 5) as i64 * FIVE_CAN_TAKE;
+
+        total += BONUS_OLD_MOOVE * (nb_4_o / 4) as i64 * ALIGN_4;
+        total += BONUS_OLD_MOOVE * (nb_4_so / 4) as i64 * ALIGN_4 / 2;
+
+        total += BONUS_OLD_MOOVE * (nb_3_o / 3) as i64 * ALIGN_3;
+    }
+
     total -= (nb_4_c / 4) as i64 * ALIGN_4 / 4;
 
-    total += (nb_3_o / 3) as i64 * ALIGN_3;
     total += (nb_3_so / 3) as i64 * ALIGN_3 / 2;
     total -= (nb_3_c / 3) as i64 * ALIGN_3 / 4;
 
@@ -135,8 +148,8 @@ pub fn first_heuristic_hint(
 ) -> i64 {
     let (good_points, bad_points) = get_alignements(board, score_board, player_actual);
 
-    score_to_points(player_actual_catch, good_points, depth)
-        - score_to_points(player_opposite_catch, bad_points, depth)
+    score_to_points(player_actual_catch, good_points, depth, false)
+        - score_to_points(player_opposite_catch, bad_points, depth, true)
 }
 
 fn get_alignements(
@@ -757,8 +770,8 @@ mod tests {
         assert!(test_board(
             white_pos,
             black_pos,
-            (0,  0,  0,  0,  0,  0,  0,  3,  3,  0,  2,  0),
-            (0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  4),
+            (0, 0, 0, 0, 0, 0, 0, 3, 3, 0, 2, 0),
+            (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4),
         ));
     }
 
@@ -788,8 +801,8 @@ mod tests {
         assert!(test_board(
             white_pos,
             black_pos,
-            (2,  0,  0,  0,  0,  0,  0,  0,  0,  0,  2,  0),
-            (0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  2),
+            (2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0),
+            (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2),
         ));
     }
 
@@ -819,8 +832,8 @@ mod tests {
         assert!(test_board(
             white_pos,
             black_pos,
-            (2,  0,  0,  0,  0,  0,  0,  0,  0,  0,  2,  0),
-            (0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  2,  0),
+            (2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0),
+            (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0),
         ));
     }
 
@@ -850,8 +863,8 @@ mod tests {
         assert!(test_board(
             white_pos,
             black_pos,
-            (0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  2),
-            (2,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0),
+            (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2),
+            (2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
         ));
     }
 }

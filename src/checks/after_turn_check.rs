@@ -6,10 +6,10 @@ use super::capture;
 
 pub const DIRECTIONS: [(isize, isize); 4] = [(1, 1), (1, 0), (1, -1), (0, 1)];
 
-// Function that expands the if statement for more clarity
-// It calls the explore function 2 times with the $direction and it's opposite
-// And checks wether there are 5 or more pawn of the same color (on the same column)
-fn check_explore(
+/// Function that expands the if statement for more clarity
+/// It calls the explore function 2 times with the $direction and it's opposite
+/// And checks wether there are 5 or more pawn of the same color (on the same column)
+pub fn check_explore(
     board: &[[Option<bool>; board::SIZE_BOARD]; board::SIZE_BOARD],
     (dir_line, dir_col): (isize, isize),
     (line_lpiece, col_lpiece): &(isize, isize),
